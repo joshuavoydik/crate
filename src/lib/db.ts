@@ -178,7 +178,8 @@ let client: Client | null = null;
 let ready: Promise<void> | null = null;
 
 function makeClient(): Client {
-  const url = process.env.DATABASE_URL || "file:./data/crate.db";
+  // Turso's Vercel integration names these TURSO_*; either spelling works.
+  const url = process.env.DATABASE_URL || process.env.TURSO_DATABASE_URL || "file:./data/crate.db";
   if (url.startsWith("file:")) {
     const path = url.slice("file:".length);
     try {
@@ -189,7 +190,7 @@ function makeClient(): Client {
   }
   return createClient({
     url,
-    authToken: process.env.DATABASE_AUTH_TOKEN || undefined,
+    authToken: process.env.DATABASE_AUTH_TOKEN || process.env.TURSO_AUTH_TOKEN || undefined,
   });
 }
 

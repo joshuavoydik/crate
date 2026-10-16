@@ -1,3 +1,5 @@
+export const maxDuration = 60;
+
 import { json, error, readJson, requireUser } from "@/lib/api";
 import { isMember } from "@/lib/queries";
 import { heartbeat, liveFor, liveHistoryFor, tuneIn, tunedIn } from "@/lib/live";

@@ -1,3 +1,5 @@
+export const maxDuration = 60;
+
 import { json, readJson, requireUser } from "@/lib/api";
 import { syncUser } from "@/lib/sync";
 

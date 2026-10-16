@@ -1,3 +1,5 @@
+export const maxDuration = 60;
+
 import { json, error, readJson, str } from "@/lib/api";
 import { userByIngestToken } from "@/lib/ingest";
 import { reportFromMac } from "@/lib/live";

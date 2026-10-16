@@ -1,3 +1,5 @@
+export const maxDuration = 60;
+
 import { json, error, readJson, requireUser, str } from "@/lib/api";
 import { resolveUrl, resolveAppleId } from "@/lib/resolve";
 import { extractUrl } from "@/lib/resolve/parse";

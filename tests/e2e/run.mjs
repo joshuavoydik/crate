@@ -74,6 +74,7 @@ async function main() {
       NEXT_PUBLIC_APP_URL: BASE,
       SESSION_SECRET: "e2e-secret",
       CRATE_TEST_HOOKS: "1",
+      CRON_SECRET: "e2e-cron",
       GOOGLE_CLIENT_ID: "test-google-client",
       GOOGLE_CLIENT_SECRET: "test-google-secret",
     },
@@ -848,6 +849,28 @@ async function main() {
     await a.reload();
     await a.getByRole("button", { name: "Notices" }).waitFor();
     log("the bell lists what needs a hand, dismissal sticks until a reconnect, and a fix clears it");
+
+    // ================= Moving house: the import endpoint and its sign-in links =================
+    // The live database file is importable into itself (every row replaced by id): counts come back, and
+    // the sign-in link logs Joshua in from a cold browser, cookie-less.
+    const { readFileSync: readDb } = await import("node:fs");
+    const dbBytes = readDb(DB);
+    const badImport = await desk.request.post(`${BASE}/api/admin/import`, { headers: { authorization: "Bearer nope", "content-type": "application/octet-stream" }, data: dbBytes });
+    assert.equal(badImport.status(), 403);
+    const imp = await desk.request.post(`${BASE}/api/admin/import`, { headers: { authorization: "Bearer e2e-cron", "content-type": "application/octet-stream" }, data: dbBytes });
+    assert.equal(imp.status(), 200);
+    const impJson = await imp.json();
+    assert.ok(impJson.imported.users >= 2 && impJson.imported.sends > 0 && impJson.imported.tracks > 0, "tables came across");
+    const joshLink = impJson.people.find((p) => p.name === "Joshua")?.signin;
+    assert.ok(joshLink && joshLink.includes("/api/admin/signin?token="));
+    const cold = await browser.newContext({ viewport: { width: 1200, height: 800 } });
+    const c = await cold.newPage();
+    await c.goto(joshLink);
+    await c.waitForURL(`${BASE}/`);
+    await c.locator(".pl__name").waitFor({ timeout: 20000 });
+    assert.equal((await (await c.request.get(`${BASE}/api/me`)).json()).me?.name, "Joshua");
+    await cold.close();
+    log("the import endpoint copies a Crate across and its sign-in link opens the door");
 
     // Light mode + desktop log for the record.
     const light = await browser.newContext({ viewport: { width: 1440, height: 900 }, colorScheme: "light", storageState: await desk.storageState() });

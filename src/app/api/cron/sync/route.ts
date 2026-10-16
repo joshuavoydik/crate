@@ -1,3 +1,5 @@
+export const maxDuration = 60;
+
 import { json, error } from "@/lib/api";
 import { syncAll } from "@/lib/sync";
 

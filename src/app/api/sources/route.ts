@@ -1,3 +1,5 @@
+export const maxDuration = 60;
+
 import { json, error, readJson, requireUser, str } from "@/lib/api";
 import { saveSource, removeSource, sourcesFor, syncUser } from "@/lib/sync";
 import { configured } from "@/lib/sources";

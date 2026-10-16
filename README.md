@@ -32,8 +32,13 @@ Start a crew, copy the invite link, open it in a private window as the second pe
 | `ANTHROPIC_API_KEY` | no | agent-written notes and playlist names; templated fallback without it |
 | `AGENT_MODEL` | no | defaults to `claude-sonnet-4-5` |
 | `LASTFM_API_KEY` | no | lets members add a Last.fm username; scrobbling is the bridge for platforms with no API (Pandora, Amazon Music, Deezer) |
+| `CRON_SECRET` | prod | protects `/api/cron/sync` (Vercel sends it on its own) and `/api/admin/import` |
+
+   Turso's Vercel Marketplace integration sets `TURSO_DATABASE_URL` and `TURSO_AUTH_TOKEN` instead; both spellings work. `vercel.json` schedules `/api/cron/sync` every five minutes (a Hobby plan allows once a day; the open app still syncs itself every two minutes). A Dockerfile and `fly.toml` are there too for a single always-on machine with the SQLite file on a disk; with `CRATE_SYNC_LOOP=1` that server runs the sync loop itself.
 
 3. Open the URL on your phone, add it to the home screen, and share the invite link.
+
+**Moving an existing Crate:** `POST /api/admin/import` with the old SQLite file as the body and `Authorization: Bearer $CRON_SECRET` copies every table over (rows replaced by id) and answers with a one-day sign-in link per person, since cookies from the old address do not carry. Platforms need the new address added as a redirect: Spotify, Google, SoundCloud and TIDAL each in their own dashboard.
 
 The schema is created on first request; there are no migrations to run.
 
