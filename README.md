@@ -34,7 +34,7 @@ Start a crew, copy the invite link, open it in a private window as the second pe
 | `LASTFM_API_KEY` | no | lets members add a Last.fm username; scrobbling is the bridge for platforms with no API (Pandora, Amazon Music, Deezer) |
 | `CRON_SECRET` | prod | protects `/api/cron/sync` (Vercel sends it on its own) and `/api/admin/import` |
 
-   Turso's Vercel Marketplace integration sets `TURSO_DATABASE_URL` and `TURSO_AUTH_TOKEN` instead; both spellings work. `vercel.json` schedules `/api/cron/sync` every five minutes (a Hobby plan allows once a day; the open app still syncs itself every two minutes). A Dockerfile and `fly.toml` are there too for a single always-on machine with the SQLite file on a disk; with `CRATE_SYNC_LOOP=1` that server runs the sync loop itself.
+   Turso's Vercel Marketplace integration sets `TURSO_DATABASE_URL` and `TURSO_AUTH_TOKEN` instead; both spellings work. `vercel.json` schedules `/api/cron/sync` once a day, the most a Hobby plan allows (on Pro, `*/5 * * * *` is fine); the open app still syncs itself every two minutes, and the Mac helper and the Chrome extension report plays as they happen. A Dockerfile and `fly.toml` are there too for a single always-on machine with the SQLite file on a disk; with `CRATE_SYNC_LOOP=1` that server runs the sync loop itself.
 
 3. Open the URL on your phone, add it to the home screen, and share the invite link.
 
