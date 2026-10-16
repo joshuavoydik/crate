@@ -79,7 +79,7 @@ export function SettingsView({ appUrl }: { appUrl: string }) {
   }
 
   const base = appUrl.replace(/\/$/, "");
-  const installCmd = `cd "${projectDir ?? "~/Code/crate"}" && npm run imessage:install -- --url=${base} --token=${token ?? "<token>"}`;
+  const installCmd = `cd "${projectDir ?? "<your Crate checkout>"}" && npm run imessage:install -- --url=${base} --token=${token ?? "<token>"}`;
   const macCmd = `curl -fsSL "${base}/api/mac/install?key=${token ?? "<token>"}" | bash`;
   const macRemoveCmd = `curl -fsSL "${base}/api/mac/install?key=${token ?? "<token>"}&remove=1" | bash`;
   const chromePair = `chrome-extension://${CHROME_EXTENSION_ID}/pair.html#url=${encodeURIComponent(base)}&token=${encodeURIComponent(token ?? "")}`;
@@ -227,8 +227,21 @@ export function SettingsView({ appUrl }: { appUrl: string }) {
             </div>
             <ol className="steps">
               <li>
-                Add the extension. Until it is on the Chrome Web Store: open <code>chrome://extensions</code>, turn on Developer mode (top right), Load unpacked,
-                and choose the <code>crate-chrome</code> folder inside {projectDir ?? "the Crate folder"}.
+                Add the extension. Until it is on the Chrome Web Store:{" "}
+                {projectDir ? (
+                  <>
+                    open <code>chrome://extensions</code>, turn on Developer mode (top right), Load unpacked, and choose the <code>crate-chrome</code> folder
+                    inside {projectDir}.
+                  </>
+                ) : (
+                  <>
+                    <a href="/api/chrome/extension" download>
+                      download the extension
+                    </a>{" "}
+                    and unzip it, then open <code>chrome://extensions</code>, turn on Developer mode (top right), Load unpacked, and choose the unzipped{" "}
+                    <code>crate-chrome</code> folder.
+                  </>
+                )}
               </li>
               <li>Come back here and press Connect Chrome. A tab opens and says Connected.</li>
             </ol>
@@ -332,6 +345,7 @@ export function SettingsView({ appUrl }: { appUrl: string }) {
               </button>
             </div>
             <ol className="steps" style={{ marginTop: 12 }}>
+              {!projectDir && <li>This one needs the Crate source on your Mac: clone the repository, run npm install in it, and use that folder in the command.</li>}
               <li>Paste that in Terminal and press Return.</li>
               <li>
                 The first time, macOS needs to allow reading Messages: System Settings → Privacy &amp; Security → Full Disk Access → add the node binary the

@@ -4,8 +4,8 @@ const nextConfig: NextConfig = {
   reactStrictMode: true,
   // A self-contained server for the Docker image (see Dockerfile).
   output: "standalone",
-  // Read at request time by /api/mac/install; the file tracer cannot see a readdir.
-  outputFileTracingIncludes: { "/api/mac/install": ["./helpers/nowplaying/**"] },
+  // Read at request time; the file tracer cannot see a readdir.
+  outputFileTracingIncludes: { "/api/mac/install": ["./helpers/nowplaying/**"], "/api/chrome/extension": ["./crate-chrome/**"] },
   devIndicators: false,
   serverExternalPackages: ["@libsql/client", "sharp"],
   async headers() {
