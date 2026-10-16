@@ -1,0 +1,8 @@
+node_modules
+.next
+data
+tests/e2e/out
+crate-chrome
+.git
+*.tsbuildinfo
+.env*

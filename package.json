@@ -1,0 +1,33 @@
+{
+  "name": "crate",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev -p 3000",
+    "build": "next build",
+    "start": "next start -p 3000",
+    "typecheck": "tsc --noEmit",
+    "test": "node --import ./tests/register.mjs --test tests/unit/*.test.ts",
+    "e2e": "node tests/e2e/run.mjs",
+    "bench": "node scripts/bpm-bench.mjs",
+    "imessage": "node helpers/imessage/watch.mjs",
+    "imessage:install": "node helpers/imessage/install.mjs"
+  },
+  "dependencies": {
+    "@libsql/client": "^0.14.0",
+    "jose": "^5.9.6",
+    "next": "^15.1.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "sharp": "^0.33.5"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "typescript": "^5.7.0"
+  },
+  "engines": {
+    "node": ">=22.18"
+  }
+}

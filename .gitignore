@@ -1,0 +1,12 @@
+node_modules
+.next
+out
+data/
+*.db
+*.db-journal
+.env*.local
+.env
+tests/e2e/out
+tsconfig.tubuildinfo
+*.tsbuildinfo
+next-env.d.ts

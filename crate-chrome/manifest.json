@@ -1,0 +1,22 @@
+{
+  "manifest_version": 3,
+  "name": "Crate",
+  "version": "0.1.0",
+  "description": "Tells your Crate what you are playing in this browser: SoundCloud, YouTube, YouTube Music and most music sites.",
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAyulSPiLWxeDKEM66REzf5I6qE22puEOUpT52J6i/ymJj4JQMK7p//Fzakovxjab1WpnECH/dPYFh22ORDFVOlV3jWNAb5jyeEBpYD/gAwng9KwyvuHw/UDxGy+vr/1KKYNQF/Jl8dHNLU9csaH3IV7ikeRHMUXt1I1rONNQVdaUszoZ4Y5+iRRrojl5oZfKCuxZ7nMF4SccbSmYg0RJId1u+88DzKDlZ9ByX08lCKEBgaCXQ681/zxuw+Ltjm9q0ALvgR+g24/gk8WdZMycj3YKAJDrfP4nKq6VjGcNhb7pRA9IaOxvzjqZRsTzQr8SNv27oX4iOCQcSYdiRGyGZjwIDAQAB",
+  "permissions": ["storage", "alarms"],
+  "background": { "service_worker": "background.js" },
+  "content_scripts": [
+    { "matches": ["*://soundcloud.com/*"], "js": ["sites/soundcloud.js"], "run_at": "document_idle" },
+    { "matches": ["*://www.youtube.com/*"], "js": ["sites/youtube.js"], "run_at": "document_idle" },
+    { "matches": ["*://music.youtube.com/*"], "js": ["sites/ytmusic.js"], "run_at": "document_idle" },
+    {
+      "matches": ["*://listen.tidal.com/*", "*://www.deezer.com/*", "*://music.amazon.com/*", "*://www.pandora.com/*", "*://music.apple.com/*", "*://open.spotify.com/*"],
+      "js": ["sites/media-session.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "web_accessible_resources": [{ "resources": ["pair.html"], "matches": ["<all_urls>"] }],
+  "action": { "default_title": "Crate", "default_popup": "pair.html" },
+  "icons": { "16": "icon16.png", "48": "icon48.png", "128": "icon128.png" }
+}
