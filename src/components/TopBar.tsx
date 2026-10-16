@@ -133,6 +133,9 @@ export function TopBar({ active }: { active: "reel" | "live" | "log" | "settings
                 <Link className="pop__item" role="menuitem" href="/crew" onClick={() => setOpen(false)}>
                   {crew.name}: people, invite, radio
                 </Link>
+                <Link className="pop__item" role="menuitem" href="/days" onClick={() => setOpen(false)}>
+                  Days: the playlist, date by date
+                </Link>
                 <button className="pop__item" role="menuitem" onClick={() => copyInvite(crew)}>
                   Copy invite link
                 </button>

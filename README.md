@@ -87,6 +87,10 @@ Sync runs when the app opens, every two minutes while it is open, and on demand 
 
 Every crew has one running playlist: every send, newest first, under a name the agent gives it from the day, the hour and what is in it ("Friday late, moving electronic"). It renames itself as the music changes unless someone in the crew names it by hand (the crew page). New-to-you tracks are caught up on the swipe stage; the rest is the list, with previews, notes, who sent what, and Play all. The name also moves with the day: Thursday afternoon becomes Thursday night. A crew of one is still a playlist: your own plays, likes and sends build it until someone joins.
 
+## Days
+
+The stream would be an endless page within a month, so it is folded by date. The Playlist page is the viewer's today (everything sent or echoed since their local midnight, under the name of the moment), and beneath it "Earlier" lists the last seven days as one line each: a few covers, the date (Yesterday, a weekday, then "Oct 9"), how many, whose faces. A line opens in place with its tracks, a Play all and a link to the day's own page (`/days/2026-10-15`), which is that day as a playlist. "All days" (`/days`, also in the crew menu) is the full index by month. Days are decided in the viewer's time zone (the client sends it), so an evening in San Francisco stays on its own day. `src/lib/days.ts` holds the grouping; `/api/playlist?crew&tz` returns today plus the day index, `/api/playlist/day?crew&date&tz` one day.
+
 ## Crews
 
 The crew switcher is top left. Each crew has a page (the switcher's first item, or `/crew`) with its people and what they are playing, the invite link, the playlist name, the viewer's own "lands here on its own" rule, public radio, and leaving. Settings is about you only: name, photo, appearance, DJ mode, where you listen, iMessage.

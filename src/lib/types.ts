@@ -108,13 +108,32 @@ export type Notice = {
   at: number | null;
 };
 
+/** One day the crew brought music in: the row on the day index. */
+export type DaySummary = {
+  /** "2026-10-15", in the viewer's time zone. */
+  date: string;
+  count: number;
+  /** A few covers from that day, for the strip. */
+  art: string[];
+  /** Everyone who brought something up that day. */
+  faces: Person[];
+  firstAt: number;
+  lastAt: number;
+};
+
 export type Playlist = {
   crewId: string;
   name: string;
   namedBy: "agent" | "template" | "human";
+  /** Every track ever, across all days. */
   count: number;
   unseen: number;
   members: Person[];
+  /** The viewer's today: what was sent or echoed since midnight where they are. */
   sends: Send[];
+  /** "2026-10-15" where the viewer is; the date the sends above belong to. */
+  today: string;
+  /** Earlier days, newest first; today is not among them. */
+  days: DaySummary[];
   publicCode: string | null;
 };

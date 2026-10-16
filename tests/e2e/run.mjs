@@ -850,6 +850,43 @@ async function main() {
     await a.getByRole("button", { name: "Notices" }).waitFor();
     log("the bell lists what needs a hand, dismissal sticks until a reconnect, and a fix clears it");
 
+    // ================= Days: the stream folded by date =================
+    // Two of the crew's tracks happened on earlier days; the main page folds them under Earlier,
+    // a card opens in place, and the day has its own page. Dates are the viewer's local ones.
+    const allNow = (await (await desk.request.get(`${BASE}/api/sends?crew=${crew.id}&view=all`)).json()).sends;
+    const twoDaysAgo = Date.now() - 2 * 86400000;
+    const nineDaysAgo = Date.now() - 9 * 86400000;
+    await desk.request.post(`${BASE}/api/test/backdate`, { data: { sendId: allNow[allNow.length - 1].id, createdAt: nineDaysAgo } });
+    await desk.request.post(`${BASE}/api/test/backdate`, { data: { sendId: allNow[allNow.length - 2].id, createdAt: twoDaysAgo } });
+    const tzName = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    const plDays = (await (await desk.request.get(`${BASE}/api/playlist?crew=${crew.id}&tz=${encodeURIComponent(tzName)}`)).json()).playlist;
+    assert.equal(plDays.days.length, 2, "two earlier days");
+    assert.ok(plDays.sends.length >= 1, "today still has tracks");
+    assert.ok(plDays.count > plDays.sends.length, "the all-time count covers every day");
+    await a.goto(BASE);
+    await a.locator(".pl__by").waitFor({ timeout: 20000 });
+    await a.locator(".pl__by", { hasText: "all time" }).waitFor({ timeout: 20000 });
+    const catchUp = a.getByRole("button", { name: /Show the playlist/ });
+    if (await catchUp.count()) await catchUp.click();
+    await a.getByText("Earlier", { exact: true }).waitFor({ timeout: 20000 });
+    assert.equal(await a.locator(".day").count(), 2);
+    await a.locator(".day__head").first().click();
+    await a.locator(".day.is-open .pl__row").first().waitFor({ timeout: 20000 });
+    await settled(a);
+    await a.screenshot({ path: `${OUT}/25-earlier-desktop.png`, fullPage: true });
+    await a.getByRole("link", { name: "Open the day" }).click();
+    await a.waitForURL(/\/days\/\d{4}-\d{2}-\d{2}$/);
+    await a.locator(".dayview .pl__row").first().waitFor({ timeout: 20000 });
+    assert.ok((await a.locator(".pl__name").textContent())?.match(/day, /), "the day page is titled by its date");
+    await a.getByRole("link", { name: "Days" }).first().click();
+    await a.waitForURL(/\/days$/);
+    await a.getByRole("heading", { name: "Days" }).waitFor();
+    await a.locator(".day").nth(1).waitFor({ timeout: 20000 });
+    assert.ok((await a.locator(".day").count()) >= 2, "the Days page lists every day");
+    await settled(a);
+    await a.screenshot({ path: `${OUT}/26-days-desktop.png`, fullPage: true });
+    log("earlier days fold under the playlist, open in place, and have their own pages");
+
     // ================= Moving house: the import endpoint and its sign-in links =================
     // The live database file is importable into itself (every row replaced by id): counts come back, and
     // the sign-in link logs Joshua in from a cold browser, cookie-less.

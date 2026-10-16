@@ -3189,6 +3189,147 @@ html.is-pocket {
   font-size: 14px;
 }
 
+/* ---------- days: the stream folded by date ---------- */
+
+.earlier {
+  margin-top: 36px;
+}
+
+.earlier__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.earlier__all {
+  font-size: 13px;
+  color: var(--ink-2);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.days {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.day + .day {
+  border-top: 1px solid var(--line);
+}
+
+.day__head {
+  display: grid;
+  grid-template-columns: auto 1fr auto auto;
+  gap: 14px;
+  align-items: center;
+  width: calc(100% + 20px);
+  margin: 0 -10px;
+  padding: 12px 10px;
+  border-radius: 14px;
+  text-align: left;
+  color: inherit;
+  transition: background 200ms var(--ease);
+}
+
+.day__head:hover {
+  background: var(--glass);
+}
+
+.day__covers {
+  display: inline-flex;
+  flex: none;
+}
+
+.day__covers img,
+.day__blank {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  object-fit: cover;
+  background: var(--glass-2);
+  box-shadow: 0 0 0 2px var(--surface);
+}
+
+.day__covers img + img {
+  margin-left: -11px;
+}
+
+.day__text {
+  min-width: 0;
+}
+
+.day__label {
+  display: block;
+  font-size: 15px;
+  color: var(--ink);
+}
+
+.day__sub {
+  display: block;
+  margin-top: 2px;
+  font-size: 12.5px;
+  color: var(--ink-3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.day__faces .avatar {
+  box-shadow: 0 0 0 2px var(--surface);
+}
+
+.day__chev {
+  color: var(--ink-3);
+  transition: transform 240ms var(--ease);
+}
+
+.day.is-open .day__chev {
+  transform: rotate(180deg);
+}
+
+.day__body {
+  padding: 2px 0 10px;
+}
+
+.day__body .pl__list {
+  margin-bottom: 0;
+}
+
+.day__tools {
+  display: flex;
+  gap: 8px;
+  margin: 4px 0 2px;
+}
+
+.month {
+  margin-top: 30px;
+}
+
+.month__title {
+  margin-bottom: 6px;
+}
+
+.pl__quiet {
+  margin: 18px 0 0;
+  font-size: 14px;
+}
+
+.pl__back {
+  color: var(--ink-3);
+}
+
+.pl__back:hover {
+  color: var(--ink);
+}
+
+@media (max-width: 719px) {
+  .day__sub {
+    max-width: 52vw;
+  }
+}
+
 /* Whose tracks: a strip of the crew above the list. */
 .people {
   display: flex;
