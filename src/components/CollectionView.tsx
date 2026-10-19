@@ -80,6 +80,26 @@ export function CollectionView({ id }: { id: string }) {
     }
   }
 
+  /** The playlist's own link: anyone can open it, no account. */
+  async function share() {
+    if (!data) return;
+    const url = `${location.origin}/p/${data.collection.publicCode}`;
+    if (typeof navigator.share === "function") {
+      try {
+        await navigator.share({ title: `${data.collection.name} · ${crew!.name} on Crate`, url });
+        return;
+      } catch {
+        /* cancelled */
+      }
+    }
+    try {
+      await navigator.clipboard.writeText(url);
+      toast("Link copied. Anyone can open it.");
+    } catch {
+      toast(url);
+    }
+  }
+
   async function destroy() {
     if (!data) return;
     await api(`/api/collections/${data.collection.id}`, { method: "DELETE" });
@@ -126,6 +146,9 @@ export function CollectionView({ id }: { id: string }) {
           </span>
         </div>
         <div className="pl__actions">
+          <button className="btn btn--sm btn--primary" onClick={share}>
+            Share
+          </button>
           {tracks.some((x) => x.track.previewUrl) && (
             <button
               className="btn btn--sm"

@@ -145,6 +145,8 @@ export type Collection = {
   name: string;
   createdBy: string;
   createdAt: number;
+  /** The code in its share link (/p/<code>): anyone with it can open the playlist. */
+  publicCode: string;
   count: number;
   /** Up to four artwork URLs, newest additions first. */
   covers: string[];

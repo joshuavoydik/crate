@@ -21,6 +21,7 @@ test("a crew's playlists: start one, add a track once, see it, take it out, dele
 
   const late = await createCollection("c1", "u1", "  Late shift ");
   assert.equal(late.name, "Late shift");
+  assert.match(late.publicCode, /^[a-z0-9]{8}$/, "a share link from the start");
   assert.equal(late.count, 0);
   assert.ok(await addTrack(late.id, "t1", "u1"));
   assert.equal(await addTrack(late.id, "t1", "u1"), false, "already in");
@@ -42,6 +43,12 @@ test("a crew's playlists: start one, add a track once, see it, take it out, dele
       ["t2", "Ariel"],
     ],
   );
+
+  const { collectionByPublicCode } = await import("../../src/lib/collections.ts");
+  const shared = await collectionByPublicCode(late.publicCode.toUpperCase());
+  assert.equal(shared?.collection.id, late.id, "the link finds it, whatever the case");
+  assert.equal(shared?.crewName, "Us");
+  assert.equal(await collectionByPublicCode("nope"), null);
 
   await renameCollection(late.id, "Later");
   assert.equal((await collectionById(late.id))!.name, "Later");

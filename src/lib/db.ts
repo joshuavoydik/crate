@@ -188,6 +188,7 @@ const COLUMNS: Array<[table: string, column: string, ddl: string]> = [
   ["crews", "public_code", "TEXT"],
   ["crews", "avatar", "TEXT"],
   ["crews", "avatar_v", "INTEGER NOT NULL DEFAULT 0"],
+  ["playlists", "public_code", "TEXT"],
 ];
 
 let client: Client | null = null;
@@ -230,6 +231,9 @@ export async function db(): Promise<Client> {
         const has = info.rows.some((r) => String((r as unknown as { name: string }).name) === column);
         if (!has) await c.execute(`ALTER TABLE ${table} ADD COLUMN ${column} ${ddl}`);
       }
+      // Every playlist has a link of its own from the day it is made; ones from before get theirs now.
+      const bare = await c.execute("SELECT id FROM playlists WHERE public_code IS NULL");
+      for (const r of bare.rows) await c.execute({ sql: "UPDATE playlists SET public_code = ? WHERE id = ?", args: [inviteCode(), String((r as unknown as { id: string }).id)] });
       // One-time changes of mind, each recorded in app_settings so it runs once per install.
       const once = async (key: string, fn: () => Promise<void>) => {
         const done = await c.execute({ sql: "SELECT 1 AS x FROM app_settings WHERE key = ?", args: [key] });

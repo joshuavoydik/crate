@@ -63,25 +63,8 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
 
   const arm = useCallback(() => setArmed(true), []);
 
-  // Tell the crew what is playing here: one beat on play/pause, then every ten seconds while playing.
-  useEffect(() => {
-    const a = audio.current;
-    const id = currentId;
-    if (!a || !id) return;
-    const beat = () => {
-      const dur = a.duration && isFinite(a.duration) ? a.duration * 1000 : null;
-      fetch("/api/live", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ trackId: id, playing, progressMs: Math.round(a.currentTime * 1000), durationMs: dur }),
-        keepalive: true,
-      }).catch(() => undefined);
-    };
-    beat();
-    if (!playing) return;
-    const t = setInterval(beat, 10_000);
-    return () => clearInterval(t);
-  }, [currentId, playing]);
+  // A preview here is browsing, not listening: it is never reported to the crew as what you have on.
+  // Live follows the platforms (Spotify, Last.fm, the Mac helper, Crate in Chrome), not this player.
 
   const play = useCallback((id: string, url: string | null) => {
     const a = audio.current;

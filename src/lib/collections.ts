@@ -1,14 +1,15 @@
-import { all, one, run, now, id } from "./db";
+import { all, one, run, now, id, inviteCode } from "./db";
 import { getTrack, membersOf } from "./queries";
 import type { Collection, CollectionTrack, Person } from "./types";
 
 /**
  * Playlists a crew makes on purpose (the tables are called playlists; in code they are
  * collections, since "the playlist" is the crew's running stream). Anyone in the crew can start
- * one, add any track Crate knows to it, or take one out.
+ * one, add any track Crate knows to it, or take one out. Each has a link of its own that anyone
+ * can open, no account: a playlist is a thing you can hand to someone.
  */
 
-type Row = { id: string; crew_id: string; name: string; created_by: string; created_at: number; count: number; has?: number };
+type Row = { id: string; crew_id: string; name: string; created_by: string; created_at: number; public_code: string | null; count: number; has?: number };
 
 async function coversOf(collectionId: string): Promise<string[]> {
   const rows = await all<{ artwork_url: string }>(
@@ -25,13 +26,14 @@ async function hydrate(r: Row): Promise<Collection> {
     name: r.name,
     createdBy: r.created_by,
     createdAt: Number(r.created_at),
+    publicCode: r.public_code ?? "",
     count: Number(r.count),
     covers: await coversOf(r.id),
     has: r.has === undefined ? undefined : Number(r.has) > 0,
   };
 }
 
-const COLS = "p.id, p.crew_id, p.name, p.created_by, p.created_at, (SELECT COUNT(*) FROM playlist_tracks t WHERE t.playlist_id = p.id) AS count";
+const COLS = "p.id, p.crew_id, p.name, p.created_by, p.created_at, p.public_code, (SELECT COUNT(*) FROM playlist_tracks t WHERE t.playlist_id = p.id) AS count";
 
 /** The crew's playlists, newest first; with a track id, whether each one already holds it. */
 export async function collectionsFor(crewId: string, trackId?: string | null): Promise<Collection[]> {
@@ -50,8 +52,15 @@ export async function collectionById(collectionId: string): Promise<Collection |
 
 export async function createCollection(crewId: string, userId: string, name: string): Promise<Collection> {
   const cid = id("pl");
-  await run("INSERT INTO playlists (id, crew_id, name, created_by, created_at) VALUES (?, ?, ?, ?, ?)", [cid, crewId, name.trim(), userId, now()]);
+  await run("INSERT INTO playlists (id, crew_id, name, created_by, created_at, public_code) VALUES (?, ?, ?, ?, ?, ?)", [cid, crewId, name.trim(), userId, now(), inviteCode()]);
   return (await collectionById(cid))!;
+}
+
+/** The playlist behind a share link, with the crew's name for the page; null for a link that leads nowhere. */
+export async function collectionByPublicCode(code: string): Promise<{ collection: Collection; crewName: string } | null> {
+  const r = await one<Row & { crew_name: string }>(`SELECT ${COLS}, c.name AS crew_name FROM playlists p JOIN crews c ON c.id = p.crew_id WHERE p.public_code = ?`, [code.toLowerCase()]);
+  if (!r) return null;
+  return { collection: await hydrate(r), crewName: r.crew_name };
 }
 
 export async function renameCollection(collectionId: string, name: string): Promise<void> {

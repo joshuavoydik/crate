@@ -205,11 +205,11 @@ export function LiveView() {
 
       {data && nobodyConnected && liveCount === 0 && (
         <p className="muted live__hint">
-          Play a preview and you show up here. Connect{" "}
+          What you have on shows up here as you play it. Connect{" "}
           <Link href="/settings" style={{ textDecoration: "underline" }}>
             Spotify or Last.fm
-          </Link>{" "}
-          and everything you play does.
+          </Link>
+          , or run Crate in Chrome or on your Mac, and it follows along.
         </p>
       )}
 
