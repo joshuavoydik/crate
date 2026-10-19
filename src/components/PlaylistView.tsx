@@ -20,7 +20,7 @@ const RECENT_DAYS = 7;
  * beneath it. New-to-you tracks are caught up on the swipe stage; the rest is the list.
  */
 export function PlaylistView() {
-  const { me, crew, toast, sendsVersion, setAccentTrack } = useStore();
+  const { me, crew, toast, sendsVersion, setAccentTrack, openInvite } = useStore();
   const player = usePlayer();
   const [playlist, setPlaylist] = useState<Playlist | null>(null);
   const [mode, setMode] = useState<"stage" | "list">("stage");
@@ -126,9 +126,9 @@ export function PlaylistView() {
             {!together && (
               <>
                 {" · "}
-                <Link href="/crew" className="pl__invite">
+                <button className="linkbtn pl__invite" onClick={openInvite} type="button">
                   Invite someone
-                </Link>
+                </button>
               </>
             )}
           </span>

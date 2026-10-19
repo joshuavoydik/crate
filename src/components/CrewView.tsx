@@ -11,7 +11,7 @@ import type { Me, Playlist, AutoShare } from "@/lib/types";
 
 /** One crew: its name, people, invite link, the playlist name, public radio, and the viewer's own rules. */
 export function CrewView({ appUrl }: { appUrl: string }) {
-  const { me, crew, refreshMe, toast, setAccentTrack } = useStore();
+  const { me, crew, refreshMe, toast, setAccentTrack, openInvite } = useStore();
   const router = useRouter();
   const [name, setName] = useState(crew?.name ?? "");
   const [playlist, setPlaylist] = useState<Playlist | null>(null);
@@ -204,7 +204,7 @@ export function CrewView({ appUrl }: { appUrl: string }) {
           })}
         </ul>
         <div className="crewpage__actions">
-          <button className="btn btn--sm" onClick={() => share(inviteUrl, `Join ${crew.name} on Crate`)}>
+          <button className="btn btn--sm" onClick={openInvite}>
             Invite someone
           </button>
           <button className="btn btn--sm btn--ghost" onClick={() => copy(inviteUrl, "Invite link")}>

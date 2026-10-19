@@ -3728,3 +3728,120 @@ html.is-pocket {
   letter-spacing: inherit;
   text-transform: inherit;
 }
+
+/* ---------- crew menu: each crew has its X ---------- */
+
+.pop__crew {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.pop__crew .pop__item {
+  flex: 1;
+  min-width: 0;
+}
+
+.pop__x {
+  flex: none;
+  width: 30px;
+  height: 30px;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ink-3);
+}
+
+.pop__x:hover {
+  background: var(--glass-2);
+  color: var(--ink);
+}
+
+/* ---------- invite: the sheet that brings someone in ---------- */
+
+.invite {
+  text-align: center;
+  padding: 6px 0 2px;
+}
+
+.invite__faces {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 2px 0 16px;
+}
+
+.invite__faces .avatar {
+  margin: 0 -6px;
+  box-shadow: 0 0 0 3px var(--surface-2);
+}
+
+.invite__plus {
+  width: 44px;
+  height: 44px;
+  border-radius: 999px;
+  border: 1.5px dashed var(--ink-3);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 4px;
+  font-size: 22px;
+  line-height: 1;
+  color: var(--ink-3);
+}
+
+.invite__title {
+  font-size: 34px;
+  margin: 4px 0 8px;
+}
+
+.invite__lede {
+  font-size: 15px;
+  margin: 0 auto;
+  max-width: 400px;
+}
+
+.invite__link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  margin: 22px 0 14px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: var(--surface-3);
+  border: 1px solid var(--line);
+  text-align: left;
+}
+
+.invite__url {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 13px;
+  color: var(--ink-2);
+}
+
+.invite__copy {
+  flex: none;
+  font-size: 12.5px;
+  color: var(--accent);
+}
+
+.invite__actions {
+  display: grid;
+  gap: 10px;
+}
+
+.invite__code {
+  font-size: 13px;
+  margin: 16px 0 0;
+}
+
+.invite__code b {
+  color: var(--ink);
+  letter-spacing: 0.08em;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}

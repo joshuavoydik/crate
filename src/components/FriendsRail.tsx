@@ -11,7 +11,7 @@ import { timeAgo, sourceName } from "@/lib/client";
  * Live people first with a pulsing dot; everyone else with the last thing they had on.
  */
 export function FriendsRail() {
-  const { me, crew, rail } = useStore();
+  const { me, crew, rail, openInvite } = useStore();
   const { data } = useLive(rail && crew ? crew.id : null, 20000);
   if (!rail || !crew) return null;
   const people = (data?.people ?? []).filter((p) => p.person.id !== me.id);
@@ -37,11 +37,11 @@ export function FriendsRail() {
       {others.length === 0 ? (
         <div className="rail__empty">
           <p className="muted" style={{ fontSize: 13.5, margin: 0 }}>
-            Nobody here but you. When someone joins, what they play shows up here as they play it.
+            Nobody here but you. Bring someone in and what they play shows up here as they play it.
           </p>
-          <Link href="/crew" className="btn btn--sm" style={{ marginTop: 12 }}>
+          <button className="btn btn--sm btn--primary" style={{ marginTop: 12 }} onClick={openInvite} type="button">
             Invite someone
-          </Link>
+          </button>
         </div>
       ) : (
         <ul className="rail__list">

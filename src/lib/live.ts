@@ -256,6 +256,8 @@ async function refreshExternal(userId: string, prev: PresenceRow | null): Promis
       if (!spotifyTokenCurrent(token)) throw new SpotifyScopeError("Reconnect Spotify to show what you are playing");
       const r = await spotifyNowPlaying(token);
       if (r.token) await run("UPDATE sources SET token_enc = ? WHERE id = ?", [encrypt(JSON.stringify(r.token)), sp.id]);
+      // Spotify answered, so the token has what Live needs: a reconnect flag raised here earlier is lifted.
+      if (sp.status === "reauth") await run("UPDATE sources SET status = 'ok', error = NULL WHERE id = ?", [sp.id]);
       if (r.now) {
         const started = r.now.progressMs != null ? t - r.now.progressMs : t;
         let trackId: string | null = null;

@@ -188,3 +188,19 @@ test("SoundCloud read from the player bar keeps its fields; the tab title is onl
   const web = parseNowLines("deezer\tHarder Better Faster Stronger\tDaft Punk\tDiscovery\t224\t10\thttps://www.deezer.com/track/3135556\n").now;
   assert.equal(web?.source, "deezer");
 });
+
+test("a Spotify refresh keeps the granted scope, so an hour-old connection is not asked to reconnect", async () => {
+  const { tokenFromRefresh, spotifyTokenCurrent, SPOTIFY_SCOPES } = await import("../../src/lib/sources/spotify.ts");
+  const granted = { access_token: "a", refresh_token: "r1", expires_at: 1, scope: SPOTIFY_SCOPES };
+  // Spotify's refresh answer may leave out the scope and the refresh token: both carry over.
+  const refreshed = tokenFromRefresh(granted, { access_token: "b", expires_in: 3600 }, 1_000_000);
+  assert.equal(refreshed.scope, SPOTIFY_SCOPES);
+  assert.equal(refreshed.refresh_token, "r1");
+  assert.equal(refreshed.expires_at, 1_000_000 + 3_600_000);
+  assert.ok(spotifyTokenCurrent(refreshed));
+  // When it rotates them, the new values win.
+  const rotated = tokenFromRefresh(granted, { access_token: "c", refresh_token: "r2", expires_in: 60, scope: "user-library-read" });
+  assert.equal(rotated.refresh_token, "r2");
+  assert.equal(spotifyTokenCurrent(rotated), false, "a token known to lack a scope is flagged");
+  assert.ok(spotifyTokenCurrent({ access_token: "d", expires_at: 1 }), "a token with no recorded scope is tried, not flagged");
+});

@@ -29,6 +29,10 @@ type Store = {
   /** The friends rail on wide screens. */
   rail: boolean;
   setRail: (on: boolean) => void;
+  /** The invite sheet: the one way to bring someone into the current crew, from any page. */
+  inviteOpen: boolean;
+  openInvite: () => void;
+  closeInvite: () => void;
   /** How many people in this crew are playing something right now; the red dot in the nav. */
   liveCount: number;
   setLiveCount: (n: number) => void;
@@ -52,6 +56,7 @@ export function StoreProvider({ initialMe, children }: { initialMe: Me; children
   const [sendsVersion, setSendsVersion] = useState(0);
   const [pocket, setPocketState] = useState(false);
   const [rail, setRailState] = useState(true);
+  const [inviteOpen, setInviteOpen] = useState(false);
   const [liveCount, setLiveCount] = useState(0);
   const toastId = useRef(0);
 
@@ -112,6 +117,8 @@ export function StoreProvider({ initialMe, children }: { initialMe: Me; children
     setSendPrefill(null);
   }, []);
   const bumpSends = useCallback(() => setSendsVersion((v) => v + 1), []);
+  const openInvite = useCallback(() => setInviteOpen(true), []);
+  const closeInvite = useCallback(() => setInviteOpen(false), []);
 
   const crew = useMemo(() => me.crews.find((c) => c.id === crewId) ?? me.crews[0] ?? null, [me.crews, crewId]);
 
@@ -134,10 +141,13 @@ export function StoreProvider({ initialMe, children }: { initialMe: Me; children
       setPocket,
       rail,
       setRail,
+      inviteOpen,
+      openInvite,
+      closeInvite,
       liveCount,
       setLiveCount,
     }),
-    [me, crew, setCrewId, refreshMe, toast, sendOpen, sendPrefill, openSend, closeSend, accentTrack, sendsVersion, bumpSends, pocket, setPocket, rail, setRail, liveCount],
+    [me, crew, setCrewId, refreshMe, toast, sendOpen, sendPrefill, openSend, closeSend, accentTrack, sendsVersion, bumpSends, pocket, setPocket, rail, setRail, inviteOpen, openInvite, closeInvite, liveCount],
   );
 
   // The accent lives on <html> so portaled sheets and the tab bar take the current track's color too.

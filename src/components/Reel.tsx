@@ -26,7 +26,7 @@ function useDesktop(): boolean {
 }
 
 export function Reel({ embedded = false, onCaughtUp }: { embedded?: boolean; onCaughtUp?: () => void } = {}) {
-  const { me, crew, setAccentTrack, toast, sendsVersion, openSend } = useStore();
+  const { me, crew, setAccentTrack, toast, sendsVersion, openSend, openInvite } = useStore();
   const desktop = useDesktop();
   const player = usePlayer();
   const [sends, setSends] = useState<Send[] | null>(null);
@@ -276,6 +276,11 @@ export function Reel({ embedded = false, onCaughtUp }: { embedded?: boolean; onC
                 : "Invite someone to this crew and the music starts flowing both ways."}
           </p>
           <div className="stage__actions">
+            {!others.length && (
+              <button className="btn btn--primary" onClick={openInvite}>
+                Invite someone
+              </button>
+            )}
             <button className="btn" onClick={() => openSend()}>
               Send something
             </button>

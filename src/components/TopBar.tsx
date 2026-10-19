@@ -4,16 +4,20 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { useStore } from "./Store";
 import { IconPlus, IconChevron, IconUser, IconBell, IconClose } from "./Icons";
+import { Confirm } from "./Confirm";
 import { api } from "@/lib/client";
 import { Avatar } from "./Avatar";
 import type { Crew, Me } from "@/lib/types";
 
 export function TopBar({ active }: { active: "reel" | "live" | "log" | "settings" | "crew" }) {
-  const { me, crew, setCrewId, openSend, refreshMe, toast, setPocket, rail, setRail, liveCount } = useStore();
+  const { me, crew, setCrewId, openSend, openInvite, refreshMe, toast, setPocket, rail, setRail, liveCount } = useStore();
   const [open, setOpen] = useState(false);
   const [bell, setBell] = useState(false);
   const [creating, setCreating] = useState(false);
   const [newName, setNewName] = useState("");
+  /** The crew whose X was tapped; the sheet asks before anything happens. */
+  const [leaving, setLeaving] = useState<Crew | null>(null);
+  const [leaveBusy, setLeaveBusy] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const bellRef = useRef<HTMLDivElement>(null);
   const notices = me.notices ?? [];
@@ -54,15 +58,19 @@ export function TopBar({ active }: { active: "reel" | "live" | "log" | "settings
     }
   }
 
-  async function copyInvite(c: Crew) {
-    const url = `${location.origin}/join/${c.inviteCode}`;
+  /** Leave a crew; the last one out takes the crew and its playlist along (the API decides). */
+  async function leave(c: Crew) {
+    setLeaveBusy(true);
     try {
-      await navigator.clipboard.writeText(url);
-      toast("Invite link copied");
-    } catch {
-      toast(url);
+      await api(`/api/crews/${c.id}/membership`, { method: "DELETE" });
+      await refreshMe();
+      toast(c.members.length > 1 ? `You left ${c.name}` : `${c.name} deleted`);
+    } catch (e) {
+      toast((e as Error).message);
+    } finally {
+      setLeaveBusy(false);
+      setLeaving(null);
     }
-    setOpen(false);
   }
 
   async function createCrew() {
@@ -75,18 +83,16 @@ export function TopBar({ active }: { active: "reel" | "live" | "log" | "settings
       setCrewId(r.crew.id);
       setNewName("");
       setOpen(false);
-      toast(`Crew "${r.crew.name}" started. Invite link copied.`);
-      try {
-        await navigator.clipboard.writeText(`${location.origin}/join/${r.crew.inviteCode}`);
-      } catch {
-        /* clipboard unavailable */
-      }
+      // A crew of one is a playlist nobody else hears: the invite comes up right away.
+      openInvite();
     } catch (e) {
       toast((e as Error).message);
     } finally {
       setCreating(false);
     }
   }
+
+  const alone = (c: Crew) => c.members.length <= 1;
 
   const others = crew ? crew.members.filter((m) => m.id !== me.id) : [];
 
@@ -109,36 +115,56 @@ export function TopBar({ active }: { active: "reel" | "live" | "log" | "settings
         {open && (
           <div className="pop" role="menu">
             {me.crews.map((c) => (
-              <button
-                key={c.id}
-                className={`pop__item${c.id === crew?.id ? " is-on" : ""}`}
-                role="menuitem"
-                onClick={() => {
-                  setCrewId(c.id);
-                  setOpen(false);
-                }}
-              >
-                <span>
-                  {c.name}
-                  <span className="faint" style={{ marginLeft: 8, fontSize: 12 }}>
-                    {c.members.map((m) => m.name.split(" ")[0]).join(", ")}
+              <div key={c.id} className="pop__crew">
+                <button
+                  className={`pop__item${c.id === crew?.id ? " is-on" : ""}`}
+                  role="menuitem"
+                  onClick={() => {
+                    setCrewId(c.id);
+                    setOpen(false);
+                  }}
+                >
+                  <span>
+                    {c.name}
+                    <span className="faint" style={{ marginLeft: 8, fontSize: 12 }}>
+                      {c.members.map((m) => m.name.split(" ")[0]).join(", ")}
+                    </span>
                   </span>
-                </span>
-                {c.id === crew?.id && <span className="dot" />}
-              </button>
+                  {c.id === crew?.id && <span className="dot" />}
+                </button>
+                <button
+                  className="pop__x"
+                  type="button"
+                  aria-label={alone(c) ? `Delete ${c.name}` : `Leave ${c.name}`}
+                  title={alone(c) ? "Delete this crew" : "Leave this crew"}
+                  onClick={() => {
+                    setOpen(false);
+                    setLeaving(c);
+                  }}
+                >
+                  <IconClose size={14} />
+                </button>
+              </div>
             ))}
             {crew && (
               <>
                 <div className="pop__sep" />
+                <button
+                  className="pop__item"
+                  role="menuitem"
+                  onClick={() => {
+                    setOpen(false);
+                    openInvite();
+                  }}
+                >
+                  Invite someone to {crew.name}
+                </button>
                 <Link className="pop__item" role="menuitem" href="/crew" onClick={() => setOpen(false)}>
-                  {crew.name}: people, invite, radio
+                  {crew.name}: people, radio, rules
                 </Link>
                 <Link className="pop__item" role="menuitem" href="/days" onClick={() => setOpen(false)}>
                   Days: the playlist, date by date
                 </Link>
-                <button className="pop__item" role="menuitem" onClick={() => copyInvite(crew)}>
-                  Copy invite link
-                </button>
               </>
             )}
             <div className="pop__sep" />
@@ -257,6 +283,20 @@ export function TopBar({ active }: { active: "reel" | "live" | "log" | "settings
           <IconPlus />
         </button>
       </div>
+
+      <Confirm
+        open={!!leaving}
+        title={leaving ? (alone(leaving) ? `Delete ${leaving.name}?` : `Leave ${leaving.name}?`) : ""}
+        body={
+          leaving && !alone(leaving)
+            ? "The others keep the crew and everything in it. Your kept tracks stay in your log."
+            : "You are the only member, so the crew and its playlist go with it. Your kept tracks stay in your log."
+        }
+        confirmLabel={leaving && !alone(leaving) ? "Leave" : "Delete"}
+        busy={leaveBusy}
+        onClose={() => setLeaving(null)}
+        onConfirm={() => leaving && leave(leaving)}
+      />
     </header>
   );
 }

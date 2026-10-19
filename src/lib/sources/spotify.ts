@@ -42,11 +42,29 @@ export async function spotifyExchange(code: string, verifier: string): Promise<T
 /** Thrown when a stored token predates a scope this feature needs; the person reconnects once. */
 export class SpotifyScopeError extends Error {}
 
-/** True when the token was granted everything the current build asks for. */
+/**
+ * False only when the token is known to lack a scope the current build asks for. A token whose
+ * scopes are not recorded is taken as current: Spotify answers 403 when one is missing, and the
+ * call that gets that answer flags the source then.
+ */
 export function spotifyTokenCurrent(token: Token): boolean {
   const have = new Set(String(token.scope ?? "").split(/\s+/).filter(Boolean));
-  if (!have.size) return false;
+  if (!have.size) return true;
   return SPOTIFY_SCOPES.split(" ").every((s) => have.has(s));
+}
+
+/**
+ * Pure: the stored token after a refresh. Spotify may rotate the refresh token and may or may not
+ * repeat the scope; what was granted stays granted, so the scope is carried over when it is not
+ * repeated. Dropping it made every hour-old connection look like it needed reconnecting.
+ */
+export function tokenFromRefresh(prev: Token, t: TokenResponse, now = Date.now()): Token {
+  return {
+    access_token: t.access_token,
+    refresh_token: t.refresh_token ?? prev.refresh_token,
+    expires_at: now + t.expires_in * 1000,
+    scope: t.scope ?? prev.scope,
+  };
 }
 
 async function refresh(token: Token): Promise<Token> {
@@ -55,11 +73,7 @@ async function refresh(token: Token): Promise<Token> {
     grant_type: "refresh_token",
     refresh_token: String(token.refresh_token ?? ""),
   });
-  return {
-    access_token: t.access_token,
-    refresh_token: t.refresh_token ?? token.refresh_token,
-    expires_at: Date.now() + t.expires_in * 1000,
-  };
+  return tokenFromRefresh(token, t);
 }
 
 async function ensure(token: Token): Promise<Token> {
