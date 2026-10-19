@@ -34,9 +34,8 @@ export function pkce(): { verifier: string; challenge: string } {
   return { verifier, challenge: sha256base64url(verifier) };
 }
 
-export function appUrl(): string {
-  return (process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000").replace(/\/$/, "");
-}
+import { appUrl } from "../app-url";
+export { appUrl };
 
 /** Spotify refuses "localhost" in redirect URIs; the loopback IP is the accepted spelling. */
 export async function spotifyRedirectUri(): Promise<string> {

@@ -96,35 +96,54 @@ export type PlaylistNameInput = {
   /** Newest first; a handful is enough. */
   tracks: Array<{ artist: string; title: string; genre?: string | null; year?: number | null; bpm?: number | null }>;
   count: number;
-  /** Local time where the crew lives; the server's clock is close enough for now. */
+  /** The moment; now when left out. */
   when?: Date;
+  /** The viewer's time zone (IANA), so "evening" is their evening and not the server's. */
+  tz?: string;
 };
 
 const DAY_WORDS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+const SHORT_DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 export type DayPart = "morning" | "afternoon" | "evening";
 
+/** The hour, weekday and date of a moment as a clock in that zone shows them; the server's own zone when none is given or it is unknown. */
+function clockIn(d: Date, tz?: string): { hour: number; weekday: number; ymd: string } {
+  if (tz) {
+    try {
+      const parts = new Intl.DateTimeFormat("en-US", { timeZone: tz, hourCycle: "h23", hour: "2-digit", weekday: "short", year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(d);
+      const get = (t: string) => parts.find((p) => p.type === t)?.value ?? "";
+      const weekday = SHORT_DAYS.indexOf(get("weekday"));
+      if (weekday >= 0) return { hour: Number(get("hour")) % 24, weekday, ymd: `${get("year")}-${get("month")}-${get("day")}` };
+    } catch {
+      /* not a zone Intl knows: the server's clock below */
+    }
+  }
+  return { hour: d.getHours(), weekday: d.getDay(), ymd: `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}` };
+}
+
 /**
  * The moment a playlist is named after: the day and whether it is morning (5 to 12), afternoon
- * (12 to 17) or evening (17 on). The small hours still belong to the evening before, so a name
- * does not flip to "Friday evening" at one in the morning.
+ * (12 to 17) or evening (17 on), on the viewer's clock. The small hours still belong to the
+ * evening before, so a name does not flip to "Friday evening" at one in the morning.
  */
-export function dayPart(d: Date): { day: string; part: DayPart; date: Date } {
-  const h = d.getHours();
+export function dayPart(d: Date, tz?: string): { day: string; part: DayPart; date: Date; ymd: string } {
+  const h = clockIn(d, tz).hour;
   const date = h < 5 ? new Date(d.getTime() - 5 * 3600 * 1000) : d;
   const part: DayPart = h >= 5 && h < 12 ? "morning" : h >= 12 && h < 17 ? "afternoon" : "evening";
-  return { day: DAY_WORDS[date.getDay()], part, date };
+  const at = clockIn(date, tz);
+  return { day: DAY_WORDS[at.weekday], part, date, ymd: at.ymd };
 }
 
 /** The part of the day a name belongs to; when this changes, the name is renewed. */
-export function momentKey(d: Date): string {
-  const { part, date } = dayPart(d);
-  return `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}-${part}`;
+export function momentKey(d: Date, tz?: string): string {
+  const { part, ymd } = dayPart(d, tz);
+  return `${ymd}-${part}`;
 }
 
 /** "Thursday evening": the day and the part of the day, and nothing it cannot stand behind. */
 export function templatedPlaylistName(i: PlaylistNameInput): string {
-  const { day, part } = dayPart(i.when ?? new Date());
+  const { day, part } = dayPart(i.when ?? new Date(), i.tz);
   return `${day} ${part}`;
 }
 

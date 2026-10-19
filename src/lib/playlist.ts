@@ -21,7 +21,8 @@ type CrewNameRow = {
   public_code: string | null;
 };
 
-export async function ensurePlaylistName(crewId: string, sends: Send[], force = false): Promise<{ name: string; by: Playlist["namedBy"] }> {
+/** The name of the moment, on the viewer's clock (tz); a crew in one place sees its own evening. */
+export async function ensurePlaylistName(crewId: string, sends: Send[], force = false, tz?: string): Promise<{ name: string; by: Playlist["namedBy"] }> {
   const c = await one<CrewNameRow>(
     "SELECT id, name, playlist_name, playlist_named_at, playlist_named_for, playlist_name_by, public_code FROM crews WHERE id = ?",
     [crewId],
@@ -29,7 +30,7 @@ export async function ensurePlaylistName(crewId: string, sends: Send[], force = 
   if (!c) return { name: "Playlist", by: "template" };
   const by = (c.playlist_name_by ?? "template") as Playlist["namedBy"];
   // The name of the moment is deterministic, so "stale" simply means "not what the moment says".
-  const stale = !c.playlist_name || (by !== "human" && c.playlist_name !== templatedPlaylistName({ crewName: c.name, memberNames: [], tracks: [], count: sends.length }));
+  const stale = !c.playlist_name || (by !== "human" && c.playlist_name !== templatedPlaylistName({ crewName: c.name, memberNames: [], tracks: [], count: sends.length, tz }));
   if (!force && !stale) return { name: c.playlist_name!, by };
   if (!force && by === "human" && c.playlist_name) return { name: c.playlist_name, by };
   const members = await membersOf(crewId);
@@ -38,6 +39,7 @@ export async function ensurePlaylistName(crewId: string, sends: Send[], force = 
     memberNames: members.map((m) => m.name.split(" ")[0]),
     tracks: sends.slice(0, 12).map((s) => ({ artist: s.track.artist, title: s.track.title, genre: s.track.genre, year: s.track.year, bpm: s.track.bpm })),
     count: sends.length,
+    tz,
   });
   await run("UPDATE crews SET playlist_name = ?, playlist_named_at = ?, playlist_named_for = ?, playlist_name_by = ? WHERE id = ?", [
     suggestion.name,
@@ -60,7 +62,7 @@ export async function playlistFor(viewerId: string, crewId: string, opts: { rege
   const recent = await sendsIn(viewerId, crewId, 400);
   const sends = activeToday(recent, tz, today);
   const unseen = (await reelFor(viewerId, crewId)).length;
-  const named = await ensurePlaylistName(crewId, recent, !!opts.regenerate);
+  const named = await ensurePlaylistName(crewId, recent, !!opts.regenerate, tz);
   const c = await one<{ public_code: string | null }>("SELECT public_code FROM crews WHERE id = ?", [crewId]);
   const total = await one<{ n: number }>("SELECT COUNT(*) AS n FROM sends WHERE crew_id = ?", [crewId]);
   const days = (await daySummaries(crewId, tz)).filter((d) => d.date !== today);

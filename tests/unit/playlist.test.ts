@@ -31,3 +31,20 @@ test("the moment a name belongs to moves with the part of the day", () => {
   assert.equal(momentKey(evening), momentKey(lateNight));
   assert.notEqual(momentKey(lateNight), momentKey(nextMorning));
 });
+
+test("the moment is named on the viewer's clock, not the server's", () => {
+  // 20:43 UTC on a Monday is 13:43 in Los Angeles: an afternoon there, an evening in London.
+  const at = new Date(Date.UTC(2026, 9, 19, 20, 43));
+  const base = { crewName: "c", memberNames: [], tracks: [], count: 0, when: at };
+  assert.equal(templatedPlaylistName({ ...base, tz: "America/Los_Angeles" }), "Monday afternoon");
+  assert.equal(templatedPlaylistName({ ...base, tz: "Europe/London" }), "Monday evening");
+  assert.equal(templatedPlaylistName({ ...base, tz: "Asia/Tokyo" }), "Tuesday morning");
+  // 01:30 in Tokyo still belongs to Monday evening; 05:00 is Tuesday morning.
+  assert.equal(dayPart(new Date(Date.UTC(2026, 9, 19, 16, 30)), "Asia/Tokyo").day, "Monday");
+  assert.equal(dayPart(new Date(Date.UTC(2026, 9, 19, 16, 30)), "Asia/Tokyo").part, "evening");
+  assert.equal(dayPart(new Date(Date.UTC(2026, 9, 19, 20, 0)), "Asia/Tokyo").day, "Tuesday");
+  assert.equal(momentKey(at, "America/Los_Angeles"), "2026-10-19-afternoon");
+  assert.equal(momentKey(at, "Asia/Tokyo"), "2026-10-20-morning");
+  // A zone Intl does not know falls back to the server's clock rather than failing.
+  assert.ok(/^(Sun|Mon|Tues|Wednes|Thurs|Fri|Satur)day (morning|afternoon|evening)$/.test(templatedPlaylistName({ ...base, tz: "Nowhere/Nope" })));
+});

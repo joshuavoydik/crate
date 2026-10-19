@@ -6,6 +6,7 @@ import { useStore } from "./Store";
 import { Avatar, squareDataUrl } from "./Avatar";
 import { Confirm } from "./Confirm";
 import { useLive } from "./LiveView";
+import { tz } from "./Days";
 import { api, timeAgo } from "@/lib/client";
 import type { Me, Playlist, AutoShare } from "@/lib/types";
 
@@ -86,7 +87,7 @@ export function CrewView({ appUrl }: { appUrl: string }) {
     try {
       const r = await api<{ playlist: Playlist }>("/api/playlist", {
         method: "POST",
-        json: nameOrRegenerate === true ? { crew: crew!.id, regenerate: true } : { crew: crew!.id, name: nameOrRegenerate },
+        json: nameOrRegenerate === true ? { crew: crew!.id, regenerate: true, tz: tz() } : { crew: crew!.id, name: nameOrRegenerate, tz: tz() },
       });
       setPlaylist(r.playlist);
       setPlName(r.playlist.name);
