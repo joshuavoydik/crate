@@ -1,6 +1,7 @@
 import { createClient, type Client, type InValue } from "@libsql/client";
 import { mkdirSync } from "node:fs";
 import { dirname } from "node:path";
+import { clusterDoubles } from "./dedupe";
 
 /**
  * Database access. One libsql client per process, schema created on first use.
@@ -231,10 +232,37 @@ export async function db(): Promise<Client> {
       await once("migr:auto_share_v1", async () => {
         await c.execute({ sql: "UPDATE crew_members SET auto_share = 'plays', share_since = ?", args: [Date.now()] });
       });
+      // Doubles written by syncs that ran at once, before the writes were made atomic: fold each pair into one.
+      await once("migr:dedupe_doubles_v1", () => dedupeDoubles(c));
     })();
   }
   await ready;
   return client;
+}
+
+/** A send of the same track by the same person in the same crew this close to an earlier one is its double. */
+const DOUBLE_WINDOW = 10 * 60 * 1000;
+
+/** Folds doubled sends (their reactions and echoes move to the one kept) and doubled Live history rows. */
+export async function dedupeDoubles(c: Client): Promise<void> {
+  type SendRow = { id: string; crew_id: string; track_id: string; from_user_id: string; created_at: number };
+  const sends = (await c.execute("SELECT id, crew_id, track_id, from_user_id, created_at FROM sends ORDER BY created_at")).rows as unknown as SendRow[];
+  for (const { keep, dups } of clusterDoubles(sends, (s) => `${s.crew_id}|${s.track_id}|${s.from_user_id}`, (s) => Number(s.created_at), DOUBLE_WINDOW)) {
+    for (const d of dups) {
+      await c.execute({ sql: "INSERT OR IGNORE INTO reactions (send_id, user_id, status, reply, updated_at) SELECT ?, user_id, status, reply, updated_at FROM reactions WHERE send_id = ?", args: [keep.id, d.id] });
+      await c.execute({ sql: "INSERT OR IGNORE INTO echoes (send_id, user_id, at, via) SELECT ?, user_id, at, via FROM echoes WHERE send_id = ?", args: [keep.id, d.id] });
+      await c.execute({ sql: "DELETE FROM reactions WHERE send_id = ?", args: [d.id] });
+      await c.execute({ sql: "DELETE FROM echoes WHERE send_id = ?", args: [d.id] });
+      await c.execute({ sql: "DELETE FROM sends WHERE id = ?", args: [d.id] });
+    }
+  }
+  type PlayRow = { id: string; user_id: string; title: string | null; artist: string | null; started_at: number; ended_at: number };
+  const plays = (await c.execute("SELECT id, user_id, title, artist, started_at, ended_at FROM live_history ORDER BY started_at")).rows as unknown as PlayRow[];
+  for (const { keep, dups } of clusterDoubles(plays, (p) => `${p.user_id}|${p.title}|${p.artist}`, (p) => Number(p.started_at), DOUBLE_WINDOW)) {
+    const ended = Math.max(Number(keep.ended_at), ...dups.map((d) => Number(d.ended_at)));
+    await c.execute({ sql: "UPDATE live_history SET ended_at = ? WHERE id = ?", args: [ended, keep.id] });
+    for (const d of dups) await c.execute({ sql: "DELETE FROM live_history WHERE id = ?", args: [d.id] });
+  }
 }
 
 export type Row = Record<string, InValue>;

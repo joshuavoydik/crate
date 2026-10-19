@@ -28,14 +28,14 @@ export function TabBar({ active }: { active: "reel" | "live" | "log" | "settings
   const { openSend, liveCount } = useStore();
   return (
     <nav className="tabbar" aria-label="Sections">
-      <Link href="/" className={`tab${active === "reel" ? " is-active" : ""}`}>
-        <IconReel />
-        Playlist
-      </Link>
       <Link href="/live" className={`tab${active === "live" ? " is-active" : ""}`}>
         <IconLive />
         {liveCount > 0 && <i className="beacon beacon--tab" aria-label={`${liveCount} playing`} />}
         Live
+      </Link>
+      <Link href="/" className={`tab${active === "reel" ? " is-active" : ""}`}>
+        <IconReel />
+        Playlist
       </Link>
       <Link href="/log" className={`tab${active === "log" ? " is-active" : ""}`}>
         <IconLog />

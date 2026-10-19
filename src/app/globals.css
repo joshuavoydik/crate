@@ -3845,3 +3845,44 @@ html.is-pocket {
   letter-spacing: 0.08em;
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
 }
+
+.invite__custom {
+  font-size: 13px;
+  margin: -4px 0 0;
+}
+
+.invite__edit {
+  margin: 22px 0 14px;
+  text-align: left;
+}
+
+.invite__editrow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 4px 4px 14px;
+  border-radius: 14px;
+  background: var(--surface-3);
+  border: 1px solid var(--line);
+}
+
+.invite__prefix {
+  flex: none;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 13px;
+  color: var(--ink-3);
+}
+
+.invite__slug {
+  flex: 1;
+  min-width: 0;
+  height: 36px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 13px;
+}
+
+.invite__hint {
+  font-size: 12.5px;
+  margin: 8px 2px 0;
+  overflow-wrap: anywhere;
+}

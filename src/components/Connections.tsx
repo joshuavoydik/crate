@@ -6,7 +6,7 @@ import { useStore } from "./Store";
 import { Confirm } from "./Confirm";
 import { api, sourceName, timeAgo } from "@/lib/client";
 import type { SourceInfo } from "@/lib/types";
-import { MARK } from "./SourceMark";
+import { MARK, SourceGlyph } from "./SourceMark";
 
 /**
  * The consumer view of connections: one tap, your own already-signed-in account, done.
@@ -138,7 +138,7 @@ export function Connections({ showUnavailable = true }: { showUnavailable?: bool
               aria-label={`${s ? (s.status === "reauth" ? "Reconnect" : "Disconnect") : "Connect"} ${sourceName(kind)}`}
             >
               <span className="conn__mark" style={{ background: MARK[kind].bg, boxShadow: kind === "tidal" ? "inset 0 0 0 1px rgba(255,255,255,0.18)" : undefined, opacity: s || available ? 1 : 0.35 }} aria-hidden>
-                {MARK[kind].text}
+                <SourceGlyph kind={kind} size={30} />
               </span>
               <span style={{ minWidth: 0 }}>
                 <span className="conn__name" style={{ display: "block", opacity: s || available ? 1 : 0.5 }}>

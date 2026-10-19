@@ -230,9 +230,13 @@ async function refreshExternal(userId: string, prev: PresenceRow | null): Promis
   const lf = sources.find((s) => s.kind === "lastfm" && s.label);
   if (!sp && !lf) return;
 
-  // Mark checked first so a slow or failing feed is not re-asked by every concurrent reader.
-  if (prev) await run("UPDATE presence SET checked_at = ? WHERE user_id = ?", [t, userId]);
-  else
+  // Claim the check in one statement, so of every reader asking at once (each tab, each device, the
+  // rail and the Live page) exactly one asks the platform; the rest take its answer. Doing it
+  // in two steps let several through, and each wrote its own copy of the song into the history.
+  if (prev) {
+    const claimed = await run("UPDATE presence SET checked_at = ? WHERE user_id = ? AND checked_at < ?", [t, userId, t - EXTERNAL_EVERY]);
+    if (!claimed) return;
+  } else
     await write(
       userId,
       {

@@ -193,12 +193,12 @@ export function TopBar({ active }: { active: "reel" | "live" | "log" | "settings
       </div>
 
       <nav className="wordmarks" aria-label="Sections">
-        <Link href="/" className={`wordmark${active === "reel" ? " is-active" : ""}`}>
-          Playlist
-        </Link>
         <Link href="/live" className={`wordmark${active === "live" ? " is-active" : ""}`}>
           Live
           {liveCount > 0 && <i className="beacon beacon--nav" aria-label={`${liveCount} playing`} />}
+        </Link>
+        <Link href="/" className={`wordmark${active === "reel" ? " is-active" : ""}`}>
+          Playlist
         </Link>
         <Link href="/log" className={`wordmark${active === "log" ? " is-active" : ""}`}>
           Log

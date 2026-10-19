@@ -204,3 +204,35 @@ test("a Spotify refresh keeps the granted scope, so an hour-old connection is no
   assert.equal(spotifyTokenCurrent(rotated), false, "a token known to lack a scope is flagged");
   assert.ok(spotifyTokenCurrent({ access_token: "d", expires_at: 1 }), "a token with no recorded scope is tried, not flagged");
 });
+
+test("doubles: rows with one key inside the window fold into the first; apart, they stand", async () => {
+  const { clusterDoubles } = await import("../../src/lib/dedupe.ts");
+  const rows = [
+    { id: "a1", key: "a", at: 1000 },
+    { id: "a2", key: "a", at: 1500 },
+    { id: "a3", key: "a", at: 2000 },
+    { id: "a4", key: "a", at: 50_000 },
+    { id: "b1", key: "b", at: 1200 },
+    { id: "c1", key: "c", at: 10 },
+    { id: "c2", key: "c", at: 20 },
+  ];
+  const out = clusterDoubles(rows, (r) => r.key, (r) => r.at, 5000);
+  assert.deepEqual(
+    out.map((c) => [c.keep.id, c.dups.map((d) => d.id)]),
+    [
+      ["a1", ["a2", "a3"]],
+      ["c1", ["c2"]],
+    ],
+  );
+  assert.deepEqual(clusterDoubles([], (r: { k: string }) => r.k, () => 0, 1), []);
+});
+
+test("a custom invite link is bent into a slug, or refused", async () => {
+  const { normalizeInviteCode } = await import("../../src/lib/invite.ts");
+  assert.equal(normalizeInviteCode("Joshua & Ariel"), "joshua-ariel");
+  assert.equal(normalizeInviteCode("  late--shift  "), "late-shift");
+  assert.equal(normalizeInviteCode("-us-"), null, "too short once the dashes go");
+  assert.equal(normalizeInviteCode("ok"), null);
+  assert.equal(normalizeInviteCode("x".repeat(41)), null);
+  assert.equal(normalizeInviteCode("Crew_2026!"), "crew-2026");
+});

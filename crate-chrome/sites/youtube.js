@@ -1,14 +1,36 @@
 // YouTube: only pages YouTube itself files under Music, so a podcast never becomes a play.
+// YouTube is one page that swaps videos in place, and the <meta> tags in its head can lag a
+// video behind, so the genre is read per video id: from the head when the head is about this
+// video, otherwise from a fresh copy of the page.
 (() => {
-  const read = () => {
+  const genres = new Map(); // video id -> genre, or null while it loads
+  const genreOf = (id) => {
+    if (genres.has(id)) return genres.get(id);
+    const ident = document.querySelector('meta[itemprop="identifier"]');
     const genre = document.querySelector('meta[itemprop="genre"]');
-    if (!genre || genre.content !== "Music") return null;
+    if (ident && ident.content === id && genre) {
+      genres.set(id, genre.content);
+      return genre.content;
+    }
+    genres.set(id, null);
+    fetch(`/watch?v=${encodeURIComponent(id)}`, { credentials: "same-origin" })
+      .then((r) => r.text())
+      .then((html) => {
+        const m = html.match(/<meta itemprop="genre" content="([^"]*)"/);
+        genres.set(id, m ? m[1] : "");
+      })
+      .catch(() => genres.delete(id));
+    if (genres.size > 200) genres.delete(genres.keys().next().value);
+    return null;
+  };
+  const read = () => {
+    const id = new URL(location.href).searchParams.get("v");
+    if (!id || genreOf(id) !== "Music") return null;
     const video = document.querySelector("video.html5-main-video") || document.querySelector("video");
     if (!video) return null;
     const title = (document.querySelector("h1.ytd-watch-metadata yt-formatted-string") || {}).textContent || document.title.replace(/\s*-\s*YouTube$/, "");
     const channel = ((document.querySelector("ytd-channel-name a") || {}).textContent || "").trim();
-    const id = new URL(location.href).searchParams.get("v");
-    if (!title.trim() || !id) return null;
+    if (!title.trim()) return null;
     return {
       source: "youtube",
       playing: !video.paused && !video.ended,

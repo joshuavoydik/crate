@@ -189,7 +189,7 @@ export async function isMember(userId: string, crewId: string): Promise<boolean>
 export async function crewByCode(code: string): Promise<Crew | null> {
   const r = await one<CrewRow & { playlist_name: string | null; public_code: string | null; avatar_v: number; has_avatar: number }>(
     "SELECT id, name, invite_code, playlist_name, public_code, avatar_v, (avatar IS NOT NULL) AS has_avatar FROM crews WHERE invite_code = ?",
-    [code],
+    [code.toLowerCase()],
   );
   if (!r) return null;
   return {
@@ -327,21 +327,40 @@ export async function createSend(input: {
   sourceUrl: string | null;
   via?: string;
 }): Promise<Send> {
+  const s = await createSendUnlessRecent(input, 0);
+  if (!s) throw new Error("send insert failed");
+  return s;
+}
+
+/**
+ * A send, unless this track already landed in this crew within the window: the check and the
+ * write are one statement, so two syncs racing each other cannot both add it. Null when it was
+ * already there.
+ */
+export async function createSendUnlessRecent(input: Parameters<typeof createSend>[0], windowMs: number): Promise<Send | null> {
   const sid = id("s");
-  await run("INSERT INTO sends (id, crew_id, track_id, from_user_id, note, note_by, source_url, via, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)", [
-    sid,
-    input.crewId,
-    input.trackId,
-    input.fromUserId,
-    input.note,
-    input.noteBy,
-    input.sourceUrl,
-    input.via ?? "app",
-    now(),
-  ]);
+  const t = now();
+  const args = [sid, input.crewId, input.trackId, input.fromUserId, input.note, input.noteBy, input.sourceUrl, input.via ?? "app", t];
+  const inserted = windowMs
+    ? await run(
+        `INSERT INTO sends (id, crew_id, track_id, from_user_id, note, note_by, source_url, via, created_at)
+         SELECT ?, ?, ?, ?, ?, ?, ?, ?, ? WHERE NOT EXISTS (SELECT 1 FROM sends WHERE crew_id = ? AND track_id = ? AND created_at > ?)`,
+        [...args, input.crewId, input.trackId, t - windowMs],
+      )
+    : await run("INSERT INTO sends (id, crew_id, track_id, from_user_id, note, note_by, source_url, via, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)", args);
+  if (!inserted) return null;
   const s = await getSend(sid, input.fromUserId);
   if (!s) throw new Error("send insert failed");
   return s;
+}
+
+export class CodeTakenError extends Error {}
+
+/** A crew's custom invite slug; refused when another crew already has it. */
+export async function setInviteCode(crewId: string, code: string): Promise<void> {
+  const taken = await one<{ id: string }>("SELECT id FROM crews WHERE invite_code = ? AND id != ?", [code, crewId]);
+  if (taken) throw new CodeTakenError("That link is taken");
+  await run("UPDATE crews SET invite_code = ? WHERE id = ?", [code, crewId]);
 }
 
 export async function getSend(sendId: string, viewerId: string): Promise<Send | null> {

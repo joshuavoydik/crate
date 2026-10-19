@@ -3,7 +3,7 @@ import { encrypt, decrypt } from "./crypto";
 import { PROVIDERS, type SourceKind, type SourceItem } from "./sources";
 import { resolveFromMeta, type TrackMeta } from "./resolve";
 import { fingerprint } from "./resolve/parse";
-import { upsertTrack, createSend, getTrack, echo } from "./queries";
+import { upsertTrack, createSendUnlessRecent, getTrack, echo } from "./queries";
 import { suggestNote } from "./agent";
 import type { Track } from "./types";
 
@@ -108,10 +108,12 @@ export async function ingestItems(userId: string, kind: string, items: SourceIte
       ]);
       if (twin) continue;
     }
-    await run(
+    const inserted = await run(
       "INSERT OR IGNORE INTO log_entries (id, user_id, track_id, source_kind, external_id, action, at, meta_json, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
       [id("l"), userId, track.id, kind, item.externalId, item.action, item.at, JSON.stringify({ url: item.meta.sourceUrl }), now()],
     );
+    // Another sync of this person wrote it first (two devices opening the app at once): theirs counts, not this one.
+    if (!inserted) continue;
     added++;
     shared += await autoShare(userId, track, kind, item);
     await new Promise((r) => setTimeout(r, 150));
@@ -169,15 +171,30 @@ async function autoShare(userId: string, track: Track, kind: string, item: Sourc
         sourcePlatform: kind,
       });
     }
-    await createSend({
-      crewId: c.crew_id,
-      trackId: track.id,
-      fromUserId: userId,
-      note,
-      noteBy: "agent",
-      sourceUrl: item.meta.sourceUrl,
-      via,
-    });
+    const created = await createSendUnlessRecent(
+      {
+        crewId: c.crew_id,
+        trackId: track.id,
+        fromUserId: userId,
+        note,
+        noteBy: "agent",
+        sourceUrl: item.meta.sourceUrl,
+        via,
+      },
+      AUTO_SHARE_WINDOW,
+    );
+    if (!created) {
+      // Lost the race to a row that landed between the look and the write; if it is someone else's, this is an echo on it.
+      const won = await one<{ id: string; from_user_id: string }>(
+        "SELECT id, from_user_id FROM sends WHERE crew_id = ? AND track_id = ? AND created_at > ? ORDER BY created_at DESC LIMIT 1",
+        [c.crew_id, track.id, now() - AUTO_SHARE_WINDOW],
+      );
+      if (won && won.from_user_id !== userId) {
+        await echo(won.id, userId, via);
+        n++;
+      }
+      continue;
+    }
     n++;
   }
   return n;
@@ -191,9 +208,19 @@ export async function syncUser(userId: string, opts: { force?: boolean; only?: S
   const reports: SyncReport[] = [];
   for (const s of sources) {
     if (opts.only && s.kind !== opts.only) continue;
-    if (!opts.force && s.last_sync_at && now() - s.last_sync_at < SYNC_INTERVAL) {
-      reports.push({ kind: s.kind, added: 0, shared: 0, skipped: true });
-      continue;
+    if (!opts.force) {
+      if (s.last_sync_at && now() - s.last_sync_at < SYNC_INTERVAL) {
+        reports.push({ kind: s.kind, added: 0, shared: 0, skipped: true });
+        continue;
+      }
+      // Claim the run in one statement: two syncs of the same person at once (a phone and a laptop
+      // both opening the app, the cron under an open tab) would otherwise both pull the same items.
+      const t = now();
+      const claimed = await run("UPDATE sources SET last_sync_at = ? WHERE id = ? AND (last_sync_at IS NULL OR last_sync_at < ?)", [t, s.id, t - SYNC_INTERVAL]);
+      if (!claimed) {
+        reports.push({ kind: s.kind, added: 0, shared: 0, skipped: true });
+        continue;
+      }
     }
     const provider = PROVIDERS[s.kind];
     if (!provider) continue;
