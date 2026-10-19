@@ -21,6 +21,14 @@ export function TopBar({ active }: { active: "reel" | "live" | "log" | "settings
   const ref = useRef<HTMLDivElement>(null);
   const bellRef = useRef<HTMLDivElement>(null);
   const notices = me.notices ?? [];
+  /** Past the top of the page: the bar takes a surface and a hairline, so what scrolls under it stays legible. */
+  const [scrolled, setScrolled] = useState(false);
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 6);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
   useEffect(() => {
     if (!open && !bell) return;
@@ -97,7 +105,7 @@ export function TopBar({ active }: { active: "reel" | "live" | "log" | "settings
   const others = crew ? crew.members.filter((m) => m.id !== me.id) : [];
 
   return (
-    <header className="topbar">
+    <header className={`topbar${scrolled ? " is-scrolled" : ""}`}>
       <div className="topbar__left" ref={ref} style={{ position: "relative" }}>
         <button className="crewname" onClick={() => setOpen((o) => !o)} aria-haspopup="menu" aria-expanded={open}>
           <span className="avatars" aria-hidden>

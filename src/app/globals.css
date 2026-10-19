@@ -4069,3 +4069,29 @@ html.is-pocket {
   max-width: 560px;
   margin: 0 auto 18px;
 }
+
+/* ---------- the top bar past the top of the page: a surface and a hairline, eased in ---------- */
+
+.topbar {
+  background: transparent;
+  border-bottom: 1px solid transparent;
+  transition:
+    background-color 320ms var(--ease),
+    border-color 320ms var(--ease),
+    box-shadow 320ms var(--ease);
+}
+
+.topbar.is-scrolled {
+  background-color: color-mix(in srgb, var(--surface) 82%, transparent);
+  -webkit-backdrop-filter: blur(18px) saturate(1.15);
+  backdrop-filter: blur(18px) saturate(1.15);
+  border-bottom-color: var(--line);
+  box-shadow: 0 12px 32px -22px rgba(0, 0, 0, 0.45);
+}
+
+/* The rail sits beside the page, not under the bar: the bar's surface stops where the rail starts. */
+@media (min-width: 1180px) {
+  html.has-rail .topbar.is-scrolled {
+    background-clip: padding-box;
+  }
+}
