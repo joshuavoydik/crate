@@ -146,27 +146,6 @@ export function TopBar({ active }: { active: "reel" | "live" | "log" | "settings
                 </button>
               </div>
             ))}
-            {crew && (
-              <>
-                <div className="pop__sep" />
-                <button
-                  className="pop__item"
-                  role="menuitem"
-                  onClick={() => {
-                    setOpen(false);
-                    openInvite();
-                  }}
-                >
-                  Invite someone to {crew.name}
-                </button>
-                <Link className="pop__item" role="menuitem" href="/crew" onClick={() => setOpen(false)}>
-                  {crew.name}: people, radio, rules
-                </Link>
-                <Link className="pop__item" role="menuitem" href="/days" onClick={() => setOpen(false)}>
-                  Days: the playlist, date by date
-                </Link>
-              </>
-            )}
             <div className="pop__sep" />
             <form
               className="send__row"

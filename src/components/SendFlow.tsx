@@ -7,7 +7,7 @@ import { usePlayer } from "./Player";
 import { IconPlay, IconPause } from "./Icons";
 import { api } from "@/lib/client";
 import { extractUrl } from "@/lib/resolve/parse";
-import type { Track, Send } from "@/lib/types";
+import type { Track, Send, Collection } from "@/lib/types";
 
 type SearchHit = {
   appleId: string;
@@ -20,8 +20,13 @@ type SearchHit = {
 };
 type Resolved = { track: Track; resolved: boolean; sourceUrl: string; suggestedNote: string };
 
+/**
+ * The send: you, on purpose, putting one track in front of the crew with a line. The stream fills
+ * itself from what everyone plays; this is the opposite, and it lands as new at the top of their
+ * reel to keep, skip or answer. It can go into one of the crew's playlists on the way.
+ */
 export function SendFlow() {
-  const { sendOpen, sendPrefill, closeSend, me, crew, toast, bumpSends } = useStore();
+  const { sendOpen, sendPrefill, closeSend, me, crew, toast, bumpSends, openInvite, collectionsVersion, bumpCollections } = useStore();
   const player = usePlayer();
   const [text, setText] = useState("");
   const [hits, setHits] = useState<SearchHit[]>([]);
@@ -31,12 +36,15 @@ export function SendFlow() {
   const [crewId, setCrewId] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
+  const [collections, setCollections] = useState<Collection[]>([]);
+  const [into, setInto] = useState<Set<string>>(new Set());
   const inputRef = useRef<HTMLInputElement>(null);
   const seq = useRef(0);
 
   const target = me.crews.find((c) => c.id === crewId) ?? crew;
   const recipients = target ? target.members.filter((m) => m.id !== me.id) : [];
   const recipientIsDj = recipients.some((m) => m.isDj);
+  const names = recipients.map((m) => m.name.split(" ")[0]).join(" and ");
 
   const reset = useCallback(() => {
     setText("");
@@ -46,7 +54,24 @@ export function SendFlow() {
     setNote("");
     setErr(null);
     setSending(false);
+    setInto(new Set());
   }, []);
+
+  // The crew's playlists, for the "also keep it in" chips: fetched when the sheet opens and again
+  // when a track is ready, so a playlist made meanwhile is there to pick.
+  const targetId = target?.id ?? null;
+  useEffect(() => {
+    if (!sendOpen || !targetId || step === "resolving") return;
+    let stop = false;
+    api<{ collections: Collection[] }>(`/api/collections?crew=${encodeURIComponent(targetId)}`)
+      .then((r) => {
+        if (!stop) setCollections(r.collections);
+      })
+      .catch(() => undefined);
+    return () => {
+      stop = true;
+    };
+  }, [sendOpen, targetId, collectionsVersion, step]);
 
   useEffect(() => {
     if (!sendOpen) {
@@ -131,10 +156,14 @@ export function SendFlow() {
           sourceUrl: resolved.sourceUrl,
         },
       });
-      const names = recipients.map((m) => m.name.split(" ")[0]).join(" and ") || target.name;
+      const chosen = collections.filter((c) => into.has(c.id));
+      if (chosen.length) {
+        await Promise.all(chosen.map((c) => api(`/api/collections/${c.id}/tracks`, { method: "POST", json: { trackId: resolved.track.id } }).catch(() => undefined)));
+        bumpCollections();
+      }
       closeSend();
       bumpSends();
-      toast(`Sent to ${names}`, {
+      toast(`Sent to ${names || target.name}${chosen.length ? ` · in ${chosen.map((c) => c.name).join(", ")}` : ""}`, {
         label: "Undo",
         run: async () => {
           try {
@@ -244,10 +273,33 @@ export function SendFlow() {
             </ul>
           )}
           {step === "input" && !text && (
-            <p className="faint" style={{ marginTop: 18, fontSize: 13.5 }}>
-              Spotify, Apple Music, YouTube, SoundCloud, Bandcamp, Beatport, Tidal or Deezer links all work. On desktop you can also paste anywhere or drop a
-              link on the page.
-            </p>
+            <div className="send__why">
+              {recipients.length ? (
+                <p className="muted" style={{ fontSize: 14.5, margin: "18px 0 0" }}>
+                  The playlist fills itself from what everyone plays. This is the other thing: you saying <em>hear this</em>. It lands at the top of{" "}
+                  {names}&rsquo;s reel with your line, to keep, skip or answer.
+                </p>
+              ) : (
+                <p className="muted" style={{ fontSize: 14.5, margin: "18px 0 0" }}>
+                  Just you in {target?.name ?? "this crew"} for now, so this goes into the playlist and your log. Bring someone in and the next one lands in
+                  front of them.{" "}
+                  <button
+                    className="linkbtn"
+                    type="button"
+                    onClick={() => {
+                      closeSend();
+                      openInvite();
+                    }}
+                  >
+                    Invite someone
+                  </button>
+                </p>
+              )}
+              <p className="faint" style={{ marginTop: 12, fontSize: 13 }}>
+                A Spotify, Apple Music, YouTube, SoundCloud, Bandcamp, Beatport, Tidal or Deezer link, or just a song name. On desktop, paste anywhere or drop
+                a link on the page.
+              </p>
+            </div>
           )}
         </>
       )}
@@ -309,6 +361,32 @@ export function SendFlow() {
           <p className="faint" style={{ fontSize: 12.5, marginTop: 6 }}>
             Leave it empty and the agent's line goes with it, marked as the agent's.
           </p>
+
+          {collections.length > 0 && (
+            <>
+              <span className="label caps">Also keep it in</span>
+              <div className="chips" role="group" aria-label="Also keep it in">
+                {collections.map((c) => (
+                  <button
+                    key={c.id}
+                    type="button"
+                    className={`chip${into.has(c.id) ? " is-on" : ""}`}
+                    aria-pressed={into.has(c.id)}
+                    onClick={() =>
+                      setInto((s) => {
+                        const n = new Set(s);
+                        if (n.has(c.id)) n.delete(c.id);
+                        else n.add(c.id);
+                        return n;
+                      })
+                    }
+                  >
+                    {c.name}
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
           {err && (
             <p className="muted" style={{ marginTop: 10, fontSize: 14 }}>
               {err}
