@@ -7,7 +7,11 @@ import { similarity } from "../resolve/parse";
  * Spotify, Authorization Code with PKCE (no client secret). A new app runs in Development
  * Mode, which allows up to five users; enough for a crew. Pulls liked songs and recent plays.
  */
-export const SPOTIFY_SCOPES = "user-library-read user-read-recently-played user-read-currently-playing user-read-playback-state user-modify-playback-state";
+/** What Live and the sync need; a token short of one of these is asked to reconnect. */
+export const LIVE_SCOPES = "user-library-read user-read-recently-played user-read-currently-playing user-read-playback-state user-modify-playback-state";
+/** Saving a Crate playlist to Spotify needs this too; asked for at connect time, checked only when saving. */
+export const PLAYLIST_SCOPE = "playlist-modify-private";
+export const SPOTIFY_SCOPES = `${LIVE_SCOPES} ${PLAYLIST_SCOPE}`;
 
 export async function spotifyConfigured(): Promise<boolean> {
   return !!(await getKeys()).SPOTIFY_CLIENT_ID;
@@ -50,7 +54,13 @@ export class SpotifyScopeError extends Error {}
 export function spotifyTokenCurrent(token: Token): boolean {
   const have = new Set(String(token.scope ?? "").split(/\s+/).filter(Boolean));
   if (!have.size) return true;
-  return SPOTIFY_SCOPES.split(" ").every((s) => have.has(s));
+  return LIVE_SCOPES.split(" ").every((s) => have.has(s));
+}
+
+/** Whether the token is known to carry a scope; unknown counts as yes, and the API says otherwise with a 403. */
+export function spotifyHasScope(token: Token, scope: string): boolean {
+  const have = String(token.scope ?? "").split(/\s+/).filter(Boolean);
+  return have.length === 0 || have.includes(scope);
 }
 
 /**
@@ -275,4 +285,40 @@ export async function spotifyPlay(token: Token, uri: string, positionMs: number)
   }
   if (!r.ok && r.status !== 204) throw new SpotifyPlayError(`Spotify said ${r.status}.`, "other");
   return { token: tok !== token ? tok : undefined, device };
+}
+
+// ---------- a Crate playlist, saved to this person's Spotify ----------
+
+async function postJson<T>(url: string, token: Token, body: unknown): Promise<T> {
+  const ctrl = new AbortController();
+  const t = setTimeout(() => ctrl.abort(), 10000);
+  try {
+    const r = await fetch(url, {
+      method: "POST",
+      headers: { authorization: `Bearer ${token.access_token}`, "content-type": "application/json" },
+      body: JSON.stringify(body),
+      signal: ctrl.signal,
+      cache: "no-store",
+    });
+    const text = await r.text();
+    if (r.status === 403) throw new SpotifyScopeError("Reconnect Spotify once so Crate may save playlists there");
+    if (!r.ok) throw new Error(`${r.status} from api.spotify.com: ${text.slice(0, 160)}`);
+    return (text ? JSON.parse(text) : {}) as T;
+  } finally {
+    clearTimeout(t);
+  }
+}
+
+/** A private playlist on this person's Spotify with these tracks, in order. Returns its link and the refreshed token, when it rotated. */
+export async function spotifyCreatePlaylist(token: Token, name: string, description: string, uris: string[]): Promise<{ url: string; token?: Token }> {
+  if (!spotifyHasScope(token, PLAYLIST_SCOPE)) throw new SpotifyScopeError("Reconnect Spotify once so Crate may save playlists there");
+  const tok = await ensure(token);
+  const me = await getJson<{ id: string }>("https://api.spotify.com/v1/me", { headers: { authorization: `Bearer ${tok.access_token}` } });
+  const made = await postJson<{ id: string; external_urls: { spotify: string } }>(`https://api.spotify.com/v1/users/${encodeURIComponent(me.id)}/playlists`, tok, {
+    name,
+    public: false,
+    description,
+  });
+  for (let i = 0; i < uris.length; i += 100) await postJson(`https://api.spotify.com/v1/playlists/${made.id}/tracks`, tok, { uris: uris.slice(i, i + 100) });
+  return { url: made.external_urls.spotify, token: tok !== token ? tok : undefined };
 }

@@ -236,3 +236,13 @@ test("a custom invite link is bent into a slug, or refused", async () => {
   assert.equal(normalizeInviteCode("x".repeat(41)), null);
   assert.equal(normalizeInviteCode("Crew_2026!"), "crew-2026");
 });
+
+test("saving to Spotify needs its own permission; Live does not ask for it", async () => {
+  const { spotifyHasScope, spotifyTokenCurrent, LIVE_SCOPES, PLAYLIST_SCOPE, SPOTIFY_SCOPES } = await import("../../src/lib/sources/spotify.ts");
+  const liveOnly = { access_token: "a", expires_at: 1, scope: LIVE_SCOPES };
+  assert.ok(spotifyTokenCurrent(liveOnly), "a token from before playlists is still fine for Live");
+  assert.equal(spotifyHasScope(liveOnly, PLAYLIST_SCOPE), false, "but cannot save a playlist until reconnected");
+  assert.ok(spotifyHasScope({ access_token: "a", expires_at: 1, scope: SPOTIFY_SCOPES }, PLAYLIST_SCOPE));
+  assert.ok(spotifyHasScope({ access_token: "a", expires_at: 1 }, PLAYLIST_SCOPE), "unknown scope is tried, and the API answers");
+  assert.ok(SPOTIFY_SCOPES.includes(PLAYLIST_SCOPE), "new connections ask for it up front");
+});

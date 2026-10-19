@@ -139,7 +139,7 @@ export function InviteSheet() {
           </button>
         </div>
         <p className="faint invite__code">
-          Across a table? They can type the code <b>{crew.inviteCode}</b> on the first screen.
+          The same link works for everyone you send it to. Across a table? They can type the code <b>{crew.inviteCode}</b> on the first screen.
         </p>
       </div>
     </Sheet>

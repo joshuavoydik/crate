@@ -100,6 +100,29 @@ export function CollectionView({ id }: { id: string }) {
     }
   }
 
+  /** This playlist, saved to where the person listens. */
+  async function saveTo(to: "spotify" | "apple") {
+    if (!data) return;
+    const label = to === "spotify" ? "Spotify" : "Apple Music";
+    setBusy(`export:${to}`);
+    try {
+      const r = await fetch(`/api/collections/${data.collection.id}/export`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ to }) });
+      const j = (await r.json()) as { url?: string | null; added?: number; missed?: number; error?: string; reconnect?: boolean };
+      if (r.status === 409 && j.reconnect) {
+        toast(j.error ?? `Reconnect ${label} once`, { label: "Reconnect", run: () => (window.location.href = `/api/connect/${to}`) });
+        return;
+      }
+      if (!r.ok) throw new Error(j.error ?? `Could not save to ${label}`);
+      const note = `Saved to ${label}: ${j.added} ${j.added === 1 ? "track" : "tracks"}${j.missed ? `, ${j.missed} not there` : ""}`;
+      if (j.url) toast(note, { label: "Open", run: () => window.open(j.url!, "_blank", "noopener") });
+      else toast(note);
+    } catch (e) {
+      toast((e as Error).message);
+    } finally {
+      setBusy(null);
+    }
+  }
+
   async function destroy() {
     if (!data) return;
     await api(`/api/collections/${data.collection.id}`, { method: "DELETE" });
@@ -149,6 +172,16 @@ export function CollectionView({ id }: { id: string }) {
           <button className="btn btn--sm btn--primary" onClick={share}>
             Share
           </button>
+          {me.sources.some((s) => s.kind === "spotify") && tracks.length > 0 && (
+            <button className="btn btn--sm" onClick={() => saveTo("spotify")} disabled={busy === "export:spotify"}>
+              {busy === "export:spotify" ? "Saving…" : "Save to Spotify"}
+            </button>
+          )}
+          {me.sources.some((s) => s.kind === "apple") && tracks.length > 0 && (
+            <button className="btn btn--sm" onClick={() => saveTo("apple")} disabled={busy === "export:apple"}>
+              {busy === "export:apple" ? "Saving…" : "Save to Apple Music"}
+            </button>
+          )}
           {tracks.some((x) => x.track.previewUrl) && (
             <button
               className="btn btn--sm"

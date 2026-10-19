@@ -107,3 +107,31 @@ export const apple: Provider = {
     return { items: first ? items.slice(0, 15) : items, cursor: { seen: ids.slice(0, 60) } };
   },
 };
+
+// ---------- a Crate playlist, saved to this person's Apple Music library ----------
+
+/** A playlist in this person's library with these catalog songs, in order. Returns its library id. */
+export async function appleCreatePlaylist(musicUserToken: string, name: string, description: string, songIds: string[]): Promise<{ id: string }> {
+  const dev = await appleDeveloperToken();
+  const ctrl = new AbortController();
+  const t = setTimeout(() => ctrl.abort(), 15000);
+  try {
+    const r = await fetch("https://api.music.apple.com/v1/me/library/playlists", {
+      method: "POST",
+      headers: { authorization: `Bearer ${dev}`, "music-user-token": musicUserToken, "content-type": "application/json" },
+      body: JSON.stringify({
+        attributes: { name, description },
+        relationships: { tracks: { data: songIds.map((id) => ({ id, type: "songs" })) } },
+      }),
+      signal: ctrl.signal,
+      cache: "no-store",
+    });
+    const text = await r.text();
+    if (r.status === 401 || r.status === 403) throw new Error("Reconnect Apple Music once so Crate may save playlists there");
+    if (!r.ok) throw new Error(`${r.status} from api.music.apple.com: ${text.slice(0, 160)}`);
+    const j = JSON.parse(text) as { data?: Array<{ id: string }> };
+    return { id: j.data?.[0]?.id ?? "" };
+  } finally {
+    clearTimeout(t);
+  }
+}

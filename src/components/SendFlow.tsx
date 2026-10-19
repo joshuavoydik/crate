@@ -38,6 +38,15 @@ export function SendFlow() {
   const [sending, setSending] = useState(false);
   const [collections, setCollections] = useState<Collection[]>([]);
   const [into, setInto] = useState<Set<string>>(new Set());
+  /** On a phone the clipboard needs a tap to be read, so a Paste button earns its place; with a keyboard, ⌘V does. */
+  const [touch, setTouch] = useState(false);
+  useEffect(() => {
+    try {
+      setTouch(window.matchMedia("(hover: none)").matches);
+    } catch {
+      /* no matchMedia */
+    }
+  }, []);
   const inputRef = useRef<HTMLInputElement>(null);
   const seq = useRef(0);
 
@@ -203,7 +212,7 @@ export function SendFlow() {
               inputMode="search"
               aria-label="Link or search"
             />
-            {!text && (
+            {!text && touch && (
               <button className="btn btn--sm" onClick={pasteFromClipboard} type="button">
                 Paste
               </button>
