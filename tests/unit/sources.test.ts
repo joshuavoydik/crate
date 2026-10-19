@@ -246,3 +246,17 @@ test("saving to Spotify needs its own permission; Live does not ask for it", asy
   assert.ok(spotifyHasScope({ access_token: "a", expires_at: 1 }, PLAYLIST_SCOPE), "unknown scope is tried, and the API answers");
   assert.ok(SPOTIFY_SCOPES.includes(PLAYLIST_SCOPE), "new connections ask for it up front");
 });
+
+test("the extension built for a Crate pairs on that Crate's site", async () => {
+  const { manifestFor } = await import("../../src/lib/chrome-ext.ts");
+  const { readFileSync } = await import("node:fs");
+  const raw = readFileSync("crate-chrome/manifest.json", "utf8");
+  const built = JSON.parse(manifestFor(raw, "https://cratemusic.vercel.app/")) as { content_scripts: Array<{ matches: string[]; js: string[] }> };
+  const pairing = built.content_scripts.find((c) => c.js.includes("sites/crate.js"))!;
+  assert.ok(pairing.matches.includes("https://cratemusic.vercel.app/*"), "the hosted address is in");
+  assert.ok(pairing.matches.includes("http://localhost:3000/*"), "a local Crate still works");
+  const again = JSON.parse(manifestFor(manifestFor(raw, "https://cratemusic.vercel.app"), "https://cratemusic.vercel.app")) as typeof built;
+  assert.equal(again.content_scripts.find((c) => c.js.includes("sites/crate.js"))!.matches.filter((m) => m.includes("cratemusic")).length, 1, "not twice");
+  const others = built.content_scripts.filter((c) => !c.js.includes("sites/crate.js"));
+  assert.ok(others.every((c) => !c.matches.some((m) => m.includes("cratemusic"))), "only the pairing script runs on the Crate");
+});

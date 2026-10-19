@@ -1,20 +1,23 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useStore } from "./Store";
 import { SourceGlyph, MARK } from "./SourceMark";
-import { api, CHROME_EXTENSION_ID, sourceName } from "@/lib/client";
+import { api, sourceName } from "@/lib/client";
 
 const SITES = ["soundcloud", "youtube", "tidal", "deezer", "amazon", "pandora", "apple", "spotify"] as const;
 
 /**
- * Crate in Chrome, on its own page: what it does, the download, and the three steps, with the
- * pairing link that binds the extension to this person's Crate.
+ * Crate in Chrome, on its own page: what it does, the download, the steps. The pairing is the
+ * page itself: with the extension loaded, its script finds this person's key here and takes it,
+ * and the page says Connected. No extension id, no special link.
  */
 export function ChromeView({ appUrl }: { appUrl: string }) {
   const { setAccentTrack, toast } = useStore();
   const [token, setToken] = useState<string | null>(null);
+  const [paired, setPaired] = useState(false);
+  const pairRef = useRef<HTMLDivElement>(null);
   useEffect(() => setAccentTrack(null), [setAccentTrack]);
   useEffect(() => {
     api<{ token: string }>("/api/ingest/token")
@@ -22,9 +25,19 @@ export function ChromeView({ appUrl }: { appUrl: string }) {
       .catch((e) => toast((e as Error).message));
   }, [toast]);
 
+  // The extension marks the pairing element once it has taken the key.
+  useEffect(() => {
+    const el = pairRef.current;
+    if (!el) return;
+    const check = () => setPaired(el.getAttribute("data-crate-paired") === "1");
+    check();
+    const mo = new MutationObserver(check);
+    mo.observe(el, { attributes: true, attributeFilter: ["data-crate-paired"] });
+    return () => mo.disconnect();
+  }, [token]);
+
   const base = appUrl.replace(/\/$/, "");
   const download = `${base}/api/chrome/extension`;
-  const pair = token ? `chrome-extension://${CHROME_EXTENSION_ID}/pair.html#url=${encodeURIComponent(base)}&token=${encodeURIComponent(token)}` : null;
 
   async function copy(text: string) {
     try {
@@ -57,9 +70,24 @@ export function ChromeView({ appUrl }: { appUrl: string }) {
       </div>
 
       <div className="section">
+        <div className={`chrome__status${paired ? " is-on" : ""}`} role="status" ref={pairRef} data-crate-pair={token ?? undefined} data-crate-url={base}>
+          <i className="chrome__dot" aria-hidden />
+          {paired ? (
+            <span>
+              <strong>Connected.</strong> This Chrome reports to {base.replace(/^https?:\/\//, "")}. Play something on SoundCloud or YouTube and watch Live.
+            </span>
+          ) : (
+            <span>
+              <strong>Not connected yet in this Chrome.</strong> Do the steps below in this browser; this line turns green on its own.
+            </span>
+          )}
+        </div>
+      </div>
+
+      <div className="section">
         <span className="caps">1 · Download</span>
         <p className="muted" style={{ fontSize: 14.5, margin: "6px 0 0" }}>
-          Until it is on the Chrome Web Store, it is a folder you add yourself. The link is yours to pass on; nothing in it is secret.
+          Until it is on the Chrome Web Store, it is a folder you add yourself. This download is built for this Crate; a copy from somewhere else will not pair.
         </p>
         <div className="chrome__hero">
           <a className="btn btn--primary" href="/api/chrome/extension" download>
@@ -79,7 +107,7 @@ export function ChromeView({ appUrl }: { appUrl: string }) {
         <ol className="steps">
           <li>Unzip the download. Keep the <code>crate-chrome</code> folder somewhere it can stay; Chrome reads it from there.</li>
           <li>
-            In Chrome, open <code>chrome://extensions</code> and turn on <strong>Developer mode</strong>, top right.
+            In Chrome, open <code>chrome://extensions</code> and turn on <strong>Developer mode</strong>, top right. If an older Crate is listed, remove it.
           </li>
           <li>
             Press <strong>Load unpacked</strong> and choose the <code>crate-chrome</code> folder. Crate appears in the list; pin it to the toolbar if you like.
@@ -88,21 +116,14 @@ export function ChromeView({ appUrl }: { appUrl: string }) {
       </div>
 
       <div className="section">
-        <span className="caps">3 · Connect it to your Crate</span>
-        <p className="muted" style={{ fontSize: 14.5, margin: "6px 0 10px" }}>
-          This button opens a page inside the extension and hands it your Crate&rsquo;s address and your key. It has to be pressed in the Chrome that has
-          the extension. The extension&rsquo;s toolbar icon then says which Crate it is connected to.
+        <span className="caps">3 · Come back here</span>
+        <p className="muted" style={{ fontSize: 14.5, margin: "6px 0 0" }}>
+          That is it. Reload this page and the line at the top says Connected: the extension reads your key from this page, signed in as you. The toolbar
+          icon shows which Crate it is connected to.
         </p>
-        {pair ? (
-          <a className="btn btn--primary" href={pair} target="_blank" rel="noreferrer">
-            Connect Chrome
-          </a>
-        ) : (
-          <span className="faint">Getting your key…</span>
-        )}
         <p className="faint" style={{ fontSize: 13, marginTop: 14 }}>
-          Updated the extension? Load the new folder the same way, then press Connect Chrome again. Listening in the Music, Spotify or SoundCloud apps on a Mac
-          instead? That is{" "}
+          Updated the extension? Load the new folder the same way and come back here. Listening in the Music, Spotify or SoundCloud apps on a Mac instead?
+          That is{" "}
           <Link href="/settings" style={{ textDecoration: "underline" }}>
             Crate on your Mac, in Settings
           </Link>

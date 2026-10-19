@@ -8,7 +8,7 @@ import { Confirm } from "./Confirm";
 import { Connections } from "./Connections";
 import { ThemePicker } from "./ThemeToggle";
 import { Avatar, squareDataUrl } from "./Avatar";
-import { api, sourceName, timeAgo, CHROME_EXTENSION_ID } from "@/lib/client";
+import { api, sourceName, timeAgo } from "@/lib/client";
 import { PLATFORM_LABELS, orderPlatforms } from "@/lib/resolve/links";
 import type { Me } from "@/lib/types";
 
@@ -82,7 +82,6 @@ export function SettingsView({ appUrl }: { appUrl: string }) {
   const installCmd = `cd "${projectDir ?? "<your Crate checkout>"}" && npm run imessage:install -- --url=${base} --token=${token ?? "<token>"}`;
   const macCmd = `curl -fsSL "${base}/api/mac/install?key=${token ?? "<token>"}" | bash`;
   const macRemoveCmd = `curl -fsSL "${base}/api/mac/install?key=${token ?? "<token>"}&remove=1" | bash`;
-  const chromePair = `chrome-extension://${CHROME_EXTENSION_ID}/pair.html#url=${encodeURIComponent(base)}&token=${encodeURIComponent(token ?? "")}`;
 
   return (
     <div className="page settings">
@@ -221,42 +220,20 @@ export function SettingsView({ appUrl }: { appUrl: string }) {
           </Link>
           .
         </p>
-        {token ? (
-          <>
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center", margin: "6px 0 10px" }}>
-              <a className="btn btn--sm btn--primary" href={chromePair} target="_blank" rel="noreferrer">
-                Connect Chrome
-              </a>
-              <span className="faint" style={{ fontSize: 13 }}>Once the extension is in Chrome, this pairs it with your Crate.</span>
-            </div>
-            <ol className="steps">
-              <li>
-                Add the extension. Until it is on the Chrome Web Store:{" "}
-                {projectDir ? (
-                  <>
-                    open <code>chrome://extensions</code>, turn on Developer mode (top right), Load unpacked, and choose the <code>crate-chrome</code> folder
-                    inside {projectDir}.
-                  </>
-                ) : (
-                  <>
-                    <a href="/api/chrome/extension" download>
-                      download the extension
-                    </a>{" "}
-                    and unzip it, then open <code>chrome://extensions</code>, turn on Developer mode (top right), Load unpacked, and choose the unzipped{" "}
-                    <code>crate-chrome</code> folder.
-                  </>
-                )}
-              </li>
-              <li>Come back here and press Connect Chrome. A tab opens and says Connected.</li>
-            </ol>
-          </>
-        ) : (
-          <div>
-            <button className="btn btn--sm" onClick={() => showToken(false)}>
-              Set up
-            </button>
-          </div>
-        )}
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center", margin: "6px 0 4px" }}>
+          <Link className="btn btn--sm btn--primary" href="/chrome">
+            Set up Crate in Chrome
+          </Link>
+          <span className="faint" style={{ fontSize: 13 }}>
+            {projectDir ? (
+              <>
+                Running from a checkout: load the <code>crate-chrome</code> folder inside {projectDir}, then open that page.
+              </>
+            ) : (
+              "The download, the steps, and the page that pairs it."
+            )}
+          </span>
+        </div>
       </details>
 
       <details className="section fold">

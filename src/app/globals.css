@@ -4167,3 +4167,34 @@ html.is-pocket {
   border: 1px solid var(--line);
   font-size: 13px;
 }
+
+.chrome__status {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: var(--glass);
+  border: 1px solid var(--line);
+  font-size: 14.5px;
+  color: var(--ink-2);
+}
+
+.chrome__status strong {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.chrome__dot {
+  flex: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: var(--ink-4);
+  transition: background 300ms var(--ease), box-shadow 300ms var(--ease);
+}
+
+.chrome__status.is-on .chrome__dot {
+  background: #1db954;
+  box-shadow: 0 0 0 4px rgba(29, 185, 84, 0.18);
+}
