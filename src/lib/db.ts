@@ -189,6 +189,8 @@ const COLUMNS: Array<[table: string, column: string, ddl: string]> = [
   ["crews", "avatar", "TEXT"],
   ["crews", "avatar_v", "INTEGER NOT NULL DEFAULT 0"],
   ["playlists", "public_code", "TEXT"],
+  ["users", "chrome_seen_at", "INTEGER"],
+  ["users", "chrome_last", "TEXT"],
 ];
 
 let client: Client | null = null;

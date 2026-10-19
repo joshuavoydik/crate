@@ -260,3 +260,12 @@ test("the extension built for a Crate pairs on that Crate's site", async () => {
   const others = built.content_scripts.filter((c) => !c.js.includes("sites/crate.js"));
   assert.ok(others.every((c) => !c.matches.some((m) => m.includes("cratemusic"))), "only the pairing script runs on the Crate");
 });
+
+test("the built extension may reach the Crate it was built for, so it can pair a tab already open", async () => {
+  const { manifestFor } = await import("../../src/lib/chrome-ext.ts");
+  const { readFileSync } = await import("node:fs");
+  const built = JSON.parse(manifestFor(readFileSync("crate-chrome/manifest.json", "utf8"), "https://cratemusic.vercel.app")) as { host_permissions: string[]; permissions: string[] };
+  assert.ok(built.host_permissions.includes("https://cratemusic.vercel.app/*"));
+  assert.ok(built.host_permissions.includes("*://soundcloud.com/*"), "and the music sites, for the same reason");
+  assert.ok(built.permissions.includes("scripting"));
+});

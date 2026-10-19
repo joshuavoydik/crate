@@ -13,10 +13,10 @@
     where.textContent = url;
     return;
   }
-  const { crate } = await chrome.storage.local.get("crate");
+  const { crate, lastError, lastSentAt } = await chrome.storage.local.get(["crate", "lastError", "lastSentAt"]);
   if (crate && crate.url) {
     state.innerHTML = '<span class="ok">Connected</span> to your Crate.';
-    where.textContent = crate.url;
+    where.textContent = crate.url + (lastSentAt ? ` · last report ${Math.round((Date.now() - lastSentAt) / 1000)}s ago` : " · nothing reported yet") + (lastError ? ` · last problem: ${lastError}` : "");
   } else {
     state.textContent = "Not connected yet. In Crate, open Settings → Crate in Chrome → Connect.";
   }

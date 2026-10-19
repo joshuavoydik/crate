@@ -1,12 +1,13 @@
 {
   "manifest_version": 3,
   "name": "Crate",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Tells your Crate what you are playing in this browser: SoundCloud, YouTube, YouTube Music and most music sites. Pairs itself on your Crate's own page.",
   "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAyulSPiLWxeDKEM66REzf5I6qE22puEOUpT52J6i/ymJj4JQMK7p//Fzakovxjab1WpnECH/dPYFh22ORDFVOlV3jWNAb5jyeEBpYD/gAwng9KwyvuHw/UDxGy+vr/1KKYNQF/Jl8dHNLU9csaH3IV7ikeRHMUXt1I1rONNQVdaUszoZ4Y5+iRRrojl5oZfKCuxZ7nMF4SccbSmYg0RJId1u+88DzKDlZ9ByX08lCKEBgaCXQ681/zxuw+Ltjm9q0ALvgR+g24/gk8WdZMycj3YKAJDrfP4nKq6VjGcNhb7pRA9IaOxvzjqZRsTzQr8SNv27oX4iOCQcSYdiRGyGZjwIDAQAB",
   "permissions": [
-    "storage",
-    "alarms"
+    "alarms",
+    "scripting",
+    "storage"
   ],
   "background": {
     "service_worker": "background.js"
@@ -82,5 +83,18 @@
     "16": "icon16.png",
     "48": "icon48.png",
     "128": "icon128.png"
-  }
+  },
+  "host_permissions": [
+    "*://soundcloud.com/*",
+    "*://www.youtube.com/*",
+    "*://music.youtube.com/*",
+    "*://listen.tidal.com/*",
+    "*://www.deezer.com/*",
+    "*://music.amazon.com/*",
+    "*://www.pandora.com/*",
+    "*://music.apple.com/*",
+    "*://open.spotify.com/*",
+    "http://localhost:3000/*",
+    "http://127.0.0.1:3000/*"
+  ]
 }

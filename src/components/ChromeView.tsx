@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useStore } from "./Store";
 import { SourceGlyph, MARK } from "./SourceMark";
-import { api, sourceName } from "@/lib/client";
+import { api, sourceName, timeAgo } from "@/lib/client";
 
 const SITES = ["soundcloud", "youtube", "tidal", "deezer", "amazon", "pandora", "apple", "spotify"] as const;
 
@@ -17,7 +17,25 @@ export function ChromeView({ appUrl }: { appUrl: string }) {
   const { setAccentTrack, toast } = useStore();
   const [token, setToken] = useState<string | null>(null);
   const [paired, setPaired] = useState(false);
+  const [heard, setHeard] = useState<{ seenAt: number | null; last: { source?: string; title?: string; artist?: string } | null } | null>(null);
   const pairRef = useRef<HTMLDivElement>(null);
+
+  // What the extension last told this Crate, and when: proof it is alive, or the first place to look.
+  useEffect(() => {
+    let stop = false;
+    const load = () =>
+      api<{ seenAt: number | null; last: { source?: string; title?: string; artist?: string } | null }>("/api/chrome/status")
+        .then((r) => {
+          if (!stop) setHeard(r);
+        })
+        .catch(() => undefined);
+    load();
+    const id = setInterval(load, 5000);
+    return () => {
+      stop = true;
+      clearInterval(id);
+    };
+  }, []);
   useEffect(() => setAccentTrack(null), [setAccentTrack]);
   useEffect(() => {
     api<{ token: string }>("/api/ingest/token")
@@ -82,6 +100,15 @@ export function ChromeView({ appUrl }: { appUrl: string }) {
             </span>
           )}
         </div>
+        {heard && (
+          <p className="faint" style={{ fontSize: 13, margin: "10px 2px 0" }}>
+            {heard.seenAt
+              ? `Last heard from Chrome ${timeAgo(heard.seenAt)}${
+                  heard.last?.title ? ` · ${sourceName(heard.last.source ?? "web")}: ${heard.last.title}${heard.last.artist ? ` by ${heard.last.artist}` : ""}` : " · nothing playing"
+                }`
+              : "Nothing from Chrome yet. Once it is connected, play something on SoundCloud or YouTube; a tab that was already open when you added the extension may need one reload."}
+          </p>
+        )}
       </div>
 
       <div className="section">

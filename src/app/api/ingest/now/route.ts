@@ -47,6 +47,8 @@ async function post(req: Request) {
   const body = await readJson<{ now?: Record<string, unknown> | null }>(req);
   if (!body) return error("Bad JSON");
   const n = body.now;
+  // What Chrome last said, and when: the line on the Crate in Chrome page that shows it is alive.
+  await run("UPDATE users SET chrome_seen_at = ?, chrome_last = ? WHERE id = ?", [Date.now(), n ? JSON.stringify(n).slice(0, 2000) : null, user.id]);
   if (!n) {
     await reportFromMac(user.id, null);
     return json({ ok: true });

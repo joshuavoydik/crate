@@ -12,6 +12,28 @@ chrome.runtime.onMessage.addListener((msg, sender) => {
 });
 chrome.tabs.onRemoved.addListener((tabId) => latest.delete(tabId));
 
+// Tabs that were already open when the extension arrived (or was updated) get the scripts now,
+// instead of only after a reload: the usual reason "I played something and nothing happened".
+chrome.runtime.onInstalled.addListener(async () => {
+  const scripts = chrome.runtime.getManifest().content_scripts || [];
+  for (const s of scripts) {
+    let tabs = [];
+    try {
+      tabs = await chrome.tabs.query({ url: s.matches });
+    } catch {
+      continue;
+    }
+    for (const t of tabs) {
+      if (!t.id) continue;
+      try {
+        await chrome.scripting.executeScript({ target: { tabId: t.id }, files: s.js });
+      } catch {
+        /* a page the browser does not let us into */
+      }
+    }
+  }
+});
+
 async function pair() {
   const { crate } = await chrome.storage.local.get("crate");
   return crate && crate.url && crate.token ? crate : null;
@@ -35,15 +57,24 @@ async function tick() {
   // Keep reporting while something plays (position moves); when quiet, say so once, then rarely.
   if (!report && lastKey === null && now - lastSentAt < 60000) return;
   try {
-    await fetch(`${crate.url.replace(/\/$/, "")}/api/ingest/now`, {
+    const r = await fetch(`${crate.url.replace(/\/$/, "")}/api/ingest/now`, {
       method: "POST",
       headers: { "content-type": "application/json", authorization: `Bearer ${crate.token}` },
       body: JSON.stringify({ now: report ? { ...report, playing: undefined } : null }),
     });
     lastKey = key;
     lastSentAt = now;
-  } catch {
-    /* Crate is closed; try again next tick */
+    if (!r.ok) {
+      const text = await r.text().catch(() => "");
+      console.warn("Crate answered", r.status, text.slice(0, 200));
+      await chrome.storage.local.set({ lastError: `${r.status} from Crate`, lastSentAt: now });
+    } else {
+      await chrome.storage.local.set({ lastError: null, lastSentAt: now });
+    }
+  } catch (e) {
+    // Crate is closed or unreachable (a blocker in the way, no network); the popup can say so.
+    console.warn("Could not reach Crate:", e && e.message);
+    await chrome.storage.local.set({ lastError: `could not reach ${crate.url}` });
   }
 }
 
