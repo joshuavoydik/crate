@@ -215,7 +215,11 @@ export function SettingsView({ appUrl }: { appUrl: string }) {
         </summary>
         <p className="muted" style={{ fontSize: 14.5, marginTop: 0 }}>
           A small Chrome extension tells Crate what plays in this browser: SoundCloud, YouTube, YouTube Music, TIDAL, Deezer, Amazon Music, Pandora, and
-          Apple Music or Spotify on the web. Live lights up as it plays, and each play lands in your Log and your crews&apos; playlists. Nothing to switch on.
+          Apple Music or Spotify on the web. Live lights up as it plays, and each play lands in your Log and your crews&apos; playlists. Nothing to switch on.{" "}
+          <Link href="/chrome" style={{ textDecoration: "underline" }}>
+            The full walkthrough
+          </Link>
+          .
         </p>
         {token ? (
           <>

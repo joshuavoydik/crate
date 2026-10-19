@@ -6,6 +6,9 @@ import type { Me, Crew, Track } from "@/lib/types";
 
 type Toast = { id: number; text: string; action?: { label: string; run: () => void } };
 
+/** What the share sheet is handing on: a link with a name, a line under it, and covers when it has them. */
+export type ShareRequest = { title: string; subtitle?: string; url: string; covers?: string[] };
+
 type Store = {
   me: Me;
   crew: Crew | null;
@@ -40,6 +43,10 @@ type Store = {
   /** Bumped when a playlist is made or changed, so shelves showing them reload. */
   collectionsVersion: number;
   bumpCollections: () => void;
+  /** The share sheet: one link, Crate's own way of handing it on. */
+  share: ShareRequest | null;
+  openShare: (r: ShareRequest) => void;
+  closeShare: () => void;
   /** How many people in this crew are playing something right now; the red dot in the nav. */
   liveCount: number;
   setLiveCount: (n: number) => void;
@@ -66,6 +73,7 @@ export function StoreProvider({ initialMe, children }: { initialMe: Me; children
   const [inviteOpen, setInviteOpen] = useState(false);
   const [addToTrack, setAddToTrack] = useState<Track | null>(null);
   const [collectionsVersion, setCollectionsVersion] = useState(0);
+  const [share, setShare] = useState<ShareRequest | null>(null);
   const [liveCount, setLiveCount] = useState(0);
   const toastId = useRef(0);
 
@@ -136,6 +144,8 @@ export function StoreProvider({ initialMe, children }: { initialMe: Me; children
   const openAddTo = useCallback((t: Track) => setAddToTrack(t), []);
   const closeAddTo = useCallback(() => setAddToTrack(null), []);
   const bumpCollections = useCallback(() => setCollectionsVersion((v) => v + 1), []);
+  const openShare = useCallback((r: ShareRequest) => setShare(r), []);
+  const closeShare = useCallback(() => setShare(null), []);
 
   const crew = useMemo(() => me.crews.find((c) => c.id === crewId) ?? me.crews[0] ?? null, [me.crews, crewId]);
 
@@ -166,10 +176,13 @@ export function StoreProvider({ initialMe, children }: { initialMe: Me; children
       closeAddTo,
       collectionsVersion,
       bumpCollections,
+      share,
+      openShare,
+      closeShare,
       liveCount,
       setLiveCount,
     }),
-    [me, crew, setCrewId, refreshMe, toast, sendOpen, sendPrefill, openSend, closeSend, accentTrack, sendsVersion, bumpSends, pocket, setPocket, rail, setRail, inviteOpen, openInvite, closeInvite, addToTrack, openAddTo, closeAddTo, collectionsVersion, bumpCollections, liveCount],
+    [me, crew, setCrewId, refreshMe, toast, sendOpen, sendPrefill, openSend, closeSend, accentTrack, sendsVersion, bumpSends, pocket, setPocket, rail, setRail, inviteOpen, openInvite, closeInvite, addToTrack, openAddTo, closeAddTo, collectionsVersion, bumpCollections, share, openShare, closeShare, liveCount],
   );
 
   // The accent lives on <html> so portaled sheets and the tab bar take the current track's color too.

@@ -12,7 +12,7 @@ import type { Collection, CollectionTrack } from "@/lib/types";
 
 /** One of the crew's playlists: its name (editable), its tracks in order, a Play all, a way out of it. */
 export function CollectionView({ id }: { id: string }) {
-  const { me, crew, toast, setAccentTrack, collectionsVersion, bumpCollections } = useStore();
+  const { me, crew, toast, setAccentTrack, collectionsVersion, bumpCollections, openShare } = useStore();
   const player = usePlayer();
   const router = useRouter();
   const [data, setData] = useState<{ collection: Collection; tracks: CollectionTrack[] } | null>(null);
@@ -80,24 +80,15 @@ export function CollectionView({ id }: { id: string }) {
     }
   }
 
-  /** The playlist's own link: anyone can open it, no account. */
-  async function share() {
+  /** The playlist's own link: anyone can open it, no account. Crate's sheet, not the system's. */
+  function share() {
     if (!data) return;
-    const url = `${location.origin}/p/${data.collection.publicCode}`;
-    if (typeof navigator.share === "function") {
-      try {
-        await navigator.share({ title: `${data.collection.name} · ${crew!.name} on Crate`, url });
-        return;
-      } catch {
-        /* cancelled */
-      }
-    }
-    try {
-      await navigator.clipboard.writeText(url);
-      toast("Link copied. Anyone can open it.");
-    } catch {
-      toast(url);
-    }
+    openShare({
+      title: data.collection.name,
+      subtitle: `A playlist from ${crew!.name}`,
+      url: `${location.origin}/p/${data.collection.publicCode}`,
+      covers: data.collection.covers,
+    });
   }
 
   /** This playlist, saved to where the person listens. */

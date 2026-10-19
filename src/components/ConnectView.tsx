@@ -29,6 +29,17 @@ export function ConnectView() {
           ; after that everyone just taps Connect.
         </p>
       )}
+      <p className="muted" style={{ fontSize: 14.5, marginTop: 22 }}>
+        Listening in the browser, or in the Music app on a Mac?{" "}
+        <Link href="/chrome" style={{ textDecoration: "underline" }}>
+          Crate in Chrome
+        </Link>{" "}
+        follows SoundCloud, YouTube and the rest as they play;{" "}
+        <Link href="/settings" style={{ textDecoration: "underline" }}>
+          Crate on your Mac
+        </Link>{" "}
+        does the same for the apps. Both are in Settings whenever you want them.
+      </p>
       <div style={{ marginTop: 28, display: "flex", gap: 10 }}>
         <Link href="/" className="btn btn--primary">
           {me.sources.length ? "Done" : "Skip for now"}

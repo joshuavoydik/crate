@@ -9,6 +9,7 @@ import { Backdrop } from "./Backdrop";
 import { SendFlow } from "./SendFlow";
 import { InviteSheet } from "./InviteSheet";
 import { AddToPlaylistSheet } from "./Collections";
+import { ShareSheet } from "./ShareSheet";
 import { Pocket } from "./Pocket";
 import { FriendsRail } from "./FriendsRail";
 import { useLive } from "./LiveView";
@@ -31,6 +32,7 @@ export function Shell({ initialMe, active, incomingUrl, children }: { initialMe:
         <SendFlow />
         <InviteSheet />
         <AddToPlaylistSheet />
+        <ShareSheet />
         <PocketGate />
       </PlayerProvider>
     </StoreProvider>

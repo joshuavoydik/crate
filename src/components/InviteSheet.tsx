@@ -4,18 +4,17 @@ import { useState } from "react";
 import { useStore } from "./Store";
 import { Sheet } from "./Sheet";
 import { Avatar } from "./Avatar";
+import { ShareActions } from "./ShareSheet";
 import { api } from "@/lib/client";
 import { normalizeInviteCode, INVITE_CODE_MAX } from "@/lib/invite";
 import type { Me } from "@/lib/types";
 
 /**
  * The one way to bring someone in, from any page: a sheet over whatever you were doing, with
- * the link big enough to tap, the system share where there is one, and the code to read out
- * across a table.
+ * the link big enough to tap, the places it goes, and the code to read out across a table.
  */
 export function InviteSheet() {
   const { me, crew, inviteOpen, closeInvite, refreshMe, toast } = useStore();
-  const [copied, setCopied] = useState(false);
   const [editing, setEditing] = useState(false);
   const [slug, setSlug] = useState("");
   const [saving, setSaving] = useState(false);
@@ -23,7 +22,6 @@ export function InviteSheet() {
 
   const url = `${location.origin}/join/${crew.inviteCode}`;
   const others = crew.members.filter((m) => m.id !== me.id);
-  const canShare = typeof navigator !== "undefined" && typeof navigator.share === "function";
   const preview = normalizeInviteCode(slug);
 
   function startEditing() {
@@ -48,29 +46,6 @@ export function InviteSheet() {
     } finally {
       setSaving(false);
     }
-  }
-
-  async function copy() {
-    try {
-      await navigator.clipboard.writeText(url);
-      setCopied(true);
-      toast("Invite link copied");
-      setTimeout(() => setCopied(false), 2000);
-    } catch {
-      toast(url);
-    }
-  }
-
-  async function share() {
-    if (canShare) {
-      try {
-        await navigator.share({ title: `Join ${crew!.name} on Crate`, url });
-        return;
-      } catch {
-        /* cancelled */
-      }
-    }
-    copy();
   }
 
   return (
@@ -119,21 +94,15 @@ export function InviteSheet() {
           </form>
         ) : (
           <>
-            <button className="invite__link" onClick={copy} type="button" aria-label="Copy the invite link">
-              <span className="invite__url">{url.replace(/^https?:\/\//, "")}</span>
-              <span className="invite__copy">{copied ? "Copied" : "Copy"}</span>
-            </button>
-            <p className="faint invite__custom">
+            <ShareActions url={url} text={`Join ${crew.name} on Crate`} onDone={closeInvite} />
+            <p className="faint invite__custom" style={{ marginTop: 10 }}>
               <button className="linkbtn" type="button" onClick={startEditing}>
                 Make the link yours
               </button>
             </p>
           </>
         )}
-        <div className="invite__actions">
-          <button className="btn btn--primary btn--block" onClick={share} type="button">
-            {canShare ? "Share the link" : "Copy the link"}
-          </button>
+        <div className="invite__actions" style={{ marginTop: 14 }}>
           <button className="btn btn--ghost btn--block" onClick={closeInvite} type="button">
             Later
           </button>

@@ -12,7 +12,7 @@ import type { Me, Playlist, AutoShare } from "@/lib/types";
 
 /** One crew: its name, people, invite link, the playlist name, public radio, and the viewer's own rules. */
 export function CrewView({ appUrl }: { appUrl: string }) {
-  const { me, crew, refreshMe, toast, setAccentTrack, openInvite } = useStore();
+  const { me, crew, refreshMe, toast, setAccentTrack, openInvite, openShare } = useStore();
   const router = useRouter();
   const [name, setName] = useState(crew?.name ?? "");
   const [playlist, setPlaylist] = useState<Playlist | null>(null);
@@ -57,16 +57,9 @@ export function CrewView({ appUrl }: { appUrl: string }) {
     }
   }
 
-  async function share(text: string, title: string) {
-    if (navigator.share) {
-      try {
-        await navigator.share({ title, url: text });
-        return;
-      } catch {
-        /* cancelled */
-      }
-    }
-    copy(text, title);
+  /** Crate's own share sheet, not the system's. */
+  function share(url: string, title: string, subtitle: string) {
+    openShare({ title, subtitle, url, covers: [] });
   }
 
   async function patch(body: { name?: string; autoShare?: AutoShare; publicRadio?: boolean }, done: string) {
@@ -283,7 +276,7 @@ export function CrewView({ appUrl }: { appUrl: string }) {
                 <a className="btn btn--sm btn--ghost" href={radioUrl} target="_blank" rel="noreferrer">
                   Open the station
                 </a>
-                <button className="btn btn--sm btn--ghost" onClick={() => share(radioUrl, `${crew.name} on Crate`)}>
+                <button className="btn btn--sm btn--ghost" onClick={() => share(radioUrl, `${crew.name}, on air`, "The station · anyone with the link")}>
                   Share the link
                 </button>
               </div>

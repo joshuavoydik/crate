@@ -209,7 +209,11 @@ export function LiveView() {
           <Link href="/settings" style={{ textDecoration: "underline" }}>
             Spotify or Last.fm
           </Link>
-          , or run Crate in Chrome or on your Mac, and it follows along.
+          , or run{" "}
+          <Link href="/chrome" style={{ textDecoration: "underline" }}>
+            Crate in Chrome
+          </Link>{" "}
+          or on your Mac, and it follows along.
         </p>
       )}
 
