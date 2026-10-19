@@ -107,8 +107,13 @@ export function StoreProvider({ initialMe, children }: { initialMe: Me; children
   }, []);
 
   const refreshMe = useCallback(async () => {
-    const r = await api<{ me: Me | null }>("/api/me");
-    if (r.me) setMe(r.me);
+    // A refresh that fails (offline, a server hiccup) leaves what is on screen; it never becomes the page's error.
+    try {
+      const r = await api<{ me: Me | null }>("/api/me");
+      if (r.me) setMe(r.me);
+    } catch {
+      /* keep the last good state */
+    }
   }, []);
 
   const toast = useCallback((text: string, action?: Toast["action"]) => {

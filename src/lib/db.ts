@@ -247,23 +247,49 @@ export async function db(): Promise<Client> {
       await once("migr:auto_share_v1", async () => {
         await c.execute({ sql: "UPDATE crew_members SET auto_share = 'plays', share_since = ?", args: [Date.now()] });
       });
-      // Doubles written by syncs that ran at once, before the writes were made atomic: fold each pair into one.
-      await once("migr:dedupe_doubles_v1", () => dedupeDoubles(c));
     })();
   }
   await ready;
+  // Doubles written by syncs that ran at once, before the writes were made atomic: folded in the
+  // background, a few seconds at a time, never in a request's way. Each run makes progress; the
+  // mark is set only when a run finds nothing left.
+  scheduleDedupe(client);
   return client;
+}
+
+const DEDUPE_KEY = "migr:dedupe_doubles_v1";
+let dedupeScheduled = false;
+
+function scheduleDedupe(c: Client): void {
+  if (dedupeScheduled) return;
+  dedupeScheduled = true;
+  (async () => {
+    const done = await c.execute({ sql: "SELECT 1 AS x FROM app_settings WHERE key = ?", args: [DEDUPE_KEY] });
+    if (done.rows.length) return;
+    const finished = await dedupeDoubles(c, 3000);
+    if (finished) await c.execute({ sql: "INSERT OR IGNORE INTO app_settings (key, value_enc, updated_at) VALUES (?, '1', ?)", args: [DEDUPE_KEY, Date.now()] });
+  })().catch((e) => {
+    console.error("dedupe:", (e as Error).message);
+    dedupeScheduled = false; // another request may try again
+  });
 }
 
 /** A send of the same track by the same person in the same crew this close to an earlier one is its double. */
 const DOUBLE_WINDOW = 10 * 60 * 1000;
 
-/** Folds doubled sends (their reactions and echoes move to the one kept) and doubled Live history rows. */
-export async function dedupeDoubles(c: Client): Promise<void> {
+/**
+ * Folds doubled sends (their reactions and echoes move to the one kept) and doubled Live history
+ * rows, for up to budgetMs. True when it got through everything; false when it stopped early,
+ * with the rest left for the next run.
+ */
+export async function dedupeDoubles(c: Client, budgetMs = Infinity): Promise<boolean> {
+  const t0 = Date.now();
+  const over = () => Date.now() - t0 > budgetMs;
   type SendRow = { id: string; crew_id: string; track_id: string; from_user_id: string; created_at: number };
   const sends = (await c.execute("SELECT id, crew_id, track_id, from_user_id, created_at FROM sends ORDER BY created_at")).rows as unknown as SendRow[];
   for (const { keep, dups } of clusterDoubles(sends, (s) => `${s.crew_id}|${s.track_id}|${s.from_user_id}`, (s) => Number(s.created_at), DOUBLE_WINDOW)) {
     for (const d of dups) {
+      if (over()) return false;
       await c.execute({ sql: "INSERT OR IGNORE INTO reactions (send_id, user_id, status, reply, updated_at) SELECT ?, user_id, status, reply, updated_at FROM reactions WHERE send_id = ?", args: [keep.id, d.id] });
       await c.execute({ sql: "INSERT OR IGNORE INTO echoes (send_id, user_id, at, via) SELECT ?, user_id, at, via FROM echoes WHERE send_id = ?", args: [keep.id, d.id] });
       await c.execute({ sql: "DELETE FROM reactions WHERE send_id = ?", args: [d.id] });
@@ -274,10 +300,12 @@ export async function dedupeDoubles(c: Client): Promise<void> {
   type PlayRow = { id: string; user_id: string; title: string | null; artist: string | null; started_at: number; ended_at: number };
   const plays = (await c.execute("SELECT id, user_id, title, artist, started_at, ended_at FROM live_history ORDER BY started_at")).rows as unknown as PlayRow[];
   for (const { keep, dups } of clusterDoubles(plays, (p) => `${p.user_id}|${p.title}|${p.artist}`, (p) => Number(p.started_at), DOUBLE_WINDOW)) {
+    if (over()) return false;
     const ended = Math.max(Number(keep.ended_at), ...dups.map((d) => Number(d.ended_at)));
     await c.execute({ sql: "UPDATE live_history SET ended_at = ? WHERE id = ?", args: [ended, keep.id] });
     for (const d of dups) await c.execute({ sql: "DELETE FROM live_history WHERE id = ?", args: [d.id] });
   }
+  return true;
 }
 
 export type Row = Record<string, InValue>;

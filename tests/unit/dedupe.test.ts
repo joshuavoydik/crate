@@ -44,7 +44,7 @@ test("doubles already written are folded into one, keeping reactions and echoes"
   await run("INSERT INTO live_history (id, user_id, source, title, artist, started_at, ended_at) VALUES ('h2', 'u1', 'spotify', 'Archangel', 'Burial', ?, ?)", [t + 2000, t + 90_000]);
   await run("INSERT INTO live_history (id, user_id, source, title, artist, started_at, ended_at) VALUES ('h3', 'u1', 'spotify', 'Other', 'Burial', ?, ?)", [t + 4000, t + 10_000]);
 
-  await dedupeDoubles(await db());
+  assert.equal(await dedupeDoubles(await db()), true);
 
   const sends = await all<{ id: string }>("SELECT id FROM sends WHERE track_id = 't2' ORDER BY created_at");
   assert.deepEqual(

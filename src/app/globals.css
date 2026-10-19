@@ -4055,3 +4055,17 @@ html.is-pocket {
 .mosaic.is-two img {
   grid-row: 1 / -1;
 }
+
+.errorpage__msg {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  text-align: left;
+  font-size: 13px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: var(--surface-3);
+  border: 1px solid var(--line);
+  color: var(--ink-2);
+  max-width: 560px;
+  margin: 0 auto 18px;
+}
