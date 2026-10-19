@@ -137,3 +137,19 @@ export type Playlist = {
   days: DaySummary[];
   publicCode: string | null;
 };
+
+/** A playlist the crew made on purpose: a named list anyone in the crew adds to. */
+export type Collection = {
+  id: string;
+  crewId: string;
+  name: string;
+  createdBy: string;
+  createdAt: number;
+  count: number;
+  /** Up to four artwork URLs, newest additions first. */
+  covers: string[];
+  /** Whether it holds the track the list was asked about; only when one was. */
+  has?: boolean;
+};
+
+export type CollectionTrack = { track: Track; addedBy: Person; addedAt: number };

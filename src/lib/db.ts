@@ -130,6 +130,21 @@ CREATE TABLE IF NOT EXISTS notice_dismissals (
   dismissed_at INTEGER NOT NULL,
   PRIMARY KEY (user_id, notice_id)
 );
+CREATE TABLE IF NOT EXISTS playlists (
+  id TEXT PRIMARY KEY,
+  crew_id TEXT NOT NULL,
+  name TEXT NOT NULL,
+  created_by TEXT NOT NULL,
+  created_at INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS playlists_crew ON playlists (crew_id, created_at);
+CREATE TABLE IF NOT EXISTS playlist_tracks (
+  playlist_id TEXT NOT NULL,
+  track_id TEXT NOT NULL,
+  added_by TEXT NOT NULL,
+  added_at INTEGER NOT NULL,
+  PRIMARY KEY (playlist_id, track_id)
+);
 CREATE TABLE IF NOT EXISTS tune_ins (
   crew_id TEXT NOT NULL,
   viewer TEXT NOT NULL,

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useStore } from "./Store";
-import { IconCheck, IconKeep, IconOut, IconDeck, IconCopy } from "./Icons";
+import { IconCheck, IconKeep, IconOut, IconDeck, IconCopy, IconPlus } from "./Icons";
 import { formatDuration, timeAgo, viaLabel } from "@/lib/client";
 import { openable, PLATFORM_LABELS, BUY_PLATFORMS, type PlatformKey } from "@/lib/resolve/links";
 import { api } from "@/lib/client";
@@ -42,7 +42,7 @@ export function TrackCard({
   onTrackChange?: (t: Track) => void;
   compact?: boolean;
 }) {
-  const { me, toast } = useStore();
+  const { me, toast, openAddTo } = useStore();
   const [reply, setReply] = useState(send.reaction?.reply ?? "");
   const [fixing, setFixing] = useState(false);
   const [candidates, setCandidates] = useState<Candidate[] | null>(null);
@@ -272,6 +272,9 @@ export function TrackCard({
               {status === "played" ? "Played out" : "Played it out"}
             </button>
           )}
+          <button className="btn btn--sm btn--ghost" onClick={() => openAddTo(t)}>
+            <IconPlus size={14} /> Add to a playlist
+          </button>
           <button className="btn btn--sm btn--ghost" onClick={copyLink}>
             <IconCopy /> Copy link
           </button>
@@ -279,6 +282,9 @@ export function TrackCard({
       )}
       {mine && (
         <div className="tc__actions">
+          <button className="btn btn--sm btn--ghost" onClick={() => openAddTo(t)}>
+            <IconPlus size={14} /> Add to a playlist
+          </button>
           <button className="btn btn--sm btn--ghost" onClick={copyLink}>
             <IconCopy /> Copy link
           </button>

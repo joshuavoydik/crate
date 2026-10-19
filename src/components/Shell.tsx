@@ -8,6 +8,7 @@ import { TabBar } from "./TabBar";
 import { Backdrop } from "./Backdrop";
 import { SendFlow } from "./SendFlow";
 import { InviteSheet } from "./InviteSheet";
+import { AddToPlaylistSheet } from "./Collections";
 import { Pocket } from "./Pocket";
 import { FriendsRail } from "./FriendsRail";
 import { useLive } from "./LiveView";
@@ -29,6 +30,7 @@ export function Shell({ initialMe, active, incomingUrl, children }: { initialMe:
         <TabBar active={active} />
         <SendFlow />
         <InviteSheet />
+        <AddToPlaylistSheet />
         <PocketGate />
       </PlayerProvider>
     </StoreProvider>

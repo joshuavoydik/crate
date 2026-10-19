@@ -27,6 +27,8 @@ const TABLES = [
   "notice_dismissals",
   "tune_ins",
   "presence",
+  "playlists",
+  "playlist_tracks",
 ];
 
 export async function POST(req: Request) {

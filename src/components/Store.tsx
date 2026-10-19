@@ -33,6 +33,13 @@ type Store = {
   inviteOpen: boolean;
   openInvite: () => void;
   closeInvite: () => void;
+  /** The "add to a playlist" sheet, for one track, from any track card. */
+  addToTrack: Track | null;
+  openAddTo: (t: Track) => void;
+  closeAddTo: () => void;
+  /** Bumped when a playlist is made or changed, so shelves showing them reload. */
+  collectionsVersion: number;
+  bumpCollections: () => void;
   /** How many people in this crew are playing something right now; the red dot in the nav. */
   liveCount: number;
   setLiveCount: (n: number) => void;
@@ -57,6 +64,8 @@ export function StoreProvider({ initialMe, children }: { initialMe: Me; children
   const [pocket, setPocketState] = useState(false);
   const [rail, setRailState] = useState(true);
   const [inviteOpen, setInviteOpen] = useState(false);
+  const [addToTrack, setAddToTrack] = useState<Track | null>(null);
+  const [collectionsVersion, setCollectionsVersion] = useState(0);
   const [liveCount, setLiveCount] = useState(0);
   const toastId = useRef(0);
 
@@ -119,6 +128,9 @@ export function StoreProvider({ initialMe, children }: { initialMe: Me; children
   const bumpSends = useCallback(() => setSendsVersion((v) => v + 1), []);
   const openInvite = useCallback(() => setInviteOpen(true), []);
   const closeInvite = useCallback(() => setInviteOpen(false), []);
+  const openAddTo = useCallback((t: Track) => setAddToTrack(t), []);
+  const closeAddTo = useCallback(() => setAddToTrack(null), []);
+  const bumpCollections = useCallback(() => setCollectionsVersion((v) => v + 1), []);
 
   const crew = useMemo(() => me.crews.find((c) => c.id === crewId) ?? me.crews[0] ?? null, [me.crews, crewId]);
 
@@ -144,10 +156,15 @@ export function StoreProvider({ initialMe, children }: { initialMe: Me; children
       inviteOpen,
       openInvite,
       closeInvite,
+      addToTrack,
+      openAddTo,
+      closeAddTo,
+      collectionsVersion,
+      bumpCollections,
       liveCount,
       setLiveCount,
     }),
-    [me, crew, setCrewId, refreshMe, toast, sendOpen, sendPrefill, openSend, closeSend, accentTrack, sendsVersion, bumpSends, pocket, setPocket, rail, setRail, inviteOpen, openInvite, closeInvite, liveCount],
+    [me, crew, setCrewId, refreshMe, toast, sendOpen, sendPrefill, openSend, closeSend, accentTrack, sendsVersion, bumpSends, pocket, setPocket, rail, setRail, inviteOpen, openInvite, closeInvite, addToTrack, openAddTo, closeAddTo, collectionsVersion, bumpCollections, liveCount],
   );
 
   // The accent lives on <html> so portaled sheets and the tab bar take the current track's color too.
