@@ -6,7 +6,7 @@ import { useStore } from "./Store";
 import { usePlayer } from "./Player";
 import { Sheet } from "./Sheet";
 import { TrackCard } from "./TrackCard";
-import { Avatar } from "./Avatar";
+import { Avatar, artFallback } from "./Avatar";
 import { SourceMark, platformOfVia } from "./SourceMark";
 import { IconPlay, IconPause, IconKeep, IconDeck, IconChevron } from "./Icons";
 import { api, timeAgo, viaLabel } from "@/lib/client";
@@ -98,17 +98,19 @@ export function SendRows({
         const status = s.reaction?.status;
         const mine = s.from.id === me.id;
         const intentional = !s.via.startsWith("played:");
+        // Someone chose to send this (from the app or by message), as opposed to a play or a like that landed on its own.
+        const hand = s.via === "app" || s.via === "imessage";
+        const excerpt = hand && s.note && s.noteBy === "human" ? s.note : null;
         const faces = facesOf(s);
         return (
           <li
             key={s.id}
             className={`pl__row${isCur && player.playing ? " is-playing" : ""}${!mine && intentional && (!status || status === "seen") ? " is-new" : ""}`}
-            onClick={() => onOpen(s)}
           >
             <div className="log__artwrap pl__artwrap">
               {s.track.artworkUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img className="row__art" src={s.track.artworkUrl} alt="" />
+                <img className="row__art" src={s.track.artworkUrl} alt="" onError={artFallback} />
               ) : (
                 <div className="row__art" />
               )}
@@ -127,10 +129,14 @@ export function SendRows({
               )}
             </div>
             <div className="pl__main">
-              <div className="row__title pl__title">{s.track.title}</div>
-              <div className="row__sub pl__sub">{s.track.artist}</div>
+              <button type="button" className="pl__open" onClick={() => onOpen(s)}>
+                <div className="row__title pl__title">{s.track.title}</div>
+                <div className="row__sub pl__sub">{s.track.artist}</div>
+                {excerpt && <div className="pl__excerpt">{excerpt}</div>}
+              </button>
             </div>
             <div className="pl__meta">
+              {hand && <span className="pl__sender">from {mine ? "you" : s.from.name.split(" ")[0]}</span>}
               {together && (
                 <span
                   className={`faces${faces.length > 1 ? " is-many" : ""}`}
@@ -235,7 +241,7 @@ export function DayCard({
         <span className="day__covers" aria-hidden>
           {day.art.slice(0, 4).map((u, i) => (
             // eslint-disable-next-line @next/next/no-img-element
-            <img key={i} src={u} alt="" />
+            <img key={i} src={u} alt="" onError={artFallback} />
           ))}
           {day.art.length === 0 && <span className="day__blank" />}
         </span>
