@@ -15,12 +15,17 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
   const { id } = await ctx.params;
   if (!(await isMember(auth.user.id, id))) return error("Not in that crew", 403);
   const body = await readJson<{ autoShare?: string; name?: string; publicRadio?: boolean; inviteCode?: string }>(req);
-  if (body?.autoShare === "plays" || body?.autoShare === "likes" || body?.autoShare === "off") await setAutoShare(auth.user.id, id, body.autoShare as AutoShare);
-  const name = str(body?.name, 60);
-  if (name) await renameCrew(id, name);
-  if (body?.inviteCode !== undefined) {
-    const code = normalizeInviteCode(String(body.inviteCode ?? ""));
+  if (!body) return error("Bad JSON");
+  // Everything is checked before anything is written, so a refused link never leaves a half-applied rename behind.
+  const name = str(body.name, 60);
+  if (body.name !== undefined && !name) return error("A crew needs a name");
+  let code: string | null = null;
+  if (body.inviteCode !== undefined) {
+    code = normalizeInviteCode(String(body.inviteCode ?? ""));
     if (!code) return error(`A link is ${INVITE_CODE_MIN} to ${INVITE_CODE_MAX} letters, numbers or dashes`);
+  }
+  if (body.autoShare === "plays" || body.autoShare === "likes" || body.autoShare === "off") await setAutoShare(auth.user.id, id, body.autoShare as AutoShare);
+  if (code) {
     try {
       await setInviteCode(id, code);
     } catch (e) {
@@ -28,6 +33,7 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
       throw e;
     }
   }
+  if (name) await renameCrew(id, name);
   let publicCode: string | null | undefined;
   if (typeof body?.publicRadio === "boolean") publicCode = await setPublicRadio(id, body.publicRadio);
   return json({ me: await buildMe(auth.user), publicCode });

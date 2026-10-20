@@ -98,21 +98,20 @@ export async function ingestItems(userId: string, kind: string, items: SourceIte
     } catch {
       continue;
     }
-    // The Mac helper and a platform's own history can both report one listen; keep the first.
-    if (item.action === "played") {
-      const twin = await one("SELECT 1 AS x FROM log_entries WHERE user_id = ? AND track_id = ? AND action = 'played' AND ABS(at - ?) < ?", [
-        userId,
-        track.id,
-        item.at,
-        SAME_PLAY_WINDOW,
-      ]);
-      if (twin) continue;
-    }
-    const inserted = await run(
-      "INSERT OR IGNORE INTO log_entries (id, user_id, track_id, source_kind, external_id, action, at, meta_json, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-      [id("l"), userId, track.id, kind, item.externalId, item.action, item.at, JSON.stringify({ url: item.meta.sourceUrl }), now()],
-    );
-    // Another sync of this person wrote it first (two devices opening the app at once): theirs counts, not this one.
+    // The Mac helper, the extension and a platform's own history can all report one listen; the
+    // first one in counts. The look and the write are one statement, so twenty reports landing at
+    // once still make one play.
+    const args = [id("l"), userId, track.id, kind, item.externalId, item.action, item.at, JSON.stringify({ url: item.meta.sourceUrl }), now()];
+    const inserted =
+      item.action === "played"
+        ? await run(
+            `INSERT OR IGNORE INTO log_entries (id, user_id, track_id, source_kind, external_id, action, at, meta_json, created_at)
+             SELECT ?, ?, ?, ?, ?, ?, ?, ?, ? WHERE NOT EXISTS (
+               SELECT 1 FROM log_entries WHERE user_id = ? AND track_id = ? AND action = 'played' AND ABS(at - ?) < ?)`,
+            [...args, userId, track.id, item.at, SAME_PLAY_WINDOW],
+          )
+        : await run("INSERT OR IGNORE INTO log_entries (id, user_id, track_id, source_kind, external_id, action, at, meta_json, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)", args);
+    // Already there, from this report's twin or from another device: theirs counts, not this one.
     if (!inserted) continue;
     added++;
     shared += await autoShare(userId, track, kind, item);
@@ -127,6 +126,8 @@ export async function ingestItems(userId: string, kind: string, items: SourceIte
  * was turned on counts, so connecting a platform never pours its history into a playlist. A track
  * already in the playlist this month is not added twice.
  */
+const SHARE_GRACE = 20 * 60 * 1000;
+
 async function autoShare(userId: string, track: Track, kind: string, item: SourceItem): Promise<number> {
   if (item.action !== "played" && item.action !== "liked") return 0;
   const crews = await all<{ crew_id: string; auto_share: string; share_since: number | null }>(
@@ -136,7 +137,9 @@ async function autoShare(userId: string, track: Track, kind: string, item: Sourc
   let n = 0;
   for (const c of crews) {
     if (item.action === "played" && c.auto_share !== "plays") continue;
-    if (item.at < Number(c.share_since ?? 0)) continue;
+    // A play is dated from its first second, so the song that was on when the person joined (or
+    // switched the rule on) started before the line; one song's length of grace lets it through.
+    if (item.at + SHARE_GRACE < Number(c.share_since ?? 0)) continue;
     const via = item.action === "played" ? `played:${kind}` : kind;
     const recent = await one<{ id: string; from_user_id: string }>(
       "SELECT id, from_user_id FROM sends WHERE crew_id = ? AND track_id = ? AND created_at > ? ORDER BY created_at DESC LIMIT 1",

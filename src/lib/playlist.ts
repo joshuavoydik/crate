@@ -29,10 +29,15 @@ export async function ensurePlaylistName(crewId: string, sends: Send[], force = 
   );
   if (!c) return { name: "Playlist", by: "template" };
   const by = (c.playlist_name_by ?? "template") as Playlist["namedBy"];
-  // The name of the moment is deterministic, so "stale" simply means "not what the moment says".
-  const stale = !c.playlist_name || (by !== "human" && c.playlist_name !== templatedPlaylistName({ crewName: c.name, memberNames: [], tracks: [], count: sends.length, tz }));
-  if (!force && !stale) return { name: c.playlist_name!, by };
   if (!force && by === "human" && c.playlist_name) return { name: c.playlist_name, by };
+  if (!force) {
+    // The name of the moment is the viewer's: a crew across two cities sees two evenings, and neither
+    // rewrites the other's. The stored copy only backs pages with no viewer (the public ones), so it is
+    // written once and otherwise left alone.
+    const name = templatedPlaylistName({ crewName: c.name, memberNames: [], tracks: [], count: sends.length, tz });
+    if (!c.playlist_name) await run("UPDATE crews SET playlist_name = ?, playlist_named_at = ?, playlist_named_for = ?, playlist_name_by = 'template' WHERE id = ?", [name, now(), sends.length, crewId]);
+    return { name, by: "template" };
+  }
   const members = await membersOf(crewId);
   const suggestion = await suggestPlaylistName({
     crewName: c.name,
@@ -94,8 +99,14 @@ export async function setPublicRadio(crewId: string, on: boolean): Promise<strin
 }
 
 export async function crewByPublicCode(code: string): Promise<{ id: string; name: string; playlistName: string | null } | null> {
-  const c = await one<{ id: string; name: string; playlist_name: string | null }>("SELECT id, name, playlist_name FROM crews WHERE public_code = ?", [code]);
-  return c ? { id: c.id, name: c.name, playlistName: c.playlist_name } : null;
+  const c = await one<{ id: string; name: string; playlist_name: string | null; playlist_name_by: string | null }>(
+    "SELECT id, name, playlist_name, playlist_name_by FROM crews WHERE public_code = ?",
+    [code],
+  );
+  if (!c) return null;
+  // A templated name is the moment's; the public page has no viewer, so it reads the moment in UTC.
+  const playlistName = c.playlist_name_by === "human" && c.playlist_name ? c.playlist_name : templatedPlaylistName({ crewName: c.name, memberNames: [], tracks: [], count: 0, tz: "UTC" });
+  return { id: c.id, name: c.name, playlistName };
 }
 
 export async function renameCrew(crewId: string, name: string): Promise<void> {

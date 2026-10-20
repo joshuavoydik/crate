@@ -66,13 +66,40 @@ export function macNotice(app: string | null): Notice | null {
   };
 }
 
+const BACK_WINDOW = 14 * 24 * 3600 * 1000;
+
+/** Someone kept, played out or wrote back on one of this person's sends: the bell says so until it is seen. */
+export async function backNotices(userId: string, dismissed: Set<string>): Promise<Notice[]> {
+  const rows = await all<{ send_id: string; user_id: string; who: string; status: string; reply: string | null; updated_at: number; title: string; artist: string }>(
+    `SELECT s.id AS send_id, r.user_id, u.name AS who, r.status, r.reply, r.updated_at, t.title, t.artist
+     FROM reactions r JOIN sends s ON s.id = r.send_id JOIN users u ON u.id = r.user_id JOIN tracks t ON t.id = s.track_id
+     WHERE s.from_user_id = ? AND r.user_id != ? AND r.updated_at >= ? AND (r.status IN ('saved', 'played') OR (r.reply IS NOT NULL AND r.reply != ''))
+     ORDER BY r.updated_at DESC LIMIT 20`,
+    [userId, userId, now() - BACK_WINDOW],
+  );
+  return rows
+    .map((r) => {
+      const first = r.who.split(" ")[0];
+      const did = r.reply ? "wrote back on" : r.status === "played" ? "played out" : "kept";
+      return {
+        id: `back:${r.send_id}:${r.user_id}:${r.updated_at}`,
+        kind: "back" as const,
+        title: `${first} ${did} ${r.title}`,
+        body: r.reply ? `“${r.reply}”` : `${r.title} · ${r.artist}`,
+        action: { label: "Open your log", href: "/log?filter=back" },
+        at: r.updated_at,
+      };
+    })
+    .filter((n) => !dismissed.has(n.id));
+}
+
 export async function noticesFor(userId: string): Promise<Notice[]> {
   const sources = await sourcesFor(userId);
   const rows = await all<{ notice_id: string }>("SELECT notice_id FROM notice_dismissals WHERE user_id = ?", [userId]);
   const dismissed = new Set(rows.map((r) => r.notice_id));
   const u = await one<{ mac_blocked: string | null }>("SELECT mac_blocked FROM users WHERE id = ?", [userId]);
   const mac = macNotice(u?.mac_blocked ?? null);
-  return [...deriveNotices(sources, dismissed), ...(mac && !dismissed.has(mac.id) ? [mac] : [])];
+  return [...deriveNotices(sources, dismissed), ...(mac && !dismissed.has(mac.id) ? [mac] : []), ...(await backNotices(userId, dismissed))];
 }
 
 export async function dismissNotice(userId: string, id: string): Promise<void> {

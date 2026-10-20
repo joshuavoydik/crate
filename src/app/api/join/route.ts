@@ -33,5 +33,6 @@ export async function GET(req: Request) {
   const code = new URL(req.url).searchParams.get("code") ?? "";
   const crew = await crewByCode(code);
   if (!crew) return error("That invite link is not valid", 404);
-  return json({ crew: { id: crew.id, name: crew.name, members: crew.members.map((m) => ({ name: m.name })) } });
+  // Enough to say "Joshua and Dana invited you": first names only, and no ids, to whoever holds the link.
+  return json({ crew: { name: crew.name, members: crew.members.slice(0, 3).map((m) => ({ name: m.name.split(" ")[0] })), count: crew.members.length } });
 }

@@ -10,3 +10,4 @@ tests/e2e/out
 tsconfig.tubuildinfo
 *.tsbuildinfo
 next-env.d.ts
+.claude/

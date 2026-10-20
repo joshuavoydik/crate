@@ -55,6 +55,7 @@ function receivedAsSend(r: LogRow): Send {
     via: r.source_kind,
     echoes: [],
     activeAt: r.at,
+    replies: [],
   };
 }
 
@@ -97,27 +98,51 @@ function sourceLabel(kind: string): string {
 export async function logFor(userId: string, limit = 300): Promise<LogItem[]> {
   const items: LogItem[] = [];
 
+  const sent = await all<TrackRow & { send_id: string; created_at: number; crew_name: string; via: string; track_id: string }>(
+    `SELECT s.id AS send_id, s.created_at, s.via, s.track_id, c.name AS crew_name, ${TRACK_COLS}
+     FROM sends s JOIN tracks t ON t.id = s.track_id JOIN crews c ON c.id = s.crew_id
+     WHERE s.from_user_id = ? ORDER BY s.created_at DESC LIMIT ?`,
+    [userId, limit],
+  );
+
+  // A play or like that the crew rule carried into a crew is one event, not two: the source entry
+  // stays the row, and the crews it reached ride along as its detail.
+  const carried = new Map<string, Array<{ crew: string; at: number; sendId: string }>>();
+  for (const r of sent) {
+    if (r.via === "app" || r.via === "imessage") continue;
+    const list = carried.get(r.track_id) ?? [];
+    list.push({ crew: r.crew_name, at: r.created_at, sendId: r.send_id });
+    carried.set(r.track_id, list);
+  }
+  const CARRY_WINDOW = 6 * 3600 * 1000;
+  const used = new Set<string>();
+
   const entries = await all<LogRow>(`${LOG_SELECT} WHERE l.user_id = ? ORDER BY l.at DESC LIMIT ?`, [userId, limit]);
   for (const r of entries) {
     const m = meta(r);
+    let detail = r.action === "received" ? m.fromName || m.from || null : sourceLabel(r.source_kind);
+    let sendId = r.action === "received" ? `log:${r.log_id}` : null;
+    if (r.action === "played" || r.action === "liked") {
+      const hits = (carried.get(r.id) ?? []).filter((c) => !used.has(c.sendId) && c.at >= r.at - CARRY_WINDOW && c.at <= r.at + CARRY_WINDOW);
+      if (hits.length) {
+        for (const h of hits) used.add(h.sendId);
+        detail = `${sourceLabel(r.source_kind)} → ${[...new Set(hits.map((h) => h.crew))].join(", ")}`;
+        sendId = hits[0].sendId;
+      }
+    }
     items.push({
       id: `log:${r.log_id}`,
       action: r.action as LogItem["action"],
       at: r.at,
       track: trackFromRow(r),
       source: r.source_kind,
-      detail: r.action === "received" ? m.fromName || m.from || null : sourceLabel(r.source_kind),
-      sendId: r.action === "received" ? `log:${r.log_id}` : null,
+      detail,
+      sendId,
     });
   }
 
-  const sent = await all<TrackRow & { send_id: string; created_at: number; crew_name: string; via: string }>(
-    `SELECT s.id AS send_id, s.created_at, s.via, c.name AS crew_name, ${TRACK_COLS}
-     FROM sends s JOIN tracks t ON t.id = s.track_id JOIN crews c ON c.id = s.crew_id
-     WHERE s.from_user_id = ? ORDER BY s.created_at DESC LIMIT ?`,
-    [userId, limit],
-  );
   for (const r of sent) {
+    if (used.has(r.send_id)) continue;
     items.push({
       id: `sent:${r.send_id}`,
       action: "sent",
@@ -125,6 +150,28 @@ export async function logFor(userId: string, limit = 300): Promise<LogItem[]> {
       track: trackFromRow(r),
       source: r.via === "app" ? "app" : r.via,
       detail: r.crew_name,
+      sendId: r.send_id,
+    });
+  }
+
+  // What came back on the person's sends: someone kept it, played it out, or wrote a line.
+  const back = await all<TrackRow & { send_id: string; status: string; reply: string | null; updated_at: number; who: string; crew_name: string }>(
+    `SELECT s.id AS send_id, r.status, r.reply, r.updated_at, u.name AS who, c.name AS crew_name, ${TRACK_COLS}
+     FROM reactions r JOIN sends s ON s.id = r.send_id JOIN tracks t ON t.id = s.track_id JOIN users u ON u.id = r.user_id JOIN crews c ON c.id = s.crew_id
+     WHERE s.from_user_id = ? AND r.user_id != ? AND (r.status IN ('saved', 'played') OR (r.reply IS NOT NULL AND r.reply != ''))
+     ORDER BY r.updated_at DESC LIMIT ?`,
+    [userId, userId, limit],
+  );
+  for (const r of back) {
+    const first = r.who.split(" ")[0];
+    const what = r.reply ? `${first}: ${r.reply}` : r.status === "played" ? `${first} played it out` : `${first} kept it`;
+    items.push({
+      id: `back:${r.send_id}:${r.who}`,
+      action: "back",
+      at: r.updated_at,
+      track: trackFromRow(r),
+      source: "app",
+      detail: what,
       sendId: r.send_id,
     });
   }

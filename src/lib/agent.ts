@@ -107,19 +107,23 @@ const SHORT_DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 export type DayPart = "morning" | "afternoon" | "evening";
 
-/** The hour, weekday and date of a moment as a clock in that zone shows them; the server's own zone when none is given or it is unknown. */
+/**
+ * The hour, weekday and date of a moment as a clock in that zone shows them. A missing or unknown
+ * zone reads as UTC, the same fallback the day grouping uses, so a name and its day never disagree.
+ */
 function clockIn(d: Date, tz?: string): { hour: number; weekday: number; ymd: string } {
-  if (tz) {
+  for (const zone of [tz, "UTC"]) {
+    if (!zone) continue;
     try {
-      const parts = new Intl.DateTimeFormat("en-US", { timeZone: tz, hourCycle: "h23", hour: "2-digit", weekday: "short", year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(d);
+      const parts = new Intl.DateTimeFormat("en-US", { timeZone: zone, hourCycle: "h23", hour: "2-digit", weekday: "short", year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(d);
       const get = (t: string) => parts.find((p) => p.type === t)?.value ?? "";
       const weekday = SHORT_DAYS.indexOf(get("weekday"));
       if (weekday >= 0) return { hour: Number(get("hour")) % 24, weekday, ymd: `${get("year")}-${get("month")}-${get("day")}` };
     } catch {
-      /* not a zone Intl knows: the server's clock below */
+      /* not a zone Intl knows: UTC next */
     }
   }
-  return { hour: d.getHours(), weekday: d.getDay(), ymd: `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}` };
+  return { hour: d.getUTCHours(), weekday: d.getUTCDay(), ymd: `${d.getUTCFullYear()}-${d.getUTCMonth()}-${d.getUTCDate()}` };
 }
 
 /**

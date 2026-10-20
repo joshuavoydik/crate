@@ -11,7 +11,7 @@ import { IconPlay, IconPause } from "./Icons";
 import { api, sourceName, timeAgo, viaLabel } from "@/lib/client";
 import type { LogItem, Send, Track } from "@/lib/types";
 
-type Filter = "all" | "kept" | "liked" | "played" | "received" | "sent";
+type Filter = "all" | "kept" | "liked" | "played" | "received" | "sent" | "back";
 const FILTERS: Array<{ key: Filter; label: string }> = [
   { key: "all", label: "All" },
   { key: "kept", label: "Kept" },
@@ -19,6 +19,7 @@ const FILTERS: Array<{ key: Filter; label: string }> = [
   { key: "played", label: "Played" },
   { key: "received", label: "Received" },
   { key: "sent", label: "Sent" },
+  { key: "back", label: "Back to you" },
 ];
 
 function dayLabel(ts: number, now = Date.now()): string {
@@ -45,11 +46,13 @@ function phrase(i: LogItem): string {
       return `kept · ${i.detail ?? ""}`;
     case "playedOut":
       return `played out · ${i.detail ?? ""}`;
+    case "back":
+      return i.detail ?? "came back";
   }
 }
 
 export function LogView({ initialFilter }: { initialFilter: string }) {
-  const { me, toast, setAccentTrack } = useStore();
+  const { me, toast, setAccentTrack, sendsVersion } = useStore();
   const player = usePlayer();
   const [items, setItems] = useState<LogItem[] | null>(null);
   const [likes, setLikes] = useState<Array<{ source: string; n: number }>>([]);
@@ -100,8 +103,20 @@ export function LogView({ initialFilter }: { initialFilter: string }) {
       })
       .catch((e) => toast((e as Error).message));
 
+  // Fresh on open, after anything sent from this tab, when the tab comes back, and every half minute
+  // while it stays open: plays arrive from the helper and the extension without this page knowing.
   useEffect(() => {
     load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sendsVersion]);
+  useEffect(() => {
+    const id = setInterval(load, 30000);
+    const onFocus = () => load();
+    window.addEventListener("focus", onFocus);
+    return () => {
+      clearInterval(id);
+      window.removeEventListener("focus", onFocus);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -170,6 +185,7 @@ export function LogView({ initialFilter }: { initialFilter: string }) {
     via: i.source,
     echoes: [],
     activeAt: i.at,
+    replies: [],
   });
 
   const weekLine = likes.length ? `This week: ${likes.map((l) => `${l.n} ${l.n === 1 ? "like" : "likes"} from ${sourceName(l.source)}`).join(", ")}.` : null;
@@ -180,6 +196,9 @@ export function LogView({ initialFilter }: { initialFilter: string }) {
         <h1 className="display page__title">Log</h1>
         <span className="caps num">{items ? `${items.length} entries` : ""}</span>
       </div>
+      <p className="muted" style={{ marginTop: -10, marginBottom: 14, fontSize: 15 }}>
+        Yours alone: everything you played, liked, kept or sent, across every crew. Nobody else sees this page.
+      </p>
       {weekLine && (
         <p className="muted" style={{ marginTop: -10, marginBottom: 18, fontSize: 15 }}>
           {weekLine}
@@ -200,11 +219,12 @@ export function LogView({ initialFilter }: { initialFilter: string }) {
         <div className="empty">
           <h2 className="display empty__title">Nothing logged yet.</h2>
           <p className="muted">
-            Connect Spotify, YouTube or Apple Music in settings and what you like and play shows up here on its own. What you keep and send lands here too.
+            Your own listening, kept here for you alone. Connect Spotify in Settings, or run Crate on your Mac or in Chrome, and what you play shows up on
+            its own. What you keep and send lands here too.
           </p>
           <div className="stage__actions">
             <Link className="btn" href="/settings">
-              Connect a source
+              Where you listen
             </Link>
           </div>
         </div>
@@ -274,6 +294,7 @@ export function LogView({ initialFilter }: { initialFilter: string }) {
               onPlayed={open.send.from.id !== me.id ? () => react(open.send.reaction?.status === "played" ? "saved" : "played") : undefined}
               onTrackChange={trackChanged}
             />
+            {open.item.action !== "back" && (
             <div style={{ marginTop: 18, paddingTop: 14, borderTop: "1px solid var(--line)" }}>
               <button className="btn btn--sm btn--ghost" onClick={() => setConfirming(true)}>
                 {open.item.action === "sent"
@@ -283,6 +304,7 @@ export function LogView({ initialFilter }: { initialFilter: string }) {
                     : "Remove from log"}
               </button>
             </div>
+            )}
           </>
         )}
       </Sheet>

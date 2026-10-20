@@ -20,7 +20,8 @@ export function parseNowLines(text: string): MacParse {
   const errors: MacParse["errors"] = [];
   for (const line of text.split(/\r?\n/)) {
     if (!line.trim()) continue;
-    const [source, title, artist, album, duration, position, url] = line.split("\t");
+    const cap = (v: string | undefined, max: number) => (v === undefined ? v : v.slice(0, max));
+    const [source, title, artist, album, duration, position, url] = line.split("\t").map((v, i) => cap(v, i === 6 ? 1000 : i === 0 ? 20 : 300));
     if (!source) continue;
     if (source === "err") {
       if (title) errors.push({ app: title.trim(), message: (artist ?? "").trim() });

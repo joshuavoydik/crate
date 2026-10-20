@@ -41,9 +41,11 @@ export type Send = {
   echoes: Array<{ person: Person; at: number; via: string }>;
   /** The last time anyone brought this track up: the send itself or its newest echo. */
   activeAt: number;
+  /** What came back from other people: kept, played out, or a line in reply. Never the viewer's own. */
+  replies: Array<{ person: Person; status: ReactionStatus; reply: string | null; at: number }>;
 };
 
-export type LogAction = "liked" | "played" | "received" | "sent" | "kept" | "playedOut";
+export type LogAction = "liked" | "played" | "received" | "sent" | "kept" | "playedOut" | "back";
 
 export type LogItem = {
   id: string;
@@ -101,7 +103,7 @@ export type Me = {
 
 export type Notice = {
   id: string;
-  kind: "reconnect" | "error";
+  kind: "reconnect" | "error" | "back";
   title: string;
   body: string | null;
   action: { label: string; href: string } | null;

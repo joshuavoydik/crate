@@ -9,9 +9,12 @@ export function error(message: string, status = 400): NextResponse {
   return json({ error: message }, status);
 }
 
+/** The request body as a JSON object; null for no body, bad JSON, or JSON that is not an object (every route here wants an object). */
 export async function readJson<T>(req: Request): Promise<T | null> {
   try {
-    return (await req.json()) as T;
+    const v: unknown = await req.json();
+    if (!v || typeof v !== "object" || Array.isArray(v)) return null;
+    return v as T;
   } catch {
     return null;
   }

@@ -26,6 +26,10 @@ export async function api<T>(path: string, init?: RequestInit & { json?: unknown
   }
   if (!r.ok) {
     const msg = (data as { error?: string } | null)?.error ?? `Request failed (${r.status})`;
+    // Signed out elsewhere (another tab, a cleared cookie): this tab goes back to the door instead of showing raw errors.
+    if (r.status === 401 && typeof window !== "undefined" && !path.startsWith("/api/join") && !path.startsWith("/api/crews")) {
+      window.location.assign("/?signedout=1");
+    }
     throw new ApiError(msg, r.status);
   }
   return data as T;
@@ -52,12 +56,13 @@ export function formatDuration(ms: number | null | undefined): string | null {
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
 }
 
+/** Up to two initials, one whole character each, so an emoji or an accented letter never splits into garbage. */
 export function initials(name: string): string {
   return name
     .split(/\s+/)
     .filter(Boolean)
     .slice(0, 2)
-    .map((w) => w[0]!.toUpperCase())
+    .map((w) => Array.from(w)[0]!.toUpperCase())
     .join("");
 }
 

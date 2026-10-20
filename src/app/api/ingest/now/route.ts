@@ -32,12 +32,19 @@ export async function POST(req: Request) {
   return withCors(await post(req));
 }
 
+/** A millisecond count that is a real, finite number of at least `min`; anything else is "unknown". Caps at a day. */
+function ms(v: unknown, min: number): number | null {
+  if (typeof v !== "number" || !Number.isFinite(v) || v < min) return null;
+  return Math.min(Math.round(v), 24 * 3600 * 1000);
+}
+
 async function post(req: Request) {
   const token = req.headers.get("authorization")?.replace(/^Bearer\s+/i, "") ?? "";
   const user = await userByIngestToken(token);
   if (!user) return error("Bad ingest token", 401);
   if (!/json/i.test(req.headers.get("content-type") ?? "")) {
-    const text = await req.text().catch(() => "");
+    // The helper's report is a few lines; anything bigger is not the helper.
+    const text = (await req.text().catch(() => "")).slice(0, 16_384);
     const parsed = parseNowLines(text);
     // An app that refuses to answer is something the person can fix once; the bell says which.
     await run("UPDATE users SET mac_blocked = ?, mac_last = ?, mac_seen_at = ? WHERE id = ?", [permissionProblem(parsed.errors), text.slice(0, 2000), Date.now(), user.id]);
@@ -61,8 +68,8 @@ async function post(req: Request) {
     title,
     artist: str(n.artist, 300) ?? "",
     album: str(n.album, 300),
-    durationMs: typeof n.durationMs === "number" && n.durationMs > 0 ? n.durationMs : null,
-    positionMs: typeof n.positionMs === "number" && n.positionMs >= 0 ? n.positionMs : null,
+    durationMs: ms(n.durationMs, 1),
+    positionMs: ms(n.positionMs, 0),
     url: str(n.url, 1000),
   });
   return json({ ok: true });

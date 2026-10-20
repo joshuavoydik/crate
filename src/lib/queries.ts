@@ -269,7 +269,26 @@ async function echoesOf(sendId: string): Promise<Send["echoes"]> {
   }));
 }
 
-async function withHistory(rows: SendRow[], crewId: string): Promise<Send[]> {
+type ReplyRow = { user_id: string; name: string; is_dj: number; avatar_v: number; has_avatar: number; status: ReactionStatus; reply: string | null; updated_at: number };
+
+/** What other people did with a send: kept it, played it out, or wrote back. The viewer's own reaction is not in here. */
+export async function repliesOf(sendId: string, viewerId: string): Promise<Send["replies"]> {
+  const rows = await all<ReplyRow>(
+    `SELECT r.user_id, u.name, u.is_dj, u.avatar_v, (u.avatar IS NOT NULL) AS has_avatar, r.status, r.reply, r.updated_at
+     FROM reactions r JOIN users u ON u.id = r.user_id
+     WHERE r.send_id = ? AND r.user_id != ? AND (r.status IN ('saved', 'played') OR (r.reply IS NOT NULL AND r.reply != ''))
+     ORDER BY r.updated_at ASC`,
+    [sendId, viewerId],
+  );
+  return rows.map((r) => ({
+    person: { id: r.user_id, name: r.name, isDj: !!r.is_dj, avatarUrl: avatarUrlFor(r.user_id, r.avatar_v ?? 0, !!r.has_avatar) },
+    status: r.status,
+    reply: r.reply,
+    at: r.updated_at,
+  }));
+}
+
+async function withHistory(rows: SendRow[], crewId: string, viewerId: string): Promise<Send[]> {
   const out: Send[] = [];
   for (const r of rows) {
     const hist = await all<{ id: string; name: string; created_at: number }>(
@@ -282,6 +301,7 @@ async function withHistory(rows: SendRow[], crewId: string): Promise<Send[]> {
         r,
         hist.map((h) => ({ sendId: h.id, fromName: h.name, createdAt: h.created_at })),
         await echoesOf(r.send_id),
+        await repliesOf(r.send_id, viewerId),
       ),
     );
   }
@@ -300,7 +320,7 @@ export async function echo(sendId: string, userId: string, via: string): Promise
   );
 }
 
-export function sendFromRow(r: SendRow, history: Send["history"] = [], echoes: Send["echoes"] = []): Send {
+export function sendFromRow(r: SendRow, history: Send["history"] = [], echoes: Send["echoes"] = [], replies: Send["replies"] = []): Send {
   return {
     id: r.send_id,
     crewId: r.crew_id,
@@ -315,6 +335,7 @@ export function sendFromRow(r: SendRow, history: Send["history"] = [], echoes: S
     via: r.via ?? "app",
     echoes,
     activeAt: Math.max(r.send_created_at, ...echoes.map((e) => e.at)),
+    replies,
   };
 }
 
@@ -366,7 +387,7 @@ export async function setInviteCode(crewId: string, code: string): Promise<void>
 export async function getSend(sendId: string, viewerId: string): Promise<Send | null> {
   const r = await one<SendRow>(`${SEND_SELECT} WHERE s.id = ?`, [viewerId, sendId]);
   if (!r) return null;
-  const [s] = await withHistory([r], r.crew_id);
+  const [s] = await withHistory([r], r.crew_id, viewerId);
   return s;
 }
 
@@ -377,7 +398,7 @@ export async function reelFor(userId: string, crewId: string): Promise<Send[]> {
     `${SEND_SELECT} WHERE s.crew_id = ? AND s.from_user_id != ? AND s.via NOT LIKE 'played:%' AND (r.status IS NULL OR r.status = 'seen') ORDER BY s.created_at ASC LIMIT 200`,
     [userId, crewId, userId],
   );
-  return withHistory(rows, crewId);
+  return withHistory(rows, crewId, userId);
 }
 
 /** Every track in the crew, most recently brought up first (a send, or someone echoing it). */
@@ -387,7 +408,7 @@ export async function sendsIn(userId: string, crewId: string, limit = 200): Prom
      WHERE s.crew_id = ? ORDER BY MAX(s.created_at, COALESCE(e.last_at, 0)) DESC LIMIT ?`,
     [userId, crewId, limit],
   );
-  return withHistory(rows, crewId);
+  return withHistory(rows, crewId, userId);
 }
 
 export async function react(sendId: string, userId: string, status: ReactionStatus, reply: string | null | undefined): Promise<void> {

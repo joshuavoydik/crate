@@ -27,7 +27,7 @@ export function CrewView({ appUrl }: { appUrl: string }) {
   useEffect(() => {
     setName(crew?.name ?? "");
     if (!crew) return;
-    api<{ playlist: Playlist }>(`/api/playlist?crew=${encodeURIComponent(crew.id)}`)
+    api<{ playlist: Playlist }>(`/api/playlist?crew=${encodeURIComponent(crew.id)}&tz=${encodeURIComponent(tz())}`)
       .then((r) => {
         setPlaylist(r.playlist);
         setPlName(r.playlist.name);
