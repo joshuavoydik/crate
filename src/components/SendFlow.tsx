@@ -21,9 +21,9 @@ type SearchHit = {
 type Resolved = { track: Track; resolved: boolean; sourceUrl: string; suggestedNote: string };
 
 /**
- * The send: you, on purpose, putting one track in front of the crew with a line. The stream fills
+ * The send: you, on purpose, putting one track in front of the crew with a line. The playlist fills
  * itself from what everyone plays; this is the opposite, and it lands as new at the top of their
- * reel to keep, skip or answer. It can go into one of the crew's playlists on the way.
+ * playlist to keep, skip or answer. It can go into one of the crew's hand-made playlists on the way.
  */
 export function SendFlow() {
   const { sendOpen, sendPrefill, closeSend, me, crew, toast, bumpSends, openInvite, collectionsVersion, bumpCollections } = useStore();
@@ -286,7 +286,7 @@ export function SendFlow() {
               {recipients.length ? (
                 <p className="muted" style={{ fontSize: 14.5, margin: "18px 0 0" }}>
                   The playlist fills itself from what everyone plays. This is the other thing: you saying <em>hear this</em>. It lands at the top of{" "}
-                  {names}&rsquo;s reel with your line, to keep, skip or answer.
+                  {names}&rsquo;s playlist with your line, to keep, skip or answer.
                 </p>
               ) : (
                 <p className="muted" style={{ fontSize: 14.5, margin: "18px 0 0" }}>
@@ -368,7 +368,7 @@ export function SendFlow() {
             }}
           />
           <p className="faint" style={{ fontSize: 12.5, marginTop: 6 }}>
-            Leave it empty and the agent's line goes with it, marked as the agent's.
+            Leave it empty and Crate writes the line, marked as Crate&apos;s, not yours.
           </p>
 
           {collections.length > 0 && (

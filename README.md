@@ -2,11 +2,23 @@
 
 Music between friends, with memory.
 
-A private channel for passing tracks between two to five people. Paste a link from Spotify, Apple Music, YouTube, SoundCloud, Bandcamp, Beatport, Tidal or Deezer; the agent resolves it to one canonical track with artwork, a 30-second preview, links on every platform, an accent color, and (in the browser) BPM, key and energy. The other person catches up in a swipeable reel and keeps what lands.
+A private channel for passing tracks between two to five people. Paste a link from Spotify, Apple Music, YouTube, SoundCloud, Bandcamp, Beatport, Tidal or Deezer; Crate resolves it to one canonical track with artwork, a 30-second preview, links on every platform, an accent color, and (in the browser) BPM, key and energy. The other person catches up on the stage at the top of their playlist and keeps what lands.
 
-Connect where you already listen and the sends mostly stop being something you do: from the moment you connect, what you play and like on Spotify, Apple Music, YouTube, SoundCloud, TIDAL or Last.fm flows into your Log and, by each crew's rule, into its playlist. A small helper on your Mac turns music links texted to you in iMessage into cards in your Reel.
+Set up where you already listen and the sends mostly stop being something you do: what you play lands in your log and, by each crew's rule, in its playlist. Plays reach Crate three ways. The **Mac helper** asks the Music, Spotify and SoundCloud apps on a Mac what is on, as it plays. The **Chrome extension** does the same for SoundCloud, YouTube and most music sites in Chrome on a computer. **Connected accounts** sync on their own: Spotify's recently-played history brings plays from any device a few minutes behind (so a phone-only person who connects Spotify is covered); YouTube, SoundCloud and TIDAL accounts bring likes, not plays; Last.fm scrobbles count as plays. Apple Music has no now-playing API, so Music app plays come in through the Mac helper. A second helper on a Mac turns music links texted to you in iMessage into cards at the top of your playlist.
 
 Web first: one Next.js codebase, installable on iOS, Android and desktop as a PWA. On a phone the navigation moves to a bottom bar (Playlist, Live, Log, Send) and every panel becomes a bottom sheet; on a desktop it is a wide stage with a queue beside it. Dark is the default; the sun and moon in the top bar flip it, and Settings → Appearance can pin Auto, Light or Dark.
+
+## The words
+
+One word per thing, everywhere in the app:
+
+- **The playlist** is the crew's shared stream for today, under the name of the moment ("Monday afternoon"). It fills itself from what everyone plays and sends. The Playlist tab is this.
+- **Days** are the same stream, earlier: one line per day on the Playlist page under "Earlier", every day by month on `/days`, and each day on its own page.
+- **Playlists** (plural, the shelf on the Playlist page) are the lists people put together by hand, track by track. They can be shared by link and saved to Spotify or Apple Music.
+- **Your log** is personal: everything you played, liked, kept or sent, across every crew. Nobody else sees it.
+- **Live** is what the crew has on right now.
+
+There is no "reel" in the product's copy; the catch-up stage at the top of the playlist is where a send lands.
 
 ## Run it locally
 
@@ -58,22 +70,35 @@ link ──► detectSource()           which platform, any ids in the URL
 
 BPM, key and energy are computed in the browser from the preview (`src/lib/audio/dsp.ts`: banded spectral flux → autocorrelation × Fourier tempogram with a tempo prior; Krumhansl-Schmuckler key profiles on a peak-based chroma; loudness + onset density + brightness for energy) and saved back to the track. On a benchmark of 20 real previews the tempo lands within 4% on 16 and within an octave on the rest; key is an estimate and is shown as one.
 
-## Connected sources
+## Where plays come from
 
-For the people using Crate this is one tap. Right after starting or joining a crew they land on **Where do you listen?** (`/connect`), and later it lives in Settings → Where you listen. Tap Spotify, YouTube, SoundCloud or Apple Music and the platform's own sign-in opens with the account already logged in on that device; approve and it comes back connected. Tapping a connected row asks before disconnecting. Nobody but the maker ever sees a key or a redirect URI.
+Right after starting or joining a crew, people land on **Where do you listen?** (`/connect`); later the same thing lives at the top of Settings → Where you listen. Both lead with the two live paths, then the accounts, and both carry one line for phones. The honest version of that line:
 
-For the maker there is one hidden page, `/setup` (linked from the bottom of Settings as "App setup"). Each platform makes the app register once before it will hand out logins, so `/setup` walks through that registration per platform, shows the exact redirect URI to paste, and stores the keys encrypted. Until a platform is registered its row shows as "Not available yet" for everyone; the moment its keys are saved, the row turns into a Connect button. Environment variables work too, as defaults.
+| You are on | What works | What it brings |
+| --- | --- | --- |
+| A phone (any) | Connect Spotify | Plays from any device, a few minutes behind (Spotify's recently-played history, synced every two minutes while the app is open); Live follows the Spotify app too. Last.fm works the same way if you scrobble. |
+| A Mac | Crate on your Mac (one download) | The Music, Spotify and SoundCloud apps, as they play; Live lights up at once. The only way Apple Music plays get in. |
+| Chrome on a computer | Crate in Chrome (an unpacked extension) | SoundCloud, YouTube, YouTube Music, TIDAL, Deezer, Amazon Music, Pandora, and Apple Music or Spotify on the web, as they play. |
+| Anywhere | Send a link by hand | One track, with a line, in front of the crew. |
+
+A YouTube, SoundCloud or TIDAL account brings likes, not plays; nothing on a phone makes those plays visible. The copy in the app says so where each path is offered (first run, Settings, the empty Live page) rather than promising "plays" for every row.
+
+## Connected accounts
+
+For the people using Crate an account is one tap. Tap Spotify, YouTube, SoundCloud or TIDAL and the platform's own sign-in opens with the account already logged in on that device; approve and it comes back connected. Tapping a connected row asks before disconnecting. If the sign-in is cancelled or goes stale, Settings says so in a sentence and offers Try again. Nobody but the maker ever sees a key or a redirect URI.
+
+For the maker there is one page, `/setup` (linked from the bottom of Settings as "App setup"). Each platform makes the app register once before it will hand out logins, so `/setup` walks through that registration per platform, shows the exact redirect URI to paste, and stores the keys encrypted. Until a platform is registered its row is greyed out for everyone with "Not switched on in this Crate yet"; the moment its keys are saved, the row turns into a Connect button. Apple Music is the exception: without Apple keys its row is not greyed but points at Crate on your Mac, since that is how Music app plays come in anyway. Environment variables work too, as defaults.
 
 | Source | What comes in | What it needs | One-time registration (maker only, on `/setup`) |
 | --- | --- | --- | --- |
-| Spotify | Liked songs, recent plays, what is playing now (for Live) | `SPOTIFY_CLIENT_ID` | developer.spotify.com/dashboard → Create app → Redirect URI exactly `http://127.0.0.1:3000/api/connect/spotify/callback` (or your domain) → add each person under User Management (Development Mode allows 5). Connect from `http://127.0.0.1:3000`, not `localhost`, when running locally: Spotify refuses `localhost` redirects. |
-| YouTube | Liked videos (YouTube Music likes included), music category only | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | console.cloud.google.com → enable YouTube Data API v3 → OAuth client (Web) with redirect `http://localhost:3000/api/connect/youtube/callback` → add yourselves as test users. |
-| Apple Music | Recently played | `APPLE_TEAM_ID`, `APPLE_KEY_ID`, `APPLE_PRIVATE_KEY` | Apple Developer account → Keys → new key with MusicKit → paste the .p8 contents (newlines as `\n`). |
-| SoundCloud | Liked tracks | `SOUNDCLOUD_CLIENT_ID`, `SOUNDCLOUD_CLIENT_SECRET` | An approved SoundCloud API app with redirect `http://localhost:3000/api/connect/soundcloud/callback`. |
-| TIDAL | Favorite tracks | `TIDAL_CLIENT_ID` (`TIDAL_CLIENT_SECRET` if the dashboard issues one) | developer.tidal.com → create an app with redirect `http://localhost:3000/api/connect/tidal/callback`. TIDAL exposes no listening history to third parties; plays on TIDAL reach Crate through Last.fm scrobbling. |
-| Last.fm | Scrobbles, loved tracks, now playing (for Live) | `LASTFM_API_KEY` | Type your username. |
+| Spotify | Plays (recently-played history, from any device), liked songs, what is playing now (for Live) | `SPOTIFY_CLIENT_ID` | developer.spotify.com/dashboard → Create app → Redirect URI exactly `http://127.0.0.1:3000/api/connect/spotify/callback` (or your domain) → add each person under User Management (Development Mode allows 5). Connect from `http://127.0.0.1:3000`, not `localhost`, when running locally: Spotify refuses `localhost` redirects. |
+| YouTube | Likes only: liked videos (YouTube Music likes included), music category only. YouTube gives nobody watch history. | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | console.cloud.google.com → enable YouTube Data API v3 → OAuth client (Web) with redirect `http://localhost:3000/api/connect/youtube/callback` → add yourselves as test users. |
+| Apple Music | Recently played (no timestamps; dated at sync time). Optional: the Mac helper brings Music app plays without it. | `APPLE_TEAM_ID`, `APPLE_KEY_ID`, `APPLE_PRIVATE_KEY` | Apple Developer account → Keys → new key with MusicKit → paste the .p8 contents (newlines as `\n`). |
+| SoundCloud | Likes only. Plays come through Crate in Chrome or the Mac helper. | `SOUNDCLOUD_CLIENT_ID`, `SOUNDCLOUD_CLIENT_SECRET` | An approved SoundCloud API app with redirect `http://localhost:3000/api/connect/soundcloud/callback`. |
+| TIDAL | Favorites only. TIDAL exposes no listening history to third parties; plays on TIDAL reach Crate through Last.fm scrobbling or Crate in Chrome. | `TIDAL_CLIENT_ID` (`TIDAL_CLIENT_SECRET` if the dashboard issues one) | developer.tidal.com → create an app with redirect `http://localhost:3000/api/connect/tidal/callback`. |
+| Last.fm | Scrobbles (as plays), loved tracks (as likes), now playing (for Live) | `LASTFM_API_KEY` | Type your username. |
 
-**Crate starts from the day you connect.** The first sync of a platform only takes its bookmark; nothing the platform remembers from before is imported. From then on new plays and likes arrive. Not connectable, because there is no public API for a person's listening: Amazon Music (partner program only), Pandora, and Deezer (new apps closed); a Last.fm scrobbler on those gets their plays in.
+**Crate starts from the day you connect.** The first sync of a platform only takes its bookmark; nothing the platform remembers from before is imported. From then on new plays and likes arrive. Not connectable, because there is no public API for a person's listening: Amazon Music (partner program only), Pandora, and Deezer (new apps closed); a Last.fm scrobbler on those gets their plays in, and Crate in Chrome sees them on the web.
 
 Sync runs when the app opens, every two minutes while it is open, and on demand (Settings → Sync now); a scheduler can also hit `GET /api/cron/sync?key=$CRON_SECRET`. Tokens are encrypted at rest with a key derived from `SESSION_SECRET`.
 
@@ -85,11 +110,11 @@ Sync runs when the app opens, every two minutes while it is open, and on demand 
 
 ## The playlist
 
-Every crew has one running playlist: every send, newest first, under a name the agent gives it from the day, the hour and what is in it ("Friday late, moving electronic"). It renames itself as the music changes unless someone in the crew names it by hand (the crew page). New-to-you tracks are caught up on the swipe stage; the rest is the list, with previews, notes, who sent what, and Play all. The name also moves with the day: Thursday afternoon becomes Thursday night. A crew of one is still a playlist: your own plays, likes and sends build it until someone joins.
+Every crew has one running playlist: every play and send, newest first, under a name Crate gives it from the day, the hour and what is in it ("Friday late, moving electronic"). It renames itself as the music changes unless someone in the crew names it by hand (the crew page). New-to-you sends are caught up on the swipe stage at the top; the rest is the list, with previews, notes, who sent what, and Play today. The name also moves with the day: Thursday afternoon becomes Thursday night. A crew of one is still a playlist: your own plays, likes and sends build it until someone joins. The hand-made playlists sit on a shelf under the header, with one line saying which is which.
 
 ## Days
 
-The stream would be an endless page within a month, so it is folded by date. The Playlist page is the viewer's today (everything sent or echoed since their local midnight, under the name of the moment), and beneath it "Earlier" lists the last seven days as one line each: a few covers, the date (Yesterday, a weekday, then "Oct 9"), how many, whose faces. A line opens in place with its tracks, a Play all and a link to the day's own page (`/days/2026-10-15`), which is that day as a playlist. "All days" (`/days`, also in the crew menu) is the full index by month. Days are decided in the viewer's time zone (the client sends it), so an evening in San Francisco stays on its own day. `src/lib/days.ts` holds the grouping; `/api/playlist?crew&tz` returns today plus the day index, `/api/playlist/day?crew&date&tz` one day.
+The playlist would be an endless page within a month, so it is folded by date. The Playlist page is the viewer's today (everything played or sent since their local midnight, under the name of the moment), and beneath it "Earlier" lists the last seven days as one line each: a few covers, the date (Yesterday, a weekday, then "Oct 9"), how many, whose faces. A line opens in place with its tracks, a Play all and a link to the day's own page (`/days/2026-10-15`), which is the playlist that day. "All days" (`/days`) is the full index by month, with one line at the top saying what it is. Days are decided in the viewer's time zone (the client sends it), so an evening in San Francisco stays on its own day. `src/lib/days.ts` holds the grouping; `/api/playlist?crew&tz` returns today plus the day index, `/api/playlist/day?crew&date&tz` one day.
 
 ## Crews
 
@@ -103,7 +128,7 @@ Two small things, no more for now: the one-line note on a send and the playlist 
 
 ## Live
 
-Live is what the crew is playing right now. On wide screens the same thing lives in the friends rail on the right of every page (the two-people icon in the top bar hides it). Each person is a record: the album art is the label, it spins while they play, rings pulse at the song's tempo, and a thin arc counts the song down. Tap one for a preview, the platform links, and a one-tap send to the crew. Three things feed it: the Crate player itself (a heartbeat while a preview plays), Spotify's currently-playing endpoint, and Last.fm's now-playing flag. The feeds are only asked while someone has Live open, so nothing polls in the background. When someone else is playing, the Reel carries a one-line band pointing at Live.
+Live is what the crew is playing right now. On wide screens the same thing lives in the friends rail on the right of every page (the two-people icon in the top bar hides it). Each person is a record: the album art is the label, it spins while they play, rings pulse at the song's tempo, and a thin arc counts the song down. Tap one for a preview, the platform links, and a one-tap send to the crew. Five things feed it: the Mac helper and the Chrome extension (reports every few seconds), Spotify's currently-playing endpoint and Last.fm's now-playing flag (asked every fifteen seconds while someone has Live open, so nothing polls in the background; both work from a phone), and the Crate player itself (a heartbeat while a preview plays). The empty Live page says which of these a phone can use. When someone else is playing, the Playlist page carries a one-line band pointing at Live.
 
 ## Pocket mode
 
@@ -111,11 +136,11 @@ The icon left of the sun/moon (or Settings → Pocket mode) swaps the whole app 
 
 ## Crate in Chrome
 
-Most listening that is not Spotify happens in a browser tab, and no site tells other apps about it. The `crate-chrome/` folder is a small Chrome extension (Manifest V3) that does: content scripts on SoundCloud, YouTube and YouTube Music read the page's own player (title, artist, link, position, whether it is playing), and on TIDAL, Deezer, Amazon Music, Pandora, Apple Music and Spotify on the web they read the page's Media Session metadata (what the OS media keys see). The background worker posts the playing tab to `/api/ingest/now` every few seconds as JSON. Pairing is one click: Settings → Crate in Chrome → Connect Chrome opens the extension's `pair.html` with the person's Crate URL and token in the fragment, and the extension stores them. The extension's id is fixed by the `key` in its manifest, so that link is the same for everyone. Until it is published on the Chrome Web Store (one-click install), it loads unpacked from `chrome://extensions`. `/api/ingest/now` answers CORS preflights, so the extension needs no host permissions beyond the music sites it reads.
+Most listening that is not Spotify happens in a browser tab, and no site tells other apps about it. The `crate-chrome/` folder is a small Chrome extension (Manifest V3) that does: content scripts on SoundCloud, YouTube and YouTube Music read the page's own player (title, artist, link, position, whether it is playing), and on TIDAL, Deezer, Amazon Music, Pandora, Apple Music and Spotify on the web they read the page's Media Session metadata (what the OS media keys see). The background worker posts the playing tab to `/api/ingest/now` every few seconds as JSON. Pairing is the `/chrome` page itself: with the extension loaded, its content script finds the signed-in person's key on that page and takes it, and the page says Connected. Until it is published on the Chrome Web Store (one-click install), it loads unpacked from `chrome://extensions`, which is why it needs Chrome on a computer; phones take no extensions, and the page says so. `/api/ingest/now` answers CORS preflights, so the extension needs no host permissions beyond the music sites it reads.
 
 ## Crate on your Mac
 
-Apple Music has no now-playing API and SoundCloud has neither now-playing nor play history, so on their own they can never reach Live. On a Mac they can. Settings → Crate on your Mac has a **Download the setup** button: it saves a Terminal settings file (`/api/mac/terminal`) that, opened, runs one line in Terminal; the same line is there to paste by hand:
+Apple Music has no now-playing API and SoundCloud has neither now-playing nor play history, so on their own they can never reach Live. On a Mac they can. Settings → Where you listen → Crate on your Mac (the first fold, open by default on a computer until something is connected; `/settings#mac` opens it from anywhere) has a **Download the setup** button: it saves a Terminal settings file (`/api/mac/terminal`) that, opened, runs one line in Terminal; the same line is there to paste by hand:
 
 ```bash
 curl -fsSL -H "authorization: Bearer crate_..." "http://localhost:3000/api/mac/install" | bash
@@ -133,7 +158,7 @@ npm run imessage:install -- --url=http://localhost:3000 --token=crate_...
 npm run imessage:install -- --uninstall
 ```
 
-It installs a launchd agent (runs at login, log in `~/Library/Logs/crate-imessage.log`). The first time, give Full Disk Access to the `node` binary it prints (System Settings → Privacy & Security → Full Disk Access). A link from a crew member who set their iMessage handle in Settings arrives as their send, with their text as the note; anything else lands in your Reel as "received" and in your Log.
+It installs a launchd agent (runs at login, log in `~/Library/Logs/crate-imessage.log`). The first time, give Full Disk Access to the `node` binary it prints (System Settings → Privacy & Security → Full Disk Access). A link from a crew member who set their iMessage handle in Settings arrives as their send, with their text as the note; anything else lands at the top of your playlist as "received" and in your log.
 
 ## Why Spotify is a connector, not a dependency
 
@@ -158,7 +183,7 @@ The end-to-end run boots a production server on a fresh SQLite file and drives t
 ## Layout of the code
 
 ```
-src/app/                 routes (App Router). page.tsx = Reel, /live, /log (Crate folded in), /settings, /connect, /setup, /join/[code], /send
+src/app/                 routes (App Router). page.tsx = the playlist (PlaylistView, with the Reel stage), /live, /log, /days, /playlists/[id], /settings, /connect, /chrome, /setup, /join/[code], /send
 src/app/api/             resolve, search, sends, sends/[id], sends/[id]/react, crate, log, tracks/[id]/analysis, preview proxy,
                          me, crews, crews/[id], join, sources, sync, cron/sync, ingest, ingest/token, live, connect/{spotify,youtube,soundcloud,apple}
 src/components/          Shell (providers, paste/drop/⌘K, source sync), TopBar, Backdrop, Reel, StageCard (gestures), TrackCard,

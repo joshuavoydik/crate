@@ -45,7 +45,7 @@ const SETUP: Record<string, Setup> = {
   },
   apple: {
     title: "Apple Music",
-    minutes: "about 3 minutes, needs an Apple Developer account",
+    minutes: "optional: Music app plays come in through Crate on your Mac without it. About 3 minutes, needs an Apple Developer account",
     steps: [
       "developer.apple.com → Account → Certificates, Identifiers & Profiles → Keys → +.",
       "Name it, enable MusicKit, Continue, Register, then Download the .p8 file (Apple offers it once).",
@@ -177,7 +177,8 @@ export function SetupView() {
           One-time setup
         </h1>
         <p className="muted" style={{ margin: "10px 0 0", fontSize: 15.5, maxWidth: "56ch" }}>
-          Each service wants the app registered once, by you. After that, everyone just taps Connect.
+          Each service wants the app registered once, by you. After that, everyone just taps Connect. Until then its row in Settings is greyed out with
+          &ldquo;Not switched on in this Crate yet&rdquo;. The Mac helper and the Chrome extension need none of this.
         </p>
       </div>
 

@@ -138,7 +138,7 @@ export function CollectionView({ id }: { id: string }) {
     <div className="pl dayview">
       <header className="pl__head">
         <div className="pl__titles">
-          <span className="caps">{crew.name} · Playlist</span>
+          <span className="caps">{crew.name} · Hand-made playlist</span>
           <form
             className="crewpage__name"
             onSubmit={(e) => {
@@ -259,7 +259,7 @@ export function CollectionView({ id }: { id: string }) {
       <Confirm
         open={confirm}
         title={`Delete "${collection.name}"?`}
-        body="The tracks stay in the crew's stream and in everyone's log; only this list goes."
+        body="The tracks stay in the playlist, its days and everyone's log; only this list goes."
         confirmLabel="Delete"
         onClose={() => setConfirm(false)}
         onConfirm={destroy}

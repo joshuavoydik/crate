@@ -72,8 +72,15 @@ export function ChromeView({ appUrl }: { appUrl: string }) {
         <span className="caps">Crate in Chrome</span>
         <h1 className="display page__title">What plays in your browser, on Live.</h1>
         <p className="muted" style={{ margin: "10px 0 0", fontSize: 16, maxWidth: 620 }}>
-          A small extension tells your Crate what is playing in Chrome, as it plays. Live lights up, and each play lands in your Log and your crews&rsquo;
+          A small extension tells your Crate what is playing in Chrome, as it plays. Live lights up, and each play lands in your log and your crews&rsquo;
           playlists. Nothing to switch on, nothing to post. YouTube counts only what YouTube files under music, so a podcast never becomes a play.
+        </p>
+        <p className="muted" style={{ margin: "10px 0 0", fontSize: 14.5, maxWidth: 620 }}>
+          It needs Chrome on a computer; phones do not take extensions. From a phone,{" "}
+          <Link href="/settings" style={{ textDecoration: "underline" }}>
+            connect Spotify in Settings
+          </Link>{" "}
+          and your plays arrive a few minutes later.
         </p>
         <div className="chrome__sites" aria-label="Sites it follows">
           {SITES.map((k) => (
@@ -151,7 +158,7 @@ export function ChromeView({ appUrl }: { appUrl: string }) {
         <p className="faint" style={{ fontSize: 13, marginTop: 14 }}>
           Updated the extension? Load the new folder the same way and come back here. Listening in the Music, Spotify or SoundCloud apps on a Mac instead?
           That is{" "}
-          <Link href="/settings" style={{ textDecoration: "underline" }}>
+          <Link href="/settings#mac" style={{ textDecoration: "underline" }}>
             Crate on your Mac, in Settings
           </Link>
           .
