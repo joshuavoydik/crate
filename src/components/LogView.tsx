@@ -36,9 +36,9 @@ function dayLabel(ts: number, now = Date.now()): string {
 function phrase(i: LogItem): string {
   switch (i.action) {
     case "liked":
-      return `liked · ${sourceName(i.source)}`;
+      return `liked · ${i.detail ?? sourceName(i.source)}`;
     case "played":
-      return `played · ${sourceName(i.source)}`;
+      return `played · ${i.detail ?? sourceName(i.source)}`;
     case "received":
       return `received · ${i.detail ?? "iMessage"}`;
     case "sent":

@@ -103,8 +103,8 @@ async function main() {
     a.on("pageerror", (e) => console.error("DESKTOP PAGE ERROR:", e.message));
     await a.goto(BASE);
     await a.screenshot({ path: `${OUT}/01-welcome-desktop.png` });
-    await a.getByPlaceholder("Joshua", { exact: true }).fill("Joshua");
-    await a.getByPlaceholder("Joshua & Ariel").fill("Joshua & Ariel");
+    await a.locator("#start-name").fill("Joshua");
+    await a.locator("#start-crew").fill("Joshua & Ariel");
     await a.getByRole("button", { name: "Start a crew" }).click();
     await a.getByRole("heading", { name: "Where do you listen?" }).waitFor({ timeout: 20000 });
     await a.screenshot({ path: `${OUT}/01b-connect-desktop.png` });
@@ -122,7 +122,7 @@ async function main() {
     b.on("pageerror", (e) => console.error("PHONE PAGE ERROR:", e.message));
     await b.goto(`${BASE}/join/${crew.inviteCode}`);
     await b.screenshot({ path: `${OUT}/02-invite-phone.png` });
-    await b.getByPlaceholder("Ariel").fill("Ariel");
+    await b.locator("#join-name").fill("Ariel");
     await b.getByRole("button", { name: /Join Joshua & Ariel/ }).click();
     await b.getByText("Where do you listen?").waitFor({ timeout: 20000 });
     await b.getByRole("link", { name: "Skip for now" }).click();
@@ -415,7 +415,9 @@ async function main() {
     await a.goto(`${BASE}/settings`);
     await a.getByText("Where you listen").waitFor();
     assert.equal(await a.getByText("ListenBrainz").count(), 0);
-    await a.getByRole("button", { name: "Connect Apple Music" }).isDisabled().then((d) => assert.ok(d, "Apple shows as not available until the maker sets it up"));
+    // Apple Music has no account link without the maker's keys; the row points at the Mac helper instead of a dead button.
+    await a.getByRole("button", { name: "How to bring in Apple Music" }).isEnabled().then((e) => assert.ok(e, "Apple's row sends people to Crate on your Mac"));
+    assert.equal(await a.getByText("On a Mac").count(), 1);
     await a.getByRole("button", { name: "Connect YouTube" }).isEnabled().then((e) => assert.ok(e, "YouTube (env keys) is tappable"));
     await settled(a);
     await a.screenshot({ path: `${OUT}/15-settings-desktop.png`, fullPage: true });
@@ -536,12 +538,13 @@ async function main() {
     await a.screenshot({ path: `${OUT}/16-reel-autoshare-desktop.png` });
     log("Ariel's Spotify like arrived in Joshua's reel as a send");
     await b.goto(`${BASE}/log`);
-    await b.getByText(/liked · Spotify/).first().waitFor();
-    await b.getByText(/liked on Spotify → Joshua & Ariel/).first().waitFor();
+    // One listen, one row: the like, with the crew it was carried into as its detail.
+    await b.getByText(/liked · Spotify → Joshua & Ariel/).first().waitFor();
+    assert.equal(await b.getByText(/liked on Spotify → Joshua & Ariel/).count(), 0, "the carried send is not a second row");
     await b.getByText(/This week: 1 like from Spotify/).waitFor();
     await settled(b);
     await b.screenshot({ path: `${OUT}/17-log-phone.png`, fullPage: true });
-    log("Ariel's Log shows the like and the automatic send");
+    log("Ariel's Log shows the like once, with where it went");
 
     // Joshua's rule is still "everything I play": his plays stream into the playlist, each track once.
     const plays = await desk.request.post(`${BASE}/api/test/items`, {
@@ -561,7 +564,8 @@ async function main() {
     const playSend = (await (await desk.request.get(`${BASE}/api/sends?crew=${crew.id}&view=all`)).json()).sends.find((x) => x.track.title === "Near Dark");
     assert.equal(playSend?.via, "played:apple");
     await a.goto(`${BASE}/log`);
-    await a.getByText(/played on Apple Music → Joshua & Ariel/).first().waitFor();
+    await a.getByText(/played · Apple Music → Joshua & Ariel/).first().waitFor();
+    assert.equal(await a.getByText(/played on Apple Music → Joshua & Ariel/).count(), 0, "one row per listen");
     log("Joshua's Apple Music play streamed into the crew playlist on its own");
 
     // Ariel likes the same track later (her rule is likes only): not a second row, an echo on Joshua's, and the row floats up.
@@ -821,6 +825,11 @@ async function main() {
     log("removals ask first and clean up for everyone");
 
     // ================= Notices: the bell top right =================
+    // Ariel kept and replied to Joshua's sends above, and that came back to him as notices.
+    const backNotices = (await (await desk.request.get(`${BASE}/api/notices`)).json()).notices;
+    assert.ok(backNotices.some((n) => n.kind === "back" && /kept|wrote back|played out/.test(n.title)), "what came back on a send shows under the bell");
+    assert.ok(backNotices.every((n) => n.kind !== "back" || n.action?.href === "/log?filter=back"), "and points at the Log's Back to you");
+    for (const n of backNotices) await desk.request.post(`${BASE}/api/notices/dismiss`, { data: { id: n.id } });
     await a.goto(`${BASE}/live`);
     await a.getByRole("button", { name: "Notices" }).click();
     await a.getByText("Nothing needs you.").waitFor();
