@@ -10,7 +10,7 @@ import { SendRows, useTrackSheet, facesOf, tz } from "./Days";
 import { api } from "@/lib/client";
 import type { Send } from "@/lib/types";
 
-/** One day of the crew's playlist, whole: its own page, its own Play all. */
+/** One earlier day of the crew's playlist, whole: its own page, its own Play all. */
 export function DayView({ date }: { date: string }) {
   const { crew, toast, setAccentTrack } = useStore();
   const player = usePlayer();
@@ -64,7 +64,7 @@ export function DayView({ date }: { date: string }) {
           <h1 className="display pl__name">{data?.title ?? "…"}</h1>
           <span className="muted pl__by">
             {crew.name}
-            {data ? ` · ${data.sends.length === 1 ? "1 track" : `${data.sends.length} tracks`}` : ""}
+            {data ? ` · the playlist that day · ${data.sends.length === 1 ? "1 track" : `${data.sends.length} tracks`}` : ""}
             {together && faces.length > 0 && (
               <span className="faces" style={{ marginLeft: 8, verticalAlign: "middle" }}>
                 {faces.slice(0, 4).map((p) => (

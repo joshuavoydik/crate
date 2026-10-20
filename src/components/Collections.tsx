@@ -47,7 +47,10 @@ function NewPlaylistForm({ busy, onSubmit, onCancel, autoFocus }: { busy: boolea
   );
 }
 
-/** The crew's playlists on the main page: a card each, and a way to start one. */
+/**
+ * The crew's hand-made playlists on the main page: a card each, and a way to start one. The
+ * playlist (today's, which fills itself) is the page; these are the lists people put together.
+ */
 export function PlaylistShelf({ crewId }: { crewId: string }) {
   const { collectionsVersion, bumpCollections, toast } = useStore();
   const [list, setList] = useState<Collection[] | null>(null);
@@ -91,8 +94,12 @@ export function PlaylistShelf({ crewId }: { crewId: string }) {
           </button>
         )}
       </div>
+      <p className="faint shelf__empty" style={{ margin: "0 0 10px" }}>
+        This playlist fills itself from what everyone plays. These are the ones you put together by hand
+        {list.length === 0 ? ": open any track and tap “Add to a playlist”." : "."}
+      </p>
       {creating && <NewPlaylistForm busy={busy} onSubmit={create} onCancel={() => setCreating(false)} autoFocus />}
-      {list.length > 0 ? (
+      {list.length > 0 && (
         <div className="mixes">
           {list.map((c) => (
             <Link key={c.id} href={`/playlists/${c.id}`} className="mix">
@@ -102,8 +109,6 @@ export function PlaylistShelf({ crewId }: { crewId: string }) {
             </Link>
           ))}
         </div>
-      ) : (
-        !creating && <p className="faint shelf__empty">Keep the good ones somewhere. Open any track and tap &ldquo;Add to a playlist&rdquo;.</p>
       )}
     </section>
   );

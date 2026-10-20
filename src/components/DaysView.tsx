@@ -66,6 +66,9 @@ export function DaysView() {
           {crew.name} · {dayCount === 1 ? "1 day" : `${dayCount} days`} · {total === 1 ? "1 track" : `${total} tracks`}
         </span>
       </div>
+      <p className="muted" style={{ margin: "-10px 0 20px", fontSize: 14.5, maxWidth: "56ch" }}>
+        The playlist, kept by the day: everything the crew played or sent, newest day first. Today is the Playlist tab.
+      </p>
       {!playlist ? (
         <div className="skeleton" style={{ height: 64 }} />
       ) : months.length === 0 ? (
