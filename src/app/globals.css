@@ -4,7 +4,8 @@
   --surface-3: #1c1c1f;
   --ink: #efe9df;
   --ink-2: rgba(239, 233, 223, 0.64);
-  --ink-3: rgba(239, 233, 223, 0.4);
+  /* Captions: 0.52 reads 4.9:1 on the page and 4.7:1 on a tile, so small labels pass AA in the dark. */
+  --ink-3: rgba(239, 233, 223, 0.52);
   --ink-4: rgba(239, 233, 223, 0.18);
   --line: rgba(239, 233, 223, 0.1);
   --line-2: rgba(239, 233, 223, 0.16);
@@ -31,7 +32,8 @@
     --surface-3: #ebe7df;
     --ink: #151412;
     --ink-2: rgba(21, 20, 18, 0.66);
-    --ink-3: rgba(21, 20, 18, 0.42);
+    /* 0.62 on paper is 4.9:1 on the page and 4.8:1 on a tile. */
+    --ink-3: rgba(21, 20, 18, 0.62);
     --ink-4: rgba(21, 20, 18, 0.16);
     --line: rgba(21, 20, 18, 0.1);
     --line-2: rgba(21, 20, 18, 0.18);
@@ -47,7 +49,7 @@
   --surface-3: #ebe7df;
   --ink: #151412;
   --ink-2: rgba(21, 20, 18, 0.66);
-  --ink-3: rgba(21, 20, 18, 0.42);
+  --ink-3: rgba(21, 20, 18, 0.62);
   --ink-4: rgba(21, 20, 18, 0.16);
   --line: rgba(21, 20, 18, 0.1);
   --line-2: rgba(21, 20, 18, 0.18);
@@ -113,6 +115,7 @@ button {
 button:focus-visible,
 a:focus-visible,
 input:focus-visible,
+textarea:focus-visible,
 [tabindex]:focus-visible {
   outline: 2px solid color-mix(in srgb, var(--accent) 70%, var(--ink));
   outline-offset: 3px;
@@ -364,21 +367,27 @@ img {
     padding-bottom: calc(72px + var(--sab));
   }
 
+  .reel {
+    --stage-min: calc(100dvh - var(--topbar) - var(--sat) - 72px - var(--sab));
+  }
+
   .stage {
-    min-height: calc(100dvh - var(--topbar) - var(--sat) - 72px - var(--sab));
     padding-bottom: 40px;
   }
 
-  .hint {
-    bottom: 8px;
+  /* Under the playlist header there is no room to centre the card: it flows, and the page scrolls. */
+  .reel--embedded {
+    --stage-min: 0px;
+  }
+
+  .reel--embedded .stage {
+    justify-content: flex-start;
+    padding-top: 40px;
+    padding-bottom: 12px;
   }
 
   .toasts {
     bottom: calc(84px + var(--sab));
-  }
-
-  .sheet {
-    padding-bottom: calc(26px + var(--sab));
   }
 }
 
@@ -525,8 +534,14 @@ img {
 }
 
 .field:focus {
-  outline: none;
   border-bottom-color: var(--ink);
+}
+
+/* Keyboard focus keeps the ring (the underline alone is too quiet); the ring hugs an underlined field. */
+.field:focus-visible,
+.textarea:focus-visible {
+  outline-offset: 2px;
+  border-radius: 6px;
 }
 
 .field--lg {
@@ -549,7 +564,6 @@ img {
 }
 
 .textarea:focus {
-  outline: none;
   border-bottom-color: var(--ink);
 }
 
@@ -560,10 +574,20 @@ img {
 
 /* ---------- stage (reel) ---------- */
 
+/*
+ * How tall the stage wants to be: the window under the top bar on its own page, and 200px less
+ * under the playlist header (name, byline, maybe the live band), so the card and its buttons fit
+ * without a scroll on an 800px screen.
+ */
 .reel {
+  --stage-min: calc(100dvh - var(--topbar) - var(--sat));
   position: relative;
   z-index: 1;
-  min-height: calc(100dvh - var(--topbar) - var(--sat));
+  min-height: var(--stage-min);
+}
+
+.reel--embedded {
+  --stage-min: calc(100dvh - var(--topbar) - var(--sat) - 200px);
 }
 
 .reel__meta {
@@ -576,17 +600,25 @@ img {
   pointer-events: none;
 }
 
+/*
+ * The browser keeps vertical panning (the page scrolls from the card like anywhere else) and the
+ * card keeps horizontal drags, so a swipe to the right reaches the pointer handlers on touch.
+ * The stage is a size container so the title scales with the column it is in, not the window.
+ */
 .stage {
   position: relative;
-  min-height: calc(100dvh - var(--topbar) - var(--sat));
+  min-height: var(--stage-min, calc(100dvh - var(--topbar) - var(--sat)));
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   padding: 24px 22px calc(76px + var(--sab));
-  touch-action: pan-x;
+  touch-action: pan-y;
   user-select: none;
   -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  container-type: inline-size;
+  container-name: stage;
 }
 
 .stagecard {
@@ -608,6 +640,7 @@ img {
 .cover {
   position: relative;
   width: min(74vw, 44vh, 420px);
+  max-width: 100%;
   aspect-ratio: 1;
   border-radius: var(--r-card);
   overflow: hidden;
@@ -667,11 +700,13 @@ img {
   margin-top: 26px;
 }
 
+/* Wraps at spaces; a single word only breaks when it is wider than the whole column. */
 .stagecard__title {
   margin: 10px 0 0;
   font-size: clamp(34px, 9.2vw, 54px);
+  font-size: clamp(34px, 11cqi, 54px);
   max-width: 100%;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
   display: -webkit-box;
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
@@ -717,11 +752,10 @@ img {
   justify-content: center;
 }
 
+/* The one-line hint follows the buttons, so it never sits on top of them. */
 .hint {
-  position: absolute;
-  bottom: calc(22px + var(--sab));
-  left: 22px;
-  right: 22px;
+  margin-top: 22px;
+  max-width: 100%;
   text-align: center;
   pointer-events: none;
   font-size: 10.5px;
@@ -760,13 +794,6 @@ img {
   border-color: color-mix(in srgb, var(--accent) 60%, transparent);
 }
 
-.swipecue--next {
-  left: 50%;
-  top: 12%;
-  transform: translateX(-50%);
-  color: var(--ink);
-}
-
 .stage__actions {
   margin-top: 26px;
   display: flex;
@@ -786,44 +813,26 @@ img {
   margin: 0 0 10px;
 }
 
-/* ---------- desktop reel layout ---------- */
+/* ---------- wide reel layouts ---------- */
+
+/*
+ * The stage picks its layout from the room the page actually has (the shell's content box, which
+ * the friends rail takes 300px out of), not from the window. Reel.tsx measures the same box, so
+ * what the CSS lays out is what React renders. One column under 900px, the card beside the stage
+ * from 900px, and the queue on the left from 1180px.
+ */
+.shell {
+  container-type: inline-size;
+  container-name: shell;
+}
 
 .reel__layout {
   display: grid;
   grid-template-columns: 1fr;
 }
 
-@media (min-width: 1100px) {
-  .reel__layout {
-    grid-template-columns: 280px minmax(0, 1fr) 400px;
-    gap: 0;
-    padding: 0 28px;
-    min-height: calc(100dvh - var(--topbar) - var(--sat));
-  }
-
-  .stage {
-    min-height: calc(100dvh - var(--topbar) - var(--sat));
-    padding-bottom: 48px;
-    touch-action: auto;
-  }
-
-  .cover {
-    width: min(38vh, 440px);
-  }
-
-  .stagecard__title {
-    font-size: clamp(40px, 4.4vw, 66px);
-  }
-}
-
 .queue {
   display: none;
-}
-
-@media (min-width: 1100px) {
-  .reel__meta {
-    display: none;
-  }
 }
 
 .queue__head {
@@ -841,13 +850,32 @@ img {
   display: none;
 }
 
-@media (min-width: 1100px) {
-  .queue {
-    display: block;
-    padding: 18px 0 40px;
+@container shell (min-width: 900px) {
+  .reel__layout {
+    grid-template-columns: minmax(360px, 1fr) minmax(320px, 400px);
+    gap: 0 24px;
+    padding: 0 28px;
+    min-height: var(--stage-min);
+  }
+
+  /* The stage keeps its own height; the card panel beside it must not stretch it and push the buttons down. */
+  .stage {
     align-self: start;
-    position: sticky;
-    top: calc(var(--topbar) + var(--sat));
+    padding-bottom: 48px;
+  }
+
+  .reel--embedded .stage {
+    padding-top: 12px;
+    padding-bottom: 28px;
+  }
+
+  .cover {
+    width: min(36vh, 440px);
+  }
+
+  .stagecard__title {
+    font-size: clamp(36px, 4.4vw, 66px);
+    font-size: clamp(36px, 11cqi, 66px);
   }
 
   .panel {
@@ -868,6 +896,25 @@ img {
 
   .panel::-webkit-scrollbar {
     display: none;
+  }
+}
+
+@container shell (min-width: 1180px) {
+  .reel__layout {
+    grid-template-columns: minmax(200px, 240px) minmax(360px, 1fr) 400px;
+    gap: 0 12px;
+  }
+
+  .reel__meta {
+    display: none;
+  }
+
+  .queue {
+    display: block;
+    padding: 18px 0 40px;
+    align-self: start;
+    position: sticky;
+    top: calc(var(--topbar) + var(--sat));
   }
 }
 
@@ -1056,9 +1103,19 @@ img {
   overscroll-behavior: contain;
   background: var(--surface-2);
   border-radius: var(--r-sheet) var(--r-sheet) 0 0;
-  padding: 10px 22px calc(26px + var(--sab));
+  padding: 10px 22px 0;
   box-shadow: 0 -20px 60px rgba(0, 0, 0, 0.5);
   animation: rise 460ms var(--ease);
+}
+
+/* The sheet itself takes focus when it opens; the ring belongs on what is inside it. */
+.sheet:focus {
+  outline: none;
+}
+
+/* The bottom padding lives on the body, not the scroller, so a sticky row can sit on the true bottom edge. */
+.sheet__body {
+  padding-bottom: calc(26px + var(--sab));
 }
 
 .sheet__handle {
@@ -1067,6 +1124,21 @@ img {
   border-radius: 999px;
   background: var(--ink-4);
   margin: 4px auto 18px;
+}
+
+/* On a phone the track's actions stay in reach at the foot of the sheet while the rest scrolls. */
+@media (max-width: 719px) {
+  .sheet .tc__actions {
+    position: sticky;
+    bottom: 0;
+    z-index: 2;
+    margin-left: -22px;
+    margin-right: -22px;
+    padding: 12px 22px calc(12px + var(--sab));
+    background: color-mix(in srgb, var(--surface-2) 92%, transparent);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+  }
 }
 
 @media (min-width: 720px) {
@@ -1080,8 +1152,12 @@ img {
     transform: translate(-50%, -50%);
     border-radius: var(--r-sheet);
     border: 1px solid var(--line);
-    padding: 26px 28px 28px;
+    padding: 26px 28px 0;
     animation: pop 420ms var(--spring);
+  }
+
+  .sheet__body {
+    padding-bottom: 28px;
   }
 
   .sheet__handle {
@@ -1897,13 +1973,14 @@ img {
   gap: 8px;
 }
 
+/* "Live now" is one color everywhere: the red of the nav beacon, never the artwork's accent. */
 .live__dot {
   display: inline-block;
   width: 7px;
   height: 7px;
   border-radius: 999px;
-  background: var(--orb-accent, var(--accent));
-  box-shadow: 0 0 0 0 color-mix(in srgb, var(--orb-accent, var(--accent)) 60%, transparent);
+  background: var(--live);
+  box-shadow: 0 0 0 0 color-mix(in srgb, var(--live) 60%, transparent);
   animation: livedot 1.6s ease-out infinite;
   vertical-align: middle;
   margin-right: 6px;
@@ -1999,6 +2076,19 @@ img {
   padding: 6px;
 }
 
+/* On a phone the bell is not at the edge, so the feed spans the screen instead of hanging off it. */
+@media (max-width: 719px) {
+  .pop.notices {
+    position: fixed;
+    top: calc(var(--topbar) + var(--sat) - 4px);
+    left: 14px;
+    right: 14px;
+    width: auto;
+    max-height: calc(100dvh - var(--topbar) - var(--sat) - 90px - var(--sab));
+    overflow: auto;
+  }
+}
+
 .notices__empty {
   margin: 0;
   padding: 14px 12px;
@@ -2066,7 +2156,7 @@ img {
 
 @keyframes livedot {
   0% {
-    box-shadow: 0 0 0 0 color-mix(in srgb, var(--orb-accent, var(--accent)) 60%, transparent);
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--live) 60%, transparent);
   }
   70% {
     box-shadow: 0 0 0 7px transparent;
@@ -2384,7 +2474,7 @@ img {
 }
 
 .liveband__cta {
-  color: var(--orb-accent, var(--accent));
+  color: var(--live);
 }
 
 /* ---------- pocket mode ---------- */
@@ -2873,7 +2963,7 @@ html.is-pocket {
   width: 11px;
   height: 11px;
   border-radius: 999px;
-  background: var(--orb-accent, var(--accent));
+  background: var(--live);
   border: 2px solid var(--surface);
   animation: livedot 1.6s ease-out infinite;
 }
@@ -2949,7 +3039,7 @@ html.is-pocket {
 }
 
 .avatar.is-live {
-  box-shadow: 0 0 0 2px var(--orb-accent, var(--accent));
+  box-shadow: 0 0 0 2px var(--live);
 }
 
 .iconbtn--photo {
@@ -2991,11 +3081,14 @@ html.is-pocket {
   margin: 0;
   width: 100%;
   max-width: 560px;
-  outline: none;
 }
 
 .crewpage__input:focus {
   border-bottom-color: var(--line-2);
+}
+
+.crewpage__input:focus:not(:focus-visible) {
+  outline: none;
 }
 
 .people {
@@ -3139,9 +3232,75 @@ html.is-pocket {
   text-overflow: ellipsis;
 }
 
+/*
+ * The row opens from one real button that stretches over the whole row, so it is one tab stop
+ * and Enter or Space opens it. The preview button sits above the stretch so it stays its own target.
+ */
+.pl__row {
+  position: relative;
+}
+
+.pl__open {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  text-align: left;
+  color: inherit;
+}
+
+.pl__open::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+}
+
+.pl__open:focus-visible {
+  outline: none;
+}
+
+.pl__row:has(.pl__open:focus-visible) {
+  outline: 2px solid color-mix(in srgb, var(--accent) 70%, var(--ink));
+  outline-offset: -2px;
+}
+
+.pl__row .log__play {
+  z-index: 1;
+}
+
 .pl__note {
   color: var(--ink-2);
   font-style: italic;
+}
+
+/* A line someone wrote with a send: one line of it under the artist, in the sender's voice. */
+.pl__excerpt {
+  margin-top: 3px;
+  font-size: 13px;
+  line-height: 1.35;
+  color: var(--ink-2);
+  font-style: italic;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pl__excerpt::before {
+  content: "“";
+}
+
+.pl__excerpt::after {
+  content: "”";
+}
+
+/* A deliberate send carries who sent it, so it reads apart from the automatic stream. */
+.pl__sender {
+  font-size: 10.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-weight: 600;
+  color: var(--ink-2);
+  white-space: nowrap;
 }
 
 .pl__meta {

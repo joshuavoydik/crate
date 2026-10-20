@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useStore } from "./Store";
-import { Avatar } from "./Avatar";
+import { Avatar, artFallback } from "./Avatar";
 import { useLive } from "./LiveView";
 import { timeAgo, sourceName } from "@/lib/client";
 
@@ -78,7 +78,7 @@ export function FriendsRail() {
                 </span>
                 {p.artworkUrl && (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img className="rail__art" src={p.artworkUrl} alt="" />
+                  <img className="rail__art" src={p.artworkUrl} alt="" onError={artFallback} />
                 )}
               </Link>
             </li>

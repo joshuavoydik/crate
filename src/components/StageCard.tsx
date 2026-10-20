@@ -3,26 +3,27 @@
 import { useEffect, useRef, useState } from "react";
 import { usePlayer } from "./Player";
 import { IconPlay } from "./Icons";
+import { artFallback } from "./Avatar";
 import { timeAgo, viaLabel } from "@/lib/client";
 import type { Send } from "@/lib/types";
 
 export type Exit = "up" | "right" | "down" | null;
 
 /**
- * The card on the stage: cover, title, note, preview progress, and the swipe gestures.
- * Up: next. Right: keep. Down or long-press: open the full card. Tap: play/pause.
+ * The card on the stage: cover, title, note, preview progress, and the swipe gesture.
+ * Right: keep. Long-press: open the full card. Tap: play/pause.
+ * Vertical movement is never a gesture: the page scrolls from the card like from anywhere else
+ * (the stage leaves pan-y to the browser), and Next is the button or the J key.
  */
 export function StageCard({
   send,
   exit,
-  onNext,
   onSave,
   onOpen,
   showMeta,
 }: {
   send: Send;
   exit: Exit;
-  onNext: () => void;
   onSave: () => void;
   onOpen: () => void;
   showMeta: boolean;
@@ -30,8 +31,9 @@ export function StageCard({
   const player = usePlayer();
   const t = send.track;
   const ref = useRef<HTMLDivElement>(null);
-  const [drag, setDrag] = useState<{ dx: number; dy: number } | null>(null);
-  const start = useRef<{ x: number; y: number; t: number; id: number } | null>(null);
+  const [drag, setDrag] = useState<number | null>(null);
+  /** The pointer that started on the card; `axis` is decided by the first clear movement. */
+  const start = useRef<{ x: number; y: number; t: number; id: number; axis: "x" | "y" | null } | null>(null);
   const longPress = useRef<number | null>(null);
   const [settling, setSettling] = useState(false);
 
@@ -44,11 +46,19 @@ export function StageCard({
     setSettling(false);
   }, [send.id]);
 
+  function clearLongPress() {
+    if (longPress.current) {
+      clearTimeout(longPress.current);
+      longPress.current = null;
+    }
+  }
+
   function onPointerDown(e: React.PointerEvent) {
     if (e.button !== 0) return;
-    start.current = { x: e.clientX, y: e.clientY, t: Date.now(), id: e.pointerId };
+    start.current = { x: e.clientX, y: e.clientY, t: Date.now(), id: e.pointerId, axis: null };
     (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
     setSettling(false);
+    clearLongPress();
     longPress.current = window.setTimeout(() => {
       longPress.current = null;
       if (start.current) {
@@ -64,33 +74,37 @@ export function StageCard({
     if (!s || s.id !== e.pointerId) return;
     const dx = e.clientX - s.x;
     const dy = e.clientY - s.y;
-    if (Math.hypot(dx, dy) > 6 && longPress.current) {
-      clearTimeout(longPress.current);
-      longPress.current = null;
+    if (s.axis === null) {
+      if (Math.hypot(dx, dy) < 8) return;
+      clearLongPress();
+      s.axis = Math.abs(dx) > Math.abs(dy) ? "x" : "y";
     }
-    setDrag({ dx, dy });
+    // A vertical drag belongs to the page; the card stays put and nothing happens on release.
+    if (s.axis === "y") return;
+    setDrag(dx);
   }
 
   function onPointerUp(e: React.PointerEvent) {
     const s = start.current;
     if (!s || s.id !== e.pointerId) return;
     start.current = null;
-    if (longPress.current) {
-      clearTimeout(longPress.current);
-      longPress.current = null;
-    }
+    clearLongPress();
     const dx = e.clientX - s.x;
     const dy = e.clientY - s.y;
-    const dist = Math.hypot(dx, dy);
     const quick = Date.now() - s.t < 350;
     setDrag(null);
-    if (dist < 8) {
+    if (s.axis === null && Math.hypot(dx, dy) < 8) {
       player.play(t.id, t.previewUrl);
       return;
     }
-    if (dy < -90 || (quick && dy < -40 && Math.abs(dx) < 60)) return onNext();
-    if (dx > 100 || (quick && dx > 50 && Math.abs(dy) < 60)) return onSave();
-    if (dy > 90 || (quick && dy > 45 && Math.abs(dx) < 60)) return onOpen();
+    if (s.axis === "x" && (dx > 100 || (quick && dx > 50))) return onSave();
+    if (s.axis === "x") setSettling(true);
+  }
+
+  function onPointerCancel() {
+    start.current = null;
+    clearLongPress();
+    setDrag(null);
     setSettling(true);
   }
 
@@ -104,19 +118,15 @@ export function StageCard({
     opacity = 0;
   } else if (exit === "down") {
     transform = "translateY(18px)";
-  } else if (drag) {
-    transform = `translate(${drag.dx * 0.85}px, ${drag.dy * 0.85}px) rotate(${drag.dx * 0.025}deg)`;
+  } else if (drag !== null) {
+    transform = `translateX(${drag * 0.85}px) rotate(${drag * 0.025}deg)`;
   }
-  const saveCue = drag ? Math.max(0, Math.min(1, (drag.dx - 30) / 70)) : 0;
-  const nextCue = drag ? Math.max(0, Math.min(1, (-drag.dy - 30) / 70)) : 0;
+  const saveCue = drag !== null ? Math.max(0, Math.min(1, (drag - 30) / 70)) : 0;
 
   return (
     <>
       <div className="swipecue swipecue--save" style={{ opacity: saveCue }}>
         Keep
-      </div>
-      <div className="swipecue swipecue--next" style={{ opacity: nextCue }}>
-        Next
       </div>
       <div
         ref={ref}
@@ -125,17 +135,13 @@ export function StageCard({
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
-        onPointerCancel={() => {
-          start.current = null;
-          setDrag(null);
-          setSettling(true);
-        }}
+        onPointerCancel={onPointerCancel}
         onTransitionEnd={() => setSettling(false)}
       >
         <div className={`cover${t.artworkUrl ? "" : " cover--empty"}`} style={{ ["--accent" as string]: t.accent ?? undefined }}>
           {t.artworkUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={t.artworkUrl} alt={`${t.title} artwork`} draggable={false} />
+            <img src={t.artworkUrl} alt={`${t.title} artwork`} draggable={false} onError={artFallback} />
           ) : (
             <span className="caps">No artwork</span>
           )}

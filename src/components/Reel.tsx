@@ -6,6 +6,7 @@ import { usePlayer } from "./Player";
 import { StageCard, type Exit } from "./StageCard";
 import { TrackCard } from "./TrackCard";
 import { Sheet } from "./Sheet";
+import { artFallback } from "./Avatar";
 import { IconKeep, IconNext, IconDeck, IconPlay, IconPause } from "./Icons";
 import { api, flag, setFlag, timeAgo } from "@/lib/client";
 import { analyzeTrack } from "@/lib/audio/analyze";
@@ -13,21 +14,38 @@ import { openable } from "@/lib/resolve/links";
 import type { Send, ReactionStatus, Track, LogItem } from "@/lib/types";
 import Link from "next/link";
 
-function useDesktop(): boolean {
-  const [desktop, setDesktop] = useState(false);
+/**
+ * How many columns the stage gets: "one" (the card alone, details in a sheet), "two" (the card
+ * beside the stage) or "three" (the queue as well). It follows the room the page actually has,
+ * the shell's content box, which the friends rail takes 300px out of. The thresholds match the
+ * container queries on `.shell` in globals.css, so CSS and React always agree.
+ */
+type Layout = "one" | "two" | "three";
+
+function useLayout(): Layout {
+  const [layout, setLayout] = useState<Layout>("one");
   useEffect(() => {
-    const mq = window.matchMedia("(min-width: 1100px)");
-    const update = () => setDesktop(mq.matches);
-    update();
-    mq.addEventListener("change", update);
-    return () => mq.removeEventListener("change", update);
+    const shell = document.querySelector("main.shell");
+    if (!shell || typeof ResizeObserver === "undefined") {
+      const w = window.innerWidth;
+      setLayout(w >= 1180 ? "three" : w >= 900 ? "two" : "one");
+      return;
+    }
+    const ro = new ResizeObserver((entries) => {
+      const w = entries[0]?.contentRect.width ?? 0;
+      setLayout(w >= 1180 ? "three" : w >= 900 ? "two" : "one");
+    });
+    ro.observe(shell);
+    return () => ro.disconnect();
   }, []);
-  return desktop;
+  return layout;
 }
 
 export function Reel({ embedded = false, onCaughtUp }: { embedded?: boolean; onCaughtUp?: () => void } = {}) {
   const { me, crew, setAccentTrack, toast, sendsVersion, openSend, openInvite } = useStore();
-  const desktop = useDesktop();
+  const layout = useLayout();
+  /** The card has a panel of its own beside the stage; otherwise it opens in a sheet. */
+  const desktop = layout !== "one";
   const player = usePlayer();
   const [sends, setSends] = useState<Send[] | null>(null);
   const [index, setIndex] = useState(0);
@@ -263,9 +281,11 @@ export function Reel({ embedded = false, onCaughtUp }: { embedded?: boolean; onC
   const others = crew.members.filter((m) => m.id !== me.id);
   const remaining = sends.length - index;
 
+  const reelClass = `reel${embedded ? " reel--embedded" : ""}`;
+
   if (!current) {
     return (
-      <div className="reel">
+      <div className={reelClass}>
         <div className="empty">
           <h2 className="display empty__title">Nothing new.</h2>
           <p className="muted">
@@ -299,7 +319,7 @@ export function Reel({ embedded = false, onCaughtUp }: { embedded?: boolean; onC
                     <div className="log__artwrap">
                       {i.track.artworkUrl ? (
                         // eslint-disable-next-line @next/next/no-img-element
-                        <img className="strip__art" src={i.track.artworkUrl} alt="" />
+                        <img className="strip__art" src={i.track.artworkUrl} alt="" onError={artFallback} />
                       ) : (
                         <div className="strip__art" />
                       )}
@@ -346,8 +366,8 @@ export function Reel({ embedded = false, onCaughtUp }: { embedded?: boolean; onC
   const upcoming = sends.slice(index);
 
   return (
-    <div className="reel">
-      {!desktop && (
+    <div className={reelClass}>
+      {layout !== "three" && (
         <div className="reel__meta caps">
           <span className="num">{remaining} left</span>
           {index > 0 && (
@@ -358,7 +378,7 @@ export function Reel({ embedded = false, onCaughtUp }: { embedded?: boolean; onC
         </div>
       )}
       <div className="reel__layout">
-        {desktop && (
+        {layout === "three" && (
           <aside className="queue" aria-label="Up next">
             <div className="queue__head">
               <span className="caps num">Up next · {remaining} left</span>
@@ -380,7 +400,7 @@ export function Reel({ embedded = false, onCaughtUp }: { embedded?: boolean; onC
                   >
                     {s.track.artworkUrl ? (
                       // eslint-disable-next-line @next/next/no-img-element
-                      <img className="queue__art" src={s.track.artworkUrl} alt="" />
+                      <img className="queue__art" src={s.track.artworkUrl} alt="" onError={artFallback} />
                     ) : (
                       <div className="queue__art" />
                     )}
@@ -398,7 +418,7 @@ export function Reel({ embedded = false, onCaughtUp }: { embedded?: boolean; onC
         )}
 
         <section className="stage" aria-label="Now playing">
-          <StageCard key={current.id} send={current} exit={exit} onNext={next} onSave={save} onOpen={() => setCardOpen(true)} showMeta={me.isDj} />
+          <StageCard key={current.id} send={current} exit={exit} onSave={save} onOpen={() => setCardOpen(true)} showMeta={me.isDj} />
           <div className="stage__actions">
             <button className="btn btn--sm btn--ghost" onClick={next} title="Next (J)">
               <IconNext size={14} /> Next
@@ -425,7 +445,7 @@ export function Reel({ embedded = false, onCaughtUp }: { embedded?: boolean; onC
                   <span className="kbd">O</span> open <span className="kbd">⌘K</span> send
                 </div>
               )
-            : showHint && <div className="hint caps">Up for next · right to keep · hold for details</div>}
+            : showHint && <div className="hint caps">Swipe right to keep · hold for details</div>}
         </section>
 
         <aside className="panel" aria-label="Track details">
