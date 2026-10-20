@@ -53,16 +53,31 @@ export function Welcome({ invite }: { invite?: { code: string; crewName: string;
             <strong style={{ color: "var(--ink)" }}>{invite.crewName}</strong>.
           </>
         ) : (
-          "Music between friends, with memory. Send anything from anywhere; the agent resolves it, previews it, and remembers what landed."
+          "Music between friends, with memory. What you play shows up for your crew as you play it, and is kept. Only the crew ever sees it."
         )}
       </p>
 
       {mode === "start" ? (
         <form className="welcome__form" onSubmit={start}>
-          <span className="label caps">Your name</span>
-          <input className="field" value={yourName} onChange={(e) => setYourName(e.target.value)} placeholder="Joshua" autoFocus required maxLength={60} />
-          <span className="label caps">Name the crew</span>
-          <input className="field" value={crewName} onChange={(e) => setCrewName(e.target.value)} placeholder="Joshua & Ariel" maxLength={60} />
+          <label className="label caps" htmlFor="start-name">
+            Your name
+          </label>
+          <input
+            id="start-name"
+            className="field"
+            value={yourName}
+            onChange={(e) => setYourName(e.target.value)}
+            placeholder="First name is fine"
+            autoFocus
+            required
+            maxLength={60}
+            autoComplete="name"
+            autoCapitalize="words"
+          />
+          <label className="label caps" htmlFor="start-crew">
+            Name the crew
+          </label>
+          <input id="start-crew" className="field" value={crewName} onChange={(e) => setCrewName(e.target.value)} placeholder="Optional; you can rename it later" maxLength={60} autoComplete="off" />
           {err && (
             <p className="muted" style={{ marginTop: 12, fontSize: 14 }}>
               {err}
@@ -79,12 +94,39 @@ export function Welcome({ invite }: { invite?: { code: string; crewName: string;
         </form>
       ) : (
         <form className="welcome__form" onSubmit={join}>
-          <span className="label caps">Your name</span>
-          <input className="field" value={yourName} onChange={(e) => setYourName(e.target.value)} placeholder="Ariel" autoFocus required maxLength={60} />
+          <label className="label caps" htmlFor="join-name">
+            Your name
+          </label>
+          <input
+            id="join-name"
+            className="field"
+            value={yourName}
+            onChange={(e) => setYourName(e.target.value)}
+            placeholder="First name is fine"
+            autoFocus
+            required
+            maxLength={60}
+            autoComplete="name"
+            autoCapitalize="words"
+          />
           {!invite && (
             <>
-              <span className="label caps">Invite link or code</span>
-              <input className="field" value={code} onChange={(e) => setCode(e.target.value)} placeholder="https://…/join/abc123" required />
+              <label className="label caps" htmlFor="join-code">
+                Invite link or code
+              </label>
+              <input
+                id="join-code"
+                className="field"
+                value={code}
+                onChange={(e) => setCode(e.target.value)}
+                placeholder="https://…/join/abc123"
+                required
+                autoComplete="off"
+                autoCapitalize="off"
+                autoCorrect="off"
+                spellCheck={false}
+                inputMode="url"
+              />
             </>
           )}
           {err && (
@@ -105,7 +147,7 @@ export function Welcome({ invite }: { invite?: { code: string; crewName: string;
         </form>
       )}
       <p className="faint" style={{ marginTop: 40, fontSize: 12.5, maxWidth: "40ch" }}>
-        No passwords. Your crew is private to the people with the link. Add Crate to your home screen for the full-screen version.
+        No passwords: the invite link is the key. Add Crate to your home screen for the full-screen version.
       </p>
     </div>
   );
