@@ -6,6 +6,7 @@ import { extractUrl } from "@/lib/resolve/parse";
 import { upsertTrack } from "@/lib/queries";
 import { suggestNote } from "@/lib/agent";
 import { throttled } from "@/lib/ratelimit";
+import { publicHttpUrl } from "@/lib/safe-url";
 
 /**
  * Turns a link (or a catalog pick) into a stored Track plus a suggested note.
@@ -26,6 +27,7 @@ export async function POST(req: Request) {
   } else {
     const url = extractUrl(str(body.url, 2000));
     if (!url) return error("Paste a link to a track");
+    if (!(await publicHttpUrl(url))) return error("That link points somewhere Crate cannot reach. Paste a link from Spotify, YouTube, SoundCloud, Apple Music or a public web page.");
     resolved = await resolveUrl(url);
   }
   const track = await upsertTrack(resolved);
