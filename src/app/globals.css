@@ -651,6 +651,13 @@ img {
     inset 0 0 0 1px rgba(255, 255, 255, 0.06);
   transition: box-shadow 900ms var(--ease);
 }
+/* On a short phone screen the playlist's header sits above the stage, so the cover gives up a little height
+   and the title, the note and Keep stay in the first view. */
+@media (max-width: 719px) and (max-height: 760px) {
+  .pl .cover {
+    width: min(74vw, 34vh, 420px);
+  }
+}
 
 .cover img {
   width: 100%;
