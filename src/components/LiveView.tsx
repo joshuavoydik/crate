@@ -205,15 +205,19 @@ export function LiveView() {
 
       {data && nobodyConnected && liveCount === 0 && (
         <p className="muted live__hint">
-          What you have on shows up here as you play it. Connect{" "}
-          <Link href="/settings" style={{ textDecoration: "underline" }}>
-            Spotify or Last.fm
-          </Link>
-          , or run{" "}
+          What you have on shows up here as you play it. On a Mac,{" "}
+          <Link href="/settings#mac" style={{ textDecoration: "underline" }}>
+            Crate on your Mac
+          </Link>{" "}
+          follows the Music, Spotify and SoundCloud apps; in Chrome on a computer,{" "}
           <Link href="/chrome" style={{ textDecoration: "underline" }}>
             Crate in Chrome
           </Link>{" "}
-          or on your Mac, and it follows along.
+          follows SoundCloud, YouTube and most music sites. From a phone,{" "}
+          <Link href="/settings" style={{ textDecoration: "underline" }}>
+            connect Spotify
+          </Link>{" "}
+          (or Last.fm, if you scrobble) and this page follows your Spotify app.
         </p>
       )}
 
@@ -394,7 +398,7 @@ export function Orb({
   );
 }
 
-/** A one-line pulse for the Reel: who is playing right now, if anyone. */
+/** A one-line pulse for the Playlist page: who is playing right now, if anyone. */
 export function LiveBand() {
   const { me, crew } = useStore();
   const { data } = useLive(crew?.id ?? null, 30000);

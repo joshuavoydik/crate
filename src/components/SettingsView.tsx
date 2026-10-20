@@ -1,16 +1,24 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useStore } from "./Store";
 import { Confirm } from "./Confirm";
 import { Connections } from "./Connections";
+import { PhoneNote } from "./ConnectView";
 import { ThemePicker } from "./ThemeToggle";
 import { Avatar, squareDataUrl } from "./Avatar";
 import { api, sourceName, timeAgo } from "@/lib/client";
 import { PLATFORM_LABELS, orderPlatforms } from "@/lib/resolve/links";
 import type { Me } from "@/lib/types";
+
+/** What a provider's error code means to the person who just came back from its sign-in page. */
+function connectFailure(name: string, code: string): string {
+  if (code === "access_denied") return `You stopped the ${name} sign-in, so nothing changed.`;
+  if (code === "state") return `That ${name} sign-in had gone stale (it was started a while ago, or in another browser). Nothing changed.`;
+  return `${name} did not connect. Try once more; if it keeps failing, tell whoever runs this Crate.`;
+}
 
 export function SettingsView({ appUrl }: { appUrl: string }) {
   const { me, refreshMe, toast, setAccentTrack, setPocket } = useStore();
@@ -24,19 +32,52 @@ export function SettingsView({ appUrl }: { appUrl: string }) {
   const [projectDir, setProjectDir] = useState<string | null>(null);
   const [confirm, setConfirm] = useState<{ title: string; body: string; label: string; run: () => Promise<void> } | null>(null);
   const [confirmBusy, setConfirmBusy] = useState(false);
+  const macFold = useRef<HTMLDetailsElement>(null);
+  const chromeFold = useRef<HTMLDetailsElement>(null);
 
   useEffect(() => {
     setAccentTrack(null);
     setIsIos(/iPhone|iPad|iPod/.test(navigator.userAgent));
   }, [setAccentTrack]);
 
+  // The two live paths start open for someone with nothing connected yet, on a computer, where
+  // they can be followed. A phone keeps them folded; the line above them says what a phone can do.
+  // A link to #mac or #chrome opens that fold and scrolls to it.
+  useEffect(() => {
+    const phone = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    if (me.sources.length === 0 && !phone) {
+      if (macFold.current) macFold.current.open = true;
+      if (chromeFold.current) chromeFold.current.open = true;
+    }
+    const want = location.hash === "#mac" ? macFold.current : location.hash === "#chrome" ? chromeFold.current : null;
+    if (want) {
+      want.open = true;
+      want.scrollIntoView({ block: "start", behavior: "smooth" });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  function openMac() {
+    const el = macFold.current;
+    if (!el) return;
+    el.open = true;
+    el.scrollIntoView({ block: "start", behavior: "smooth" });
+  }
+
   // Landing back from a Connect flow.
   useEffect(() => {
     const kind = params.get("connect");
     if (!kind) return;
     const err = params.get("error");
-    if (err) toast(`${sourceName(kind)} did not connect: ${err}`);
-    else {
+    if (err) {
+      console.warn(`${kind} did not connect: ${err}`);
+      toast(connectFailure(sourceName(kind), err), {
+        label: "Try again",
+        run: () => {
+          window.location.href = `/api/connect/${kind}`;
+        },
+      });
+    } else {
       toast(`${sourceName(kind)} connected. Pulling your recent likes and plays.`);
       api("/api/sync", { method: "POST", json: { force: true } }).finally(() => refreshMe());
     }
@@ -151,7 +192,108 @@ export function SettingsView({ appUrl }: { appUrl: string }) {
         </div>
       </div>
 
-      <div className="switch">
+      <div className="section" style={{ borderTop: 0, marginTop: 28, paddingTop: 0 }}>
+        <div className="caps" style={{ marginBottom: 6 }}>
+          Where you listen
+        </div>
+        <PhoneNote style={{ margin: "0 0 10px" }} />
+
+        <details
+          className="fold"
+          id="mac"
+          ref={macFold}
+          style={{ borderTop: "1px solid var(--line)", padding: "14px 0 6px", scrollMarginTop: 80 }}
+          onToggle={(e) => {
+            // Opening the fold, by hand or by the page, is the moment to fetch the download; no second click.
+            if (e.currentTarget.open && !token) showToken(false).catch(() => undefined);
+          }}
+        >
+          <summary className="fold__sum">
+            <span className="caps">Crate on your Mac</span>
+            <span className="faint fold__hint">Needs a Mac · the Music, Spotify and SoundCloud apps</span>
+          </summary>
+          <MacStatus />
+          <p className="muted" style={{ fontSize: 14.5, marginTop: 0 }}>
+            Apple Music never tells other apps what you are playing. A Mac knows, though: one download sets up a tiny helper that asks the Music, Spotify and
+            SoundCloud apps what is on, and tells Crate. Live lights up at once, and each play lands in your log and your crews&apos; playlists. It uses only
+            what ships with macOS.
+          </p>
+          {token ? (
+            <>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center", margin: "6px 0 10px" }}>
+                <a className="btn btn--sm btn--primary" href="/api/mac/terminal" download>
+                  Download the setup
+                </a>
+                <span className="faint" style={{ fontSize: 13 }}>Open the file it saves; Terminal does the rest.</span>
+              </div>
+              <ol className="steps">
+                <li>macOS asks whether to open a file from the internet: Open. A Terminal window runs for ten seconds and says it is done.</li>
+                <li>The first time something plays, macOS asks whether it may control Music or Spotify. Click OK.</li>
+              </ol>
+              <details style={{ marginTop: 10 }}>
+                <summary className="faint" style={{ fontSize: 13, cursor: "pointer" }}>Rather paste a line in Terminal, or remove it later</summary>
+                <div className="code" style={{ margin: "8px 0" }}>
+                  {macCmd}
+                </div>
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                  <button className="btn btn--sm" onClick={() => copy(macCmd, "Command")}>
+                    Copy command
+                  </button>
+                  <button className="btn btn--sm btn--ghost" onClick={() => copy(macRemoveCmd, "Remove command")}>
+                    Copy remove command
+                  </button>
+                  <a className="btn btn--sm btn--ghost" href="/api/mac/terminal?remove=1" download>
+                    Download the remover
+                  </a>
+                </div>
+              </details>
+            </>
+          ) : (
+            <div>
+              <button className="btn btn--sm" onClick={() => showToken(false)}>
+                Show the download
+              </button>
+            </div>
+          )}
+        </details>
+
+        <details className="fold" id="chrome" ref={chromeFold} style={{ borderTop: "1px solid var(--line)", padding: "14px 0 6px", scrollMarginTop: 80 }}>
+          <summary className="fold__sum">
+            <span className="caps">Crate in Chrome</span>
+            <span className="faint fold__hint">Needs Chrome on a computer · SoundCloud, YouTube and the rest</span>
+          </summary>
+          <p className="muted" style={{ fontSize: 14.5, marginTop: 0 }}>
+            A small extension for Chrome on a computer tells Crate what plays there: SoundCloud, YouTube, YouTube Music, TIDAL, Deezer, Amazon Music, Pandora,
+            and Apple Music or Spotify on the web. Live lights up as it plays, and each play lands in your log and your crews&apos; playlists. Nothing to switch
+            on.{" "}
+            <Link href="/chrome" style={{ textDecoration: "underline" }}>
+              The full walkthrough
+            </Link>
+            .
+          </p>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center", margin: "6px 0 4px" }}>
+            <Link className="btn btn--sm btn--primary" href="/chrome">
+              Set up Crate in Chrome
+            </Link>
+            <span className="faint" style={{ fontSize: 13 }}>
+              {projectDir ? (
+                <>
+                  Running from a checkout: load the <code>crate-chrome</code> folder inside {projectDir}, then open that page.
+                </>
+              ) : (
+                "The download, the steps, and the page that pairs it."
+              )}
+            </span>
+          </div>
+        </details>
+
+        <div className="caps" style={{ margin: "22px 0 4px" }}>
+          Accounts
+        </div>
+        <Connections onMac={openMac} />
+      </div>
+
+      <div className="switch" style={{ marginTop: 22 }}>
         <div>
           <div>Appearance</div>
           <div className="faint" style={{ fontSize: 13 }}>
@@ -200,96 +342,10 @@ export function SettingsView({ appUrl }: { appUrl: string }) {
           ))}
       </div>
 
-      <div className="section">
-        <div className="caps" style={{ marginBottom: 6 }}>
-          Where you listen
-        </div>
-        <Connections />
-      </div>
-
-      <details className="section fold">
-        <summary className="fold__sum">
-          <span className="caps">Crate in Chrome</span>
-          <span className="faint fold__hint">SoundCloud, YouTube and the rest, as you play them</span>
-        </summary>
-        <p className="muted" style={{ fontSize: 14.5, marginTop: 0 }}>
-          A small Chrome extension tells Crate what plays in this browser: SoundCloud, YouTube, YouTube Music, TIDAL, Deezer, Amazon Music, Pandora, and
-          Apple Music or Spotify on the web. Live lights up as it plays, and each play lands in your Log and your crews&apos; playlists. Nothing to switch on.{" "}
-          <Link href="/chrome" style={{ textDecoration: "underline" }}>
-            The full walkthrough
-          </Link>
-          .
-        </p>
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center", margin: "6px 0 4px" }}>
-          <Link className="btn btn--sm btn--primary" href="/chrome">
-            Set up Crate in Chrome
-          </Link>
-          <span className="faint" style={{ fontSize: 13 }}>
-            {projectDir ? (
-              <>
-                Running from a checkout: load the <code>crate-chrome</code> folder inside {projectDir}, then open that page.
-              </>
-            ) : (
-              "The download, the steps, and the page that pairs it."
-            )}
-          </span>
-        </div>
-      </details>
-
-      <details className="section fold">
-        <summary className="fold__sum">
-          <span className="caps">Crate on your Mac</span>
-          <span className="faint fold__hint">The Music, Spotify and SoundCloud apps on this computer, live</span>
-        </summary>
-        <MacStatus />
-        <p className="muted" style={{ fontSize: 14.5, marginTop: 0 }}>
-          Apple Music never tells other apps what you are playing. Your Mac knows, though: one download sets up a tiny helper that asks the Music, Spotify and
-          SoundCloud apps what is on, and tells Crate. Live lights up at once, and each play lands in your Log and your crews&apos; playlists. It uses only
-          what ships with macOS.
-        </p>
-        {token ? (
-          <>
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center", margin: "6px 0 10px" }}>
-              <a className="btn btn--sm btn--primary" href="/api/mac/terminal" download>
-                Download the setup
-              </a>
-              <span className="faint" style={{ fontSize: 13 }}>Open the file it saves; Terminal does the rest.</span>
-            </div>
-            <ol className="steps">
-              <li>macOS asks whether to open a file from the internet: Open. A Terminal window runs for ten seconds and says it is done.</li>
-              <li>The first time something plays, macOS asks whether it may control Music or Spotify. Click OK.</li>
-            </ol>
-            <details style={{ marginTop: 10 }}>
-              <summary className="faint" style={{ fontSize: 13, cursor: "pointer" }}>Rather paste a line in Terminal, or remove it later</summary>
-              <div className="code" style={{ margin: "8px 0" }}>
-                {macCmd}
-              </div>
-              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                <button className="btn btn--sm" onClick={() => copy(macCmd, "Command")}>
-                  Copy command
-                </button>
-                <button className="btn btn--sm btn--ghost" onClick={() => copy(macRemoveCmd, "Remove command")}>
-                  Copy remove command
-                </button>
-                <a className="btn btn--sm btn--ghost" href="/api/mac/terminal?remove=1" download>
-                  Download the remover
-                </a>
-              </div>
-            </details>
-          </>
-        ) : (
-          <div>
-            <button className="btn btn--sm" onClick={() => showToken(false)}>
-              Show install command
-            </button>
-          </div>
-        )}
-      </details>
-
       <details className="section fold">
         <summary className="fold__sum">
           <span className="caps">iMessage on your Mac</span>
-          <span className="faint fold__hint">Texted links land in your playlist</span>
+          <span className="faint fold__hint">Needs a Mac · texted links land in your playlist</span>
         </summary>
         <form
           onSubmit={(e) => {

@@ -14,15 +14,21 @@ import { MARK, SourceGlyph } from "./SourceMark";
  */
 const ORDER = ["spotify", "apple", "youtube", "soundcloud", "tidal", "lastfm"] as const;
 
-
+/** What each account brings once connected, honestly: only Spotify and Last.fm carry plays. */
 const WHAT: Record<string, string> = {
-  spotify: "Likes and recent plays",
-  apple: "Recently played",
-  youtube: "Liked videos, music only",
-  soundcloud: "Liked tracks",
-  tidal: "Favorite tracks",
-  lastfm: "Scrobbles and loved tracks",
+  spotify: "Plays and likes, from any device, a few minutes behind",
+  apple: "Recently played, a few minutes behind",
+  youtube: "Likes only; YouTube keeps watch history to itself",
+  soundcloud: "Likes only; plays come through Chrome or the Mac helper",
+  tidal: "Favorites only; plays come through Last.fm",
+  lastfm: "Scrobbles count as plays, loved tracks as likes",
 };
+
+/** Why a row is greyed out, in plain words. Apple Music has another way in, so its row is not greyed. */
+const NOT_HERE: Record<string, string> = {
+  apple: "No account link here; plays in the Music app come in through Crate on your Mac",
+};
+const NOT_YET = "Not switched on in this Crate yet";
 
 declare global {
   interface Window {
@@ -33,7 +39,7 @@ declare global {
   }
 }
 
-export function Connections({ showUnavailable = true }: { showUnavailable?: boolean }) {
+export function Connections({ showUnavailable = true, onMac }: { showUnavailable?: boolean; onMac?: () => void }) {
   const { me, refreshMe, toast } = useStore();
   const [busy, setBusy] = useState<string | null>(null);
   const [confirm, setConfirm] = useState<string | null>(null);
@@ -107,19 +113,27 @@ export function Connections({ showUnavailable = true }: { showUnavailable?: bool
       setConfirm(kind);
       return;
     }
-    if (!me.connectors[kind]) return;
+    if (!me.connectors[kind]) {
+      // Apple Music without an account link still has a way in: the Mac helper.
+      if (kind === "apple" && onMac) onMac();
+      return;
+    }
     if (kind === "apple") return void connectApple();
     if (kind === "lastfm") return void setAskLastfm(true);
     window.location.href = `/api/connect/${kind}`;
   }
 
-  const rows = ORDER.filter((k) => showUnavailable || me.connectors[k] || connected.has(k));
+  // Apple Music always has a row: when it cannot be linked here, the row says where its plays come in.
+  const rows = ORDER.filter((k) => showUnavailable || me.connectors[k] || connected.has(k) || k === "apple");
+  const greyed = ORDER.some((k) => !me.connectors[k] && !connected.has(k) && !NOT_HERE[k]);
 
   return (
     <div>
       {rows.map((kind) => {
         const s = connected.get(kind);
         const available = !!me.connectors[kind];
+        const otherWay = !s && !available && !!NOT_HERE[kind];
+        const dim = !s && !available && !otherWay;
         const sub = s
           ? s.status === "error"
             ? `Problem syncing: ${s.error}`
@@ -128,27 +142,28 @@ export function Connections({ showUnavailable = true }: { showUnavailable?: bool
               : `Connected${s.label && s.label !== sourceName(kind) ? ` as ${s.label}` : ""}${s.lastSyncAt ? ` · synced ${timeAgo(s.lastSyncAt)}` : ""}`
           : available
             ? WHAT[kind]
-            : "Not available yet";
+            : (NOT_HERE[kind] ?? NOT_YET);
+        const cta = busy === kind ? "…" : s ? (s.status === "reauth" ? "Reconnect" : "Connected") : available ? "Connect" : otherWay && onMac ? "On a Mac" : "";
         return (
           <div key={kind}>
             <button
               className="conn"
               onClick={() => tap(kind)}
-              disabled={busy === kind || (!s && !available)}
-              aria-label={`${s ? (s.status === "reauth" ? "Reconnect" : "Disconnect") : "Connect"} ${sourceName(kind)}`}
+              disabled={busy === kind || dim || (otherWay && !onMac)}
+              aria-label={`${s ? (s.status === "reauth" ? "Reconnect" : "Disconnect") : otherWay ? "How to bring in" : "Connect"} ${sourceName(kind)}`}
             >
-              <span className="conn__mark" style={{ background: MARK[kind].bg, boxShadow: kind === "tidal" ? "inset 0 0 0 1px rgba(255,255,255,0.18)" : undefined, opacity: s || available ? 1 : 0.35 }} aria-hidden>
+              <span className="conn__mark" style={{ background: MARK[kind].bg, boxShadow: kind === "tidal" ? "inset 0 0 0 1px rgba(255,255,255,0.18)" : undefined, opacity: dim ? 0.35 : 1 }} aria-hidden>
                 <SourceGlyph kind={kind} size={30} />
               </span>
               <span style={{ minWidth: 0 }}>
-                <span className="conn__name" style={{ display: "block", opacity: s || available ? 1 : 0.5 }}>
+                <span className="conn__name" style={{ display: "block", opacity: dim ? 0.5 : 1 }}>
                   {sourceName(kind)}
                 </span>
                 <span className={`conn__sub${s ? (s.status === "error" || s.status === "reauth" ? " is-error" : " is-on") : ""}`} style={{ display: "block" }}>
                   {sub}
                 </span>
               </span>
-              <span className="conn__cta">{busy === kind ? "…" : s ? (s.status === "reauth" ? "Reconnect" : "Connected") : available ? "Connect" : ""}</span>
+              <span className="conn__cta">{cta}</span>
             </button>
             {kind === "lastfm" && askLastfm && !s && (
               <form
@@ -176,13 +191,13 @@ export function Connections({ showUnavailable = true }: { showUnavailable?: bool
           </div>
         );
       })}
-      {ORDER.some((k) => !me.connectors[k] && !connected.has(k)) && showUnavailable && (
+      {greyed && showUnavailable && (
         <p className="faint" style={{ fontSize: 12.5, marginTop: 10 }}>
-          Greyed-out services need a one-time registration by whoever runs this Crate.{" "}
+          Greyed out means not switched on in this Crate yet. Whoever runs it can turn it on from{" "}
           <Link href="/setup" style={{ textDecoration: "underline" }}>
-            That&apos;s here
+            App setup
           </Link>
-          . People using the app never see it.
+          .
         </p>
       )}
       <Confirm
