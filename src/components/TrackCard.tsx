@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useStore } from "./Store";
 import { IconCheck, IconKeep, IconOut, IconDeck, IconCopy, IconPlus } from "./Icons";
+import { artFallback } from "./Avatar";
 import { formatDuration, timeAgo, viaLabel } from "@/lib/client";
 import { openable, PLATFORM_LABELS, BUY_PLATFORMS, type PlatformKey } from "@/lib/resolve/links";
 import { api } from "@/lib/client";
@@ -108,7 +109,7 @@ export function TrackCard({
         <div className="tc__head">
           {t.artworkUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img className="tc__art" src={t.artworkUrl} alt="" />
+            <img className="tc__art" src={t.artworkUrl} alt="" onError={artFallback} />
           ) : (
             <div className="tc__art" />
           )}
@@ -226,7 +227,7 @@ export function TrackCard({
                 <button key={c.appleId} className="result" style={{ cursor: "pointer" }} onClick={() => pick(c)} disabled={picking === c.appleId}>
                   {c.artworkUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img className="result__art" src={c.artworkUrl.replace("600x600", "120x120")} alt="" />
+                    <img className="result__art" src={c.artworkUrl.replace("600x600", "120x120")} alt="" onError={artFallback} />
                   ) : (
                     <div className="result__art" />
                   )}
