@@ -7,6 +7,7 @@ import { useStore } from "./Store";
 import { Confirm } from "./Confirm";
 import { Connections } from "./Connections";
 import { PhoneNote } from "./ConnectView";
+import { ChromeCard } from "./ChromeView";
 import { ThemePicker } from "./ThemeToggle";
 import { Avatar, squareDataUrl } from "./Avatar";
 import { api, sourceName, timeAgo } from "@/lib/client";
@@ -33,26 +34,24 @@ export function SettingsView({ appUrl }: { appUrl: string }) {
   const [confirm, setConfirm] = useState<{ title: string; body: string; label: string; run: () => Promise<void> } | null>(null);
   const [confirmBusy, setConfirmBusy] = useState(false);
   const macFold = useRef<HTMLDetailsElement>(null);
-  const chromeFold = useRef<HTMLDetailsElement>(null);
+  const chromeFold = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setAccentTrack(null);
     setIsIos(/iPhone|iPad|iPod/.test(navigator.userAgent));
   }, [setAccentTrack]);
 
-  // The two live paths start open for someone with nothing connected yet, on a computer, where
-  // they can be followed. A phone keeps them folded; the line above them says what a phone can do.
-  // A link to #mac or #chrome opens that fold and scrolls to it.
+  // The Mac fold starts open for someone with nothing connected yet, on a computer, where it can be
+  // followed; a phone keeps it folded, and the line above says what a phone can do. A link to #mac
+  // opens that fold and scrolls to it; #chrome scrolls to the Chrome card.
   useEffect(() => {
     const phone = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-    if (me.sources.length === 0 && !phone) {
-      if (macFold.current) macFold.current.open = true;
-      if (chromeFold.current) chromeFold.current.open = true;
-    }
-    const want = location.hash === "#mac" ? macFold.current : location.hash === "#chrome" ? chromeFold.current : null;
-    if (want) {
-      want.open = true;
-      want.scrollIntoView({ block: "start", behavior: "smooth" });
+    if (me.sources.length === 0 && !phone && macFold.current) macFold.current.open = true;
+    if (location.hash === "#mac" && macFold.current) {
+      macFold.current.open = true;
+      macFold.current.scrollIntoView({ block: "start", behavior: "smooth" });
+    } else if (location.hash === "#chrome" && chromeFold.current) {
+      chromeFold.current.scrollIntoView({ block: "start", behavior: "smooth" });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -257,35 +256,10 @@ export function SettingsView({ appUrl }: { appUrl: string }) {
           )}
         </details>
 
-        <details className="fold" id="chrome" ref={chromeFold} style={{ borderTop: "1px solid var(--line)", padding: "14px 0 6px", scrollMarginTop: 80 }}>
-          <summary className="fold__sum">
-            <span className="caps">Crate in Chrome</span>
-            <span className="faint fold__hint">Needs Chrome on a computer · SoundCloud, YouTube and the rest</span>
-          </summary>
-          <p className="muted" style={{ fontSize: 14.5, marginTop: 0 }}>
-            A small extension for Chrome on a computer tells Crate what plays there: SoundCloud, YouTube, YouTube Music, TIDAL, Deezer, Amazon Music, Pandora,
-            and Apple Music or Spotify on the web. Live lights up as it plays, and each play lands in your log and your crews&apos; playlists. Nothing to switch
-            on.{" "}
-            <Link href="/chrome" style={{ textDecoration: "underline" }}>
-              The full walkthrough
-            </Link>
-            .
-          </p>
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center", margin: "6px 0 4px" }}>
-            <Link className="btn btn--sm btn--primary" href="/chrome">
-              Set up Crate in Chrome
-            </Link>
-            <span className="faint" style={{ fontSize: 13 }}>
-              {projectDir ? (
-                <>
-                  Running from a checkout: load the <code>crate-chrome</code> folder inside {projectDir}, then open that page.
-                </>
-              ) : (
-                "The download, the steps, and the page that pairs it."
-              )}
-            </span>
-          </div>
-        </details>
+
+        <div id="chrome" ref={chromeFold} style={{ scrollMarginTop: 80, margin: "14px 0 4px" }}>
+          <ChromeCard />
+        </div>
 
         <div className="caps" style={{ margin: "22px 0 4px" }}>
           Accounts
