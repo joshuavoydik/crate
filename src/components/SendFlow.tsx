@@ -30,6 +30,8 @@ export function SendFlow() {
   const player = usePlayer();
   const [text, setText] = useState("");
   const [hits, setHits] = useState<SearchHit[]>([]);
+  /** A line for a search that came back empty or did not come back; null while there is nothing to say. */
+  const [searched, setSearched] = useState<string | null>(null);
   const [step, setStep] = useState<"input" | "resolving" | "ready">("input");
   const [resolved, setResolved] = useState<Resolved | null>(null);
   const [note, setNote] = useState("");
@@ -127,12 +129,16 @@ export function SendFlow() {
       return;
     }
     const my = ++seq.current;
+    setSearched(null);
     const t = setTimeout(async () => {
       try {
         const r = await api<{ results: SearchHit[] }>(`/api/search?q=${encodeURIComponent(q)}`);
-        if (my === seq.current) setHits(r.results);
+        if (my === seq.current) {
+          setHits(r.results);
+          setSearched(r.results.length ? null : `Nothing in the catalog for “${q}”. Paste a link from where you heard it instead.`);
+        }
       } catch {
-        /* ignore */
+        if (my === seq.current) setSearched("Search is not answering right now. A pasted link still works.");
       }
     }, 320);
     return () => clearTimeout(t);
@@ -234,6 +240,11 @@ export function SendFlow() {
                 </div>
               </div>
             </div>
+          )}
+          {step === "input" && hits.length === 0 && searched && (
+            <p className="muted" style={{ fontSize: 14, marginTop: 10 }}>
+              {searched}
+            </p>
           )}
           {step === "input" && hits.length > 0 && (
             <ul className="results">

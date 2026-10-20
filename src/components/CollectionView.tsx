@@ -80,15 +80,40 @@ export function CollectionView({ id }: { id: string }) {
     }
   }
 
-  /** The playlist's own link: anyone can open it, no account. Crate's sheet, not the system's. */
-  function share() {
+  /** The playlist's own link: anyone can open it, no account. Share turns it on; it can be turned off again. */
+  async function share() {
     if (!data) return;
+    let code = data.collection.publicCode;
+    if (!code) {
+      try {
+        const r = await api<{ collection: Collection }>(`/api/collections/${data.collection.id}`, { method: "PATCH", json: { link: true } });
+        code = r.collection.publicCode;
+        setData((d) => d && { ...d, collection: r.collection });
+        bumpCollections();
+      } catch (e) {
+        toast((e as Error).message);
+        return;
+      }
+    }
     openShare({
       title: data.collection.name,
       subtitle: `A playlist from ${crew!.name}`,
-      url: `${location.origin}/p/${data.collection.publicCode}`,
+      url: `${location.origin}/p/${code}`,
       covers: data.collection.covers,
     });
+  }
+
+  /** Withdraws the link: whoever had it is out, and Share makes a new one next time. */
+  async function unshare() {
+    if (!data) return;
+    try {
+      const r = await api<{ collection: Collection }>(`/api/collections/${data.collection.id}`, { method: "PATCH", json: { link: false } });
+      setData((d) => d && { ...d, collection: r.collection });
+      bumpCollections();
+      toast("Link turned off");
+    } catch (e) {
+      toast((e as Error).message);
+    }
   }
 
   /** This playlist, saved to where the person listens. */
@@ -157,6 +182,16 @@ export function CollectionView({ id }: { id: string }) {
             {tracks.length === 1 ? "1 track" : `${tracks.length} tracks`}
             {starter ? ` · started by ${starter.id === me.id ? "you" : starter.name.split(" ")[0]}` : ""}
             {` · ${timeAgo(collection.createdAt)}`}
+            {collection.publicCode ? (
+              <>
+                {" · anyone with the link can open it · "}
+                <button className="linklike" onClick={unshare}>
+                  Turn the link off
+                </button>
+              </>
+            ) : (
+              " · only the crew can see it"
+            )}
           </span>
         </div>
         <div className="pl__actions">

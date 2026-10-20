@@ -10,6 +10,7 @@ import { IconPlay, IconPause, IconPlus } from "./Icons";
 import { api, initials, timeAgo, sourceName } from "@/lib/client";
 import { openable, PLATFORM_LABELS } from "@/lib/resolve/links";
 import type { LivePerson, LiveSession } from "@/lib/live";
+import { artFallback } from "./Avatar";
 
 type LiveResponse = { people: LivePerson[]; history: LiveSession[]; tunedIn: number; now: number };
 
@@ -29,6 +30,8 @@ function positionOf(p: LivePerson, now: number): number | null {
 export function useLive(crewId: string | null, everyMs: number, opts: { tune?: boolean; history?: boolean } = {}) {
   const [data, setData] = useState<LiveResponse | null>(null);
   const [skew, setSkew] = useState(0);
+  /** When the last fetch failed: the page keeps what it had and says it is out of touch. */
+  const [stale, setStale] = useState(false);
   const tune = !!opts.tune;
   const history = !!opts.history;
   const load = useCallback(async () => {
@@ -37,8 +40,9 @@ export function useLive(crewId: string | null, everyMs: number, opts: { tune?: b
       const r = await api<LiveResponse>(`/api/live?crew=${encodeURIComponent(crewId)}&tune=${tune ? 1 : 0}&history=${history ? 1 : 0}`);
       setSkew(Date.now() - r.now);
       setData(r);
+      setStale(false);
     } catch {
-      /* offline */
+      setStale(true);
     }
   }, [crewId, tune, history]);
   useEffect(() => {
@@ -58,7 +62,7 @@ export function useLive(crewId: string | null, everyMs: number, opts: { tune?: b
       window.removeEventListener("focus", onVis);
     };
   }, [load, everyMs]);
-  return { data, skew, reload: load };
+  return { data, skew, stale, reload: load };
 }
 
 /** A clock that ticks once a second while mounted. */
@@ -74,7 +78,7 @@ export function useNow(): number {
 export function LiveView() {
   const { me, crew, setAccentTrack, openSend, toast, refreshMe } = useStore();
   const player = usePlayer();
-  const { data, skew } = useLive(crew?.id ?? null, 8000, { tune: true, history: true });
+  const { data, skew, stale } = useLive(crew?.id ?? null, 8000, { tune: true, history: true });
   const now = useNow() - skew;
   const [open, setOpen] = useState<LivePerson | null>(null);
   const [following, setFollowing] = useState<{ id: string; song: string } | null>(null);
@@ -163,7 +167,9 @@ export function LiveView() {
               <i className="live__dot" /> Following {people.find((x) => x.person.id === following.id)?.person.name.split(" ")[0] ?? ""} · stop
             </button>
           )}
-          {data ? (
+          {stale ? (
+            <span title="The last check did not get through; this is what Crate last heard">Out of touch · retrying</span>
+          ) : data ? (
             <>
               {liveCount ? `${liveCount} playing` : "Quiet right now"}
               {data.tunedIn > 1 ? <span className="live__tuned"> · {data.tunedIn} tuned in</span> : null}
@@ -235,7 +241,7 @@ export function LiveView() {
           <div className="livesheet">
             {open.artworkUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img className="livesheet__art" src={open.artworkUrl} alt="" />
+              <img className="livesheet__art" src={open.artworkUrl} alt="" onError={artFallback} />
             ) : (
               <div className="livesheet__art" />
             )}
@@ -365,7 +371,7 @@ export function Orb({
           <span className="orb__grooves" />
           {p.artworkUrl || p.person.avatarUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img className="orb__label" src={p.artworkUrl ?? p.person.avatarUrl ?? ""} alt="" draggable={false} />
+            <img className="orb__label" src={p.artworkUrl ?? p.person.avatarUrl ?? ""} alt="" draggable={false} onError={artFallback} />
           ) : (
             <span className="orb__label orb__label--empty">{initials(p.person.name)}</span>
           )}
@@ -419,7 +425,7 @@ export function LiveBand() {
       <span className="liveband__disc">
         {p.artworkUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={p.artworkUrl} alt="" />
+          <img src={p.artworkUrl} alt="" onError={artFallback} />
         ) : null}
       </span>
       <span className="liveband__text">
@@ -492,7 +498,7 @@ export function History({
                     <span className={`lh__record${isPlaying ? " is-spinning" : ""}`}>
                       {s.artworkUrl ? (
                         // eslint-disable-next-line @next/next/no-img-element
-                        <img src={s.artworkUrl} alt="" draggable={false} />
+                        <img src={s.artworkUrl} alt="" draggable={false} onError={artFallback} />
                       ) : (
                         <span className="lh__blank" />
                       )}

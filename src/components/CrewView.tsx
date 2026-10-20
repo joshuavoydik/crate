@@ -208,7 +208,7 @@ export function CrewView({ appUrl }: { appUrl: string }) {
       </div>
 
       <div className="section">
-        <div className="caps">The playlist</div>
+        <div className="caps">The playlist&apos;s name</div>
         <form
           className="send__row"
           onSubmit={(e) => {
@@ -237,7 +237,7 @@ export function CrewView({ appUrl }: { appUrl: string }) {
               </button>
             </>
           ) : (
-            "Named after the moment; it follows the day."
+            "Today's playlist is named after the moment and follows the day. The playlists on the shelf are the ones you make by hand."
           )}
         </p>
       </div>

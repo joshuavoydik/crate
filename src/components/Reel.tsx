@@ -351,11 +351,11 @@ export function Reel({ embedded = false, onCaughtUp }: { embedded?: boolean; onC
           )}
           {lately && lately.length === 0 && me.sources.length === 0 && (
             <p className="faint" style={{ fontSize: 13, marginTop: 28 }}>
-              Connect Spotify or YouTube in{" "}
+              Connect Spotify in{" "}
               <Link href="/settings" style={{ textDecoration: "underline" }}>
-                settings
-              </Link>{" "}
-              and your likes start landing here on their own.
+                Settings
+              </Link>
+              , or run Crate on your Mac or in Chrome, and what you play lands here on its own.
             </p>
           )}
         </div>

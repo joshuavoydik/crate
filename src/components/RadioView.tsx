@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { PlayerProvider, usePlayer } from "./Player";
 import { Orb, useNow, History } from "./LiveView";
-import { Avatar } from "./Avatar";
+import { Avatar, artFallback } from "./Avatar";
 import { ThemeToggle } from "./ThemeToggle";
 import { IconPlay, IconPause } from "./Icons";
 import { api, timeAgo } from "@/lib/client";
@@ -104,7 +104,7 @@ function Station({ code, crewName }: { code: string; crewName: string }) {
                 <div className="log__artwrap">
                   {s.track.artworkUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img className="row__art" src={s.track.artworkUrl} alt="" />
+                    <img className="row__art" src={s.track.artworkUrl} alt="" onError={artFallback} />
                   ) : (
                     <div className="row__art" />
                   )}

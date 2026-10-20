@@ -121,8 +121,8 @@ export function SettingsView({ appUrl }: { appUrl: string }) {
 
   const base = appUrl.replace(/\/$/, "");
   const installCmd = `cd "${projectDir ?? "<your Crate checkout>"}" && npm run imessage:install -- --url=${base} --token=${token ?? "<token>"}`;
-  const macCmd = `curl -fsSL "${base}/api/mac/install?key=${token ?? "<token>"}" | bash`;
-  const macRemoveCmd = `curl -fsSL "${base}/api/mac/install?key=${token ?? "<token>"}&remove=1" | bash`;
+  const macCmd = `curl -fsSL -H "authorization: Bearer ${token ?? "<token>"}" "${base}/api/mac/install" | bash`;
+  const macRemoveCmd = `curl -fsSL -H "authorization: Bearer ${token ?? "<token>"}" "${base}/api/mac/install?remove=1" | bash`;
 
   return (
     <div className="page settings">
@@ -433,9 +433,11 @@ export function SettingsView({ appUrl }: { appUrl: string }) {
         <button className="btn btn--ghost" onClick={signOut}>
           Sign out on this device
         </button>
-        <Link href="/setup" className="caps" style={{ color: "var(--ink-3)" }}>
-          App setup (for the maker)
-        </Link>
+        {me.isMaker && (
+          <Link href="/setup" className="caps" style={{ color: "var(--ink-3)" }}>
+            App setup (you run this Crate)
+          </Link>
+        )}
       </div>
 
       <Confirm

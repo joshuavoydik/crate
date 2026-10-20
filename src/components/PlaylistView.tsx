@@ -193,7 +193,7 @@ export function PlaylistView() {
               {rows.length === 0 && who && <p className="muted pl__none">Nothing from them today.</p>}
             </>
           ) : (
-            playlist && <p className="muted pl__quiet">Nothing yet today. Play something anywhere and it lands here.</p>
+            playlist && <p className="muted pl__quiet">Nothing yet today. Play something on Spotify, in Chrome or on your Mac and it lands here.</p>
           )}
 
           {playlist && days.length > 0 && (

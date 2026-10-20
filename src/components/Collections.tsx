@@ -7,6 +7,7 @@ import { Sheet } from "./Sheet";
 import { IconCheck, IconPlus } from "./Icons";
 import { api } from "@/lib/client";
 import type { Collection } from "@/lib/types";
+import { artFallback } from "./Avatar";
 
 /** Up to four covers in a square; one cover fills it. */
 export function Mosaic({ covers, small }: { covers: string[]; small?: boolean }) {
@@ -16,7 +17,7 @@ export function Mosaic({ covers, small }: { covers: string[]; small?: boolean })
       {c.length ? (
         c.map((u, i) => (
           // eslint-disable-next-line @next/next/no-img-element
-          <img key={i} src={u} alt="" />
+          <img key={i} src={u} alt="" onError={artFallback} />
         ))
       ) : (
         <span />
@@ -185,7 +186,7 @@ export function AddToPlaylistSheet() {
       <div className="addto__head">
         {t.artworkUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img className="addto__art" src={t.artworkUrl} alt="" />
+          <img className="addto__art" src={t.artworkUrl} alt="" onError={artFallback} />
         ) : (
           <span className="addto__art" />
         )}

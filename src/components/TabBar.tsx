@@ -37,7 +37,7 @@ export function TabBar({ active }: { active: "reel" | "live" | "log" | "settings
         <IconReel />
         Playlist
       </Link>
-      <Link href="/log" className={`tab${active === "log" ? " is-active" : ""}`}>
+      <Link href="/log" className={`tab${active === "log" ? " is-active" : ""}`} title="Your log, private to you" aria-label="Log, private to you">
         <IconLog />
         Log
       </Link>

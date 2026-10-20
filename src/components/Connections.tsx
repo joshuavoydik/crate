@@ -193,11 +193,18 @@ export function Connections({ showUnavailable = true, onMac }: { showUnavailable
       })}
       {greyed && showUnavailable && (
         <p className="faint" style={{ fontSize: 12.5, marginTop: 10 }}>
-          Greyed out means not switched on in this Crate yet. Whoever runs it can turn it on from{" "}
-          <Link href="/setup" style={{ textDecoration: "underline" }}>
-            App setup
-          </Link>
-          .
+          Greyed out means not switched on in this Crate yet.{" "}
+          {me.isMaker ? (
+            <>
+              You can turn it on from{" "}
+              <Link href="/setup" style={{ textDecoration: "underline" }}>
+                App setup
+              </Link>
+              .
+            </>
+          ) : (
+            "Whoever runs this Crate can turn it on."
+          )}
         </p>
       )}
       <Confirm

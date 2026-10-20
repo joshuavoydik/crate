@@ -10,6 +10,7 @@ import { TrackCard } from "./TrackCard";
 import { IconPlay, IconPause } from "./Icons";
 import { api, sourceName, timeAgo, viaLabel } from "@/lib/client";
 import type { LogItem, Send, Track } from "@/lib/types";
+import { artFallback } from "./Avatar";
 
 type Filter = "all" | "kept" | "liked" | "played" | "received" | "sent" | "back";
 const FILTERS: Array<{ key: Filter; label: string }> = [
@@ -247,7 +248,7 @@ export function LogView({ initialFilter }: { initialFilter: string }) {
                 <div className="log__artwrap">
                   {i.track.artworkUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img className="row__art" src={i.track.artworkUrl} alt="" loading="lazy" />
+                    <img className="row__art" src={i.track.artworkUrl} alt="" loading="lazy" onError={artFallback} />
                   ) : (
                     <div className="row__art" />
                   )}

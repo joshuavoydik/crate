@@ -140,6 +140,21 @@ export function TrackCard({
             <span>{send.note}</span>
           </div>
         )}
+        {(send.replies ?? []).length > 0 && (
+          <div className="tc__back" aria-label="What came back">
+            {send.replies.map((r) => {
+              const who = r.person.id === me.id ? "You" : r.person.name.split(" ")[0];
+              return (
+                <div key={r.person.id} className="tc__backline">
+                  <span className="caps">
+                    {who} {r.status === "played" ? "played it out" : "kept it"} · {timeAgo(r.at)}
+                  </span>
+                  {r.reply && <span className="tc__reply">{r.reply}</span>}
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {meta.length > 0 && (
