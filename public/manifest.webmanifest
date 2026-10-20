@@ -21,7 +21,7 @@
   },
   "shortcuts": [
     { "name": "Send a track", "url": "/send", "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }] },
-    { "name": "Crate", "url": "/crate" },
-    { "name": "Memory", "url": "/memory" }
+    { "name": "Live", "url": "/live" },
+    { "name": "Kept", "url": "/log?filter=kept" }
   ]
 }
