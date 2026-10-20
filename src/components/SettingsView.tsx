@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useStore } from "./Store";
 import { Confirm } from "./Confirm";
 import { Connections } from "./Connections";
+import { ChromeCard } from "./ChromeView";
 import { ThemePicker } from "./ThemeToggle";
 import { Avatar, squareDataUrl } from "./Avatar";
 import { api, sourceName, timeAgo } from "@/lib/client";
@@ -88,6 +89,8 @@ export function SettingsView({ appUrl }: { appUrl: string }) {
       <div className="page__head">
         <h1 className="display page__title">You</h1>
       </div>
+
+      <ChromeCard />
 
       <form
         onSubmit={(e) => {
@@ -207,34 +210,6 @@ export function SettingsView({ appUrl }: { appUrl: string }) {
         <Connections />
       </div>
 
-      <details className="section fold">
-        <summary className="fold__sum">
-          <span className="caps">Crate in Chrome</span>
-          <span className="faint fold__hint">SoundCloud, YouTube and the rest, as you play them</span>
-        </summary>
-        <p className="muted" style={{ fontSize: 14.5, marginTop: 0 }}>
-          A small Chrome extension tells Crate what plays in this browser: SoundCloud, YouTube, YouTube Music, TIDAL, Deezer, Amazon Music, Pandora, and
-          Apple Music or Spotify on the web. Live lights up as it plays, and each play lands in your Log and your crews&apos; playlists. Nothing to switch on.{" "}
-          <Link href="/chrome" style={{ textDecoration: "underline" }}>
-            The full walkthrough
-          </Link>
-          .
-        </p>
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center", margin: "6px 0 4px" }}>
-          <Link className="btn btn--sm btn--primary" href="/chrome">
-            Set up Crate in Chrome
-          </Link>
-          <span className="faint" style={{ fontSize: 13 }}>
-            {projectDir ? (
-              <>
-                Running from a checkout: load the <code>crate-chrome</code> folder inside {projectDir}, then open that page.
-              </>
-            ) : (
-              "The download, the steps, and the page that pairs it."
-            )}
-          </span>
-        </div>
-      </details>
 
       <details className="section fold">
         <summary className="fold__sum">

@@ -160,3 +160,52 @@ export function ChromeView({ appUrl }: { appUrl: string }) {
     </div>
   );
 }
+
+/**
+ * The card on the profile page: Crate in Chrome, impossible to miss. Grey until the extension
+ * reports, then green with what it last heard. One button either way.
+ */
+export function ChromeCard() {
+  const [heard, setHeard] = useState<{ seenAt: number | null; last: { source?: string; title?: string; artist?: string } | null } | null>(null);
+  useEffect(() => {
+    let stop = false;
+    const load = () =>
+      api<{ seenAt: number | null; last: { source?: string; title?: string; artist?: string } | null }>("/api/chrome/status")
+        .then((r) => {
+          if (!stop) setHeard(r);
+        })
+        .catch(() => undefined);
+    load();
+    const id = setInterval(load, 8000);
+    return () => {
+      stop = true;
+      clearInterval(id);
+    };
+  }, []);
+  const seen = heard?.seenAt ?? null;
+  const alive = !!seen && Date.now() - seen < 2 * 60 * 1000;
+  const last = heard?.last;
+  return (
+    <section className={`chromecard${alive ? " is-on" : ""}`} aria-label="Crate in Chrome">
+      <div className="chromecard__text">
+        <div className="caps chromecard__status">
+          <i className="chrome__dot" aria-hidden />
+          {alive
+            ? `Crate in Chrome · reporting${last?.title ? ` · ${sourceName(last.source ?? "web")}: ${last.title}${last.artist ? ` by ${last.artist}` : ""}` : ""}`
+            : seen
+              ? `Crate in Chrome · last heard ${timeAgo(seen)}`
+              : "Crate in Chrome · not set up"}
+        </div>
+        <h2 className="display chromecard__title">{alive ? "Chrome is on Live." : "Put your browser on Live."}</h2>
+        <p className="muted chromecard__lede">
+          {alive
+            ? "Whatever plays in Chrome shows up on Live as it plays and lands in your Log. Nothing more to do."
+            : "A small extension tells Crate what plays in Chrome: SoundCloud, YouTube, YouTube Music and most music sites. Two minutes, once, and Live follows you."}
+        </p>
+      </div>
+      <Link href="/chrome" className={`btn ${alive ? "btn--ghost" : "btn--primary"}`}>
+        {alive ? "Open" : "Set up Crate in Chrome"}
+      </Link>
+    </section>
+  );
+}
