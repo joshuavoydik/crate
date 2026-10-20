@@ -1,6 +1,7 @@
 import { json, error, readJson, requireUser, str } from "@/lib/api";
 import { createSend, getTrack, isMember, reelFor, sendsIn } from "@/lib/queries";
 import { receivedUnheard } from "@/lib/log";
+import { throttled } from "@/lib/ratelimit";
 
 /** GET ?crew=...&view=reel|all */
 export async function GET(req: Request) {
@@ -20,6 +21,8 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   const auth = await requireUser();
   if ("response" in auth) return auth.response;
+  const slow = throttled(`sends:${auth.user.id}`, 60);
+  if (slow) return slow;
   const body = await readJson<{ crewId?: string; trackId?: string; note?: string; noteBy?: string; sourceUrl?: string }>(req);
   if (!body) return error("Bad JSON");
   const crewId = str(body.crewId, 80);

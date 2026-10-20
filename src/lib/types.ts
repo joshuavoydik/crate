@@ -99,6 +99,8 @@ export type Me = {
   connectors: Record<string, boolean>;
   /** What needs this person's hand right now; the bell top right. */
   notices: Notice[];
+  /** Whoever runs this Crate: sees the setup page and its keys. */
+  isMaker: boolean;
 };
 
 export type Notice = {
@@ -147,7 +149,7 @@ export type Collection = {
   name: string;
   createdBy: string;
   createdAt: number;
-  /** The code in its share link (/p/<code>): anyone with it can open the playlist. */
+  /** The code in its share link (/p/<code>) while the link is on; empty when it is off. */
   publicCode: string;
   count: number;
   /** Up to four artwork URLs, newest additions first. */

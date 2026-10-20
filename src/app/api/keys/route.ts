@@ -1,4 +1,5 @@
 import { json, error, readJson, requireUser } from "@/lib/api";
+import { isMaker } from "@/lib/maker";
 import { keyPresence, setKeys, KEY_NAMES, type KeyName } from "@/lib/keys";
 import { configured } from "@/lib/sources";
 import { spotifyRedirectUri, youtubeRedirectUri, soundcloudRedirectUri, tidalRedirectUri } from "@/lib/sources/oauth";
@@ -7,6 +8,7 @@ import { spotifyRedirectUri, youtubeRedirectUri, soundcloudRedirectUri, tidalRed
 export async function GET() {
   const auth = await requireUser();
   if ("response" in auth) return auth.response;
+  if (!(await isMaker(auth.user.id))) return error("Only the maker of this Crate can see its keys", 403);
   return json({
     present: await keyPresence(),
     connectors: await configured(),
@@ -14,10 +16,11 @@ export async function GET() {
   });
 }
 
-/** Save keys pasted in Settings. Any crew member of this private deployment may do it. */
+/** Save keys pasted on the setup page. The maker only: these decide which app every member connects through. */
 export async function POST(req: Request) {
   const auth = await requireUser();
   if ("response" in auth) return auth.response;
+  if (!(await isMaker(auth.user.id))) return error("Only the maker of this Crate can change its keys", 403);
   const body = await readJson<Record<string, unknown>>(req);
   if (!body) return error("Bad JSON");
   const values: Partial<Record<KeyName, string | null>> = {};

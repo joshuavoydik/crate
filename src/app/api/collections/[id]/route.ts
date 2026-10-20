@@ -1,6 +1,6 @@
 import { json, error, readJson, requireUser, str } from "@/lib/api";
 import { isMember } from "@/lib/queries";
-import { collectionById, renameCollection, deleteCollection, tracksIn } from "@/lib/collections";
+import { collectionById, renameCollection, deleteCollection, tracksIn, setCollectionLink } from "@/lib/collections";
 
 async function allowed(userId: string, collectionId: string) {
   const collection = await collectionById(collectionId);
@@ -18,16 +18,20 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
   return json({ collection: got.collection, tracks: await tracksIn(got.collection) });
 }
 
-/** PATCH { name }: rename. Any member may. */
+/** PATCH { name } renames; PATCH { link: true | false } turns the share link on or off. Any member may. */
 export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }> }) {
   const auth = await requireUser();
   if ("response" in auth) return auth.response;
   const got = await allowed(auth.user.id, (await ctx.params).id);
   if ("response" in got) return got.response;
-  const body = await readJson<{ name?: string }>(req);
-  const name = str(body?.name, 60);
-  if (!name) return error("Give it a name");
-  await renameCollection(got.collection.id, name);
+  const body = await readJson<{ name?: string; link?: boolean }>(req);
+  if (!body) return error("Bad JSON");
+  if (typeof body.link === "boolean") await setCollectionLink(got.collection.id, body.link);
+  if (body.name !== undefined) {
+    const name = str(body.name, 60);
+    if (!name) return error("Give it a name");
+    await renameCollection(got.collection.id, name);
+  }
   return json({ collection: await collectionById(got.collection.id) });
 }
 

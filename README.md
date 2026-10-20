@@ -118,7 +118,7 @@ Most listening that is not Spotify happens in a browser tab, and no site tells o
 Apple Music has no now-playing API and SoundCloud has neither now-playing nor play history, so on their own they can never reach Live. On a Mac they can. Settings → Crate on your Mac has a **Download the setup** button: it saves a Terminal settings file (`/api/mac/terminal`) that, opened, runs one line in Terminal; the same line is there to paste by hand:
 
 ```bash
-curl -fsSL "http://localhost:3000/api/mac/install?key=crate_..." | bash
+curl -fsSL -H "authorization: Bearer crate_..." "http://localhost:3000/api/mac/install" | bash
 ```
 
 The server answers with a bash installer (`src/lib/mac.ts`) that writes a tiny loop and a launchd agent under the person's home folder, nothing else: every 4 seconds the loop runs one small AppleScript per installed and running player (`helpers/nowplaying/now-*.applescript`: the Music app, the Spotify app, the SoundCloud desktop app; browsers are the extension's job) and `curl` posts the raw answer to `/api/ingest/now` with their token. No node, no project folder, only what ships with macOS. An app that refuses (macOS has not allowed control yet) shows up under the bell with the exact Privacy setting to flip, and Settings shows what the Mac last reported. Live follows it at once; after thirty seconds of the same song it is logged as a play, which the crew rules turn into a playlist row. A play that a platform's own history reports as well within twenty minutes is kept once. The first time something plays, macOS asks whether it may control Music, Spotify and the browser. `&remove=1` on the same URL serves the uninstaller; the log is `~/Library/Logs/crate-nowplaying.log`.

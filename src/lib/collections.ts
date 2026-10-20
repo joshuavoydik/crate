@@ -5,8 +5,9 @@ import type { Collection, CollectionTrack, Person } from "./types";
 /**
  * Playlists a crew makes on purpose (the tables are called playlists; in code they are
  * collections, since "the playlist" is the crew's running stream). Anyone in the crew can start
- * one, add any track Crate knows to it, or take one out. Each has a link of its own that anyone
- * can open, no account: a playlist is a thing you can hand to someone.
+ * one, add any track Crate knows to it, or take one out. Share turns on a link of its own that
+ * anyone can open, no account, and it can be turned off again: a playlist is a thing you can hand
+ * to someone, and take back.
  */
 
 type Row = { id: string; crew_id: string; name: string; created_by: string; created_at: number; public_code: string | null; count: number; has?: number };
@@ -52,12 +53,26 @@ export async function collectionById(collectionId: string): Promise<Collection |
 
 export async function createCollection(crewId: string, userId: string, name: string): Promise<Collection> {
   const cid = id("pl");
-  await run("INSERT INTO playlists (id, crew_id, name, created_by, created_at, public_code) VALUES (?, ?, ?, ?, ?, ?)", [cid, crewId, name.trim(), userId, now(), inviteCode()]);
+  await run("INSERT INTO playlists (id, crew_id, name, created_by, created_at, public_code) VALUES (?, ?, ?, ?, ?, NULL)", [cid, crewId, name.trim(), userId, now()]);
   return (await collectionById(cid))!;
+}
+
+/** The share link on or off. Turning it off withdraws the old link for good; turning it on again mints a new one. */
+export async function setCollectionLink(collectionId: string, on: boolean): Promise<string | null> {
+  if (!on) {
+    await run("UPDATE playlists SET public_code = NULL WHERE id = ?", [collectionId]);
+    return null;
+  }
+  const existing = await one<{ public_code: string | null }>("SELECT public_code FROM playlists WHERE id = ?", [collectionId]);
+  if (existing?.public_code) return existing.public_code;
+  const code = inviteCode();
+  await run("UPDATE playlists SET public_code = ? WHERE id = ?", [code, collectionId]);
+  return code;
 }
 
 /** The playlist behind a share link, with the crew's name for the page; null for a link that leads nowhere. */
 export async function collectionByPublicCode(code: string): Promise<{ collection: Collection; crewName: string } | null> {
+  if (!code) return null;
   const r = await one<Row & { crew_name: string }>(`SELECT ${COLS}, c.name AS crew_name FROM playlists p JOIN crews c ON c.id = p.crew_id WHERE p.public_code = ?`, [code.toLowerCase()]);
   if (!r) return null;
   return { collection: await hydrate(r), crewName: r.crew_name };

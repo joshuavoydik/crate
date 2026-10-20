@@ -1,4 +1,5 @@
 import { SignJWT, jwtVerify } from "jose";
+import { sessionSecret } from "../secret";
 import { randomToken, sha256base64url } from "../crypto";
 import { getKeys } from "../keys";
 
@@ -8,7 +9,7 @@ import { getKeys } from "../keys";
  * know which user started the connection.
  */
 function secret(): Uint8Array {
-  return new TextEncoder().encode(process.env.SESSION_SECRET || "crate-dev-secret-change-me-in-production");
+  return new TextEncoder().encode(sessionSecret());
 }
 
 export type OAuthState = { uid: string; kind: string; verifier: string; back: string };

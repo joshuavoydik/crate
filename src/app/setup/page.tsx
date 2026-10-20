@@ -10,6 +10,7 @@ export const dynamic = "force-dynamic";
 export default async function SetupPage() {
   const me = await loadMe();
   if (!me) redirect("/");
+  if (!me.isMaker) redirect("/settings");
   return (
     <Shell initialMe={me} active="settings">
       <Suspense fallback={null}>

@@ -1,5 +1,6 @@
 import { json, error, readJson, requireUser } from "@/lib/api";
 import { getTrack, saveAnalysis } from "@/lib/queries";
+import { canTouchTrack } from "@/lib/maker";
 
 /** The browser analyzes the preview and saves BPM, key and energy back to the track. */
 export async function PUT(req: Request, ctx: { params: Promise<{ id: string }> }) {
@@ -10,6 +11,7 @@ export async function PUT(req: Request, ctx: { params: Promise<{ id: string }> }
   if (!body) return error("Bad JSON");
   const track = await getTrack(id);
   if (!track) return error("Unknown track", 404);
+  if (!(await canTouchTrack(auth.user.id, id))) return error("Not your track", 403);
   const bpm = typeof body.bpm === "number" && body.bpm > 40 && body.bpm < 260 ? Math.round(body.bpm * 10) / 10 : null;
   const keyName = typeof body.keyName === "string" && /^[A-G]#? (major|minor)$/.test(body.keyName) ? body.keyName : null;
   const camelot = typeof body.camelot === "string" && /^(1[0-2]|[1-9])[AB]$/.test(body.camelot) ? body.camelot : null;

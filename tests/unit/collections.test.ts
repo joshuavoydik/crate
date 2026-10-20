@@ -21,7 +21,7 @@ test("a crew's playlists: start one, add a track once, see it, take it out, dele
 
   const late = await createCollection("c1", "u1", "  Late shift ");
   assert.equal(late.name, "Late shift");
-  assert.match(late.publicCode, /^[a-z0-9]{8}$/, "a share link from the start");
+  assert.equal(late.publicCode, "", "no link until someone turns it on");
   assert.equal(late.count, 0);
   assert.ok(await addTrack(late.id, "t1", "u1"));
   assert.equal(await addTrack(late.id, "t1", "u1"), false, "already in");
@@ -44,11 +44,18 @@ test("a crew's playlists: start one, add a track once, see it, take it out, dele
     ],
   );
 
-  const { collectionByPublicCode } = await import("../../src/lib/collections.ts");
-  const shared = await collectionByPublicCode(late.publicCode.toUpperCase());
+  const { collectionByPublicCode, setCollectionLink } = await import("../../src/lib/collections.ts");
+  assert.equal(await collectionByPublicCode(""), null, "an empty code never matches a playlist with its link off");
+  const code = await setCollectionLink(late.id, true);
+  assert.match(code ?? "", /^[a-z0-9]{10}$/, "turning the link on mints a code");
+  assert.equal(await setCollectionLink(late.id, true), code, "turning it on again keeps the same link");
+  const shared = await collectionByPublicCode(code!.toUpperCase());
   assert.equal(shared?.collection.id, late.id, "the link finds it, whatever the case");
   assert.equal(shared?.crewName, "Us");
   assert.equal(await collectionByPublicCode("nope"), null);
+  assert.equal(await setCollectionLink(late.id, false), null);
+  assert.equal(await collectionByPublicCode(code!), null, "a link turned off is gone for good");
+  assert.notEqual(await setCollectionLink(late.id, true), code, "turning it back on mints a new one");
 
   await renameCollection(late.id, "Later");
   assert.equal((await collectionById(late.id))!.name, "Later");

@@ -1,3 +1,4 @@
+import { publicHttpUrl } from "../safe-url";
 import {
   detectSource,
   cleanVideoTitle,
@@ -50,10 +51,20 @@ type Hints = {
 const BROWSER_UA = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Safari/605.1.15";
 
 async function fetchWithTimeout(url: string, init: RequestInit = {}, timeoutMs = 8000): Promise<Response> {
+  // Pasted links are fetched only when they point at the public web; the catalog hosts pass the same gate.
+  if (!(await publicHttpUrl(url))) throw new Error("Not a public web address");
   const ctrl = new AbortController();
   const t = setTimeout(() => ctrl.abort(), timeoutMs);
   try {
-    return await fetch(url, { ...init, signal: ctrl.signal, redirect: "follow", cache: "no-store" });
+    return await fetch(url, { ...init, signal: ctrl.signal, redirect: "manual", cache: "no-store" }).then(async (r) => {
+      // One hop of redirect, checked the same way; link shorteners need it, private hops do not get it.
+      if ([301, 302, 303, 307, 308].includes(r.status)) {
+        const to = r.headers.get("location");
+        const next = to ? new URL(to, url).toString() : null;
+        if (next && (await publicHttpUrl(next))) return fetch(next, { ...init, signal: ctrl.signal, redirect: "manual", cache: "no-store" });
+      }
+      return r;
+    });
   } finally {
     clearTimeout(t);
   }

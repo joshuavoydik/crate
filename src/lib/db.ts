@@ -233,9 +233,6 @@ export async function db(): Promise<Client> {
         const has = info.rows.some((r) => String((r as unknown as { name: string }).name) === column);
         if (!has) await c.execute(`ALTER TABLE ${table} ADD COLUMN ${column} ${ddl}`);
       }
-      // Every playlist has a link of its own from the day it is made; ones from before get theirs now.
-      const bare = await c.execute("SELECT id FROM playlists WHERE public_code IS NULL");
-      for (const r of bare.rows) await c.execute({ sql: "UPDATE playlists SET public_code = ? WHERE id = ?", args: [inviteCode(), String((r as unknown as { id: string }).id)] });
       // One-time changes of mind, each recorded in app_settings so it runs once per install.
       const once = async (key: string, fn: () => Promise<void>) => {
         const done = await c.execute({ sql: "SELECT 1 AS x FROM app_settings WHERE key = ?", args: [key] });
@@ -243,6 +240,11 @@ export async function db(): Promise<Client> {
         await fn();
         await c.execute({ sql: "INSERT INTO app_settings (key, value_enc, updated_at) VALUES (?, '1', ?)", args: [key, Date.now()] });
       };
+      // A playlist's link is something a person turns on, not something it is born with: links that
+      // were handed out before anyone asked are withdrawn once, and Share makes a new one on request.
+      await once("migr:playlist_links_optin_v1", async () => {
+        await c.execute("UPDATE playlists SET public_code = NULL");
+      });
       // Crate starts from the day you connect: what a platform remembers from before stays there.
       await once("migr:fresh_start_v1", async () => {
         await c.execute(
@@ -345,9 +347,19 @@ export function id(prefix = ""): string {
   return prefix ? `${prefix}_${s}` : s;
 }
 
+/** Ten letters and digits that are easy to read aloud, drawn evenly (about 49 bits). */
 export function inviteCode(): string {
   const alphabet = "abcdefghjkmnpqrstuvwxyz23456789";
-  const bytes = new Uint8Array(8);
-  crypto.getRandomValues(bytes);
-  return Array.from(bytes, (b) => alphabet[b % alphabet.length]).join("");
+  const out: string[] = [];
+  const bytes = new Uint8Array(32);
+  while (out.length < 10) {
+    crypto.getRandomValues(bytes);
+    for (const b of bytes) {
+      // Values past the largest multiple of the alphabet's size are thrown away, so no letter is favored.
+      if (b >= 248) continue;
+      out.push(alphabet[b % alphabet.length]);
+      if (out.length === 10) break;
+    }
+  }
+  return out.join("");
 }

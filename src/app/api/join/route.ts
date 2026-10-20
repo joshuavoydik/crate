@@ -2,12 +2,15 @@ import { currentUser, createUser, setSessionCookie } from "@/lib/auth";
 import { json, error, readJson, str } from "@/lib/api";
 import { crewByCode, joinCrew } from "@/lib/queries";
 import { buildMe } from "@/lib/session";
+import { throttled, clientIp } from "@/lib/ratelimit";
 
 /** A crew is a group of friends, not a feed: this many is plenty, and the invite link works for all of them. */
 const CREW_MAX = 12;
 
 /** Joins a crew by invite code; creates the user when there is no session. */
 export async function POST(req: Request) {
+  const slow = throttled(`join:${clientIp(req)}`, 10);
+  if (slow) return slow;
   const body = await readJson<{ code?: string; yourName?: string }>(req);
   if (!body) return error("Bad JSON");
   const code = str(body.code, 40);
@@ -30,6 +33,8 @@ export async function POST(req: Request) {
 }
 
 export async function GET(req: Request) {
+  const slow = throttled(`joinlook:${clientIp(req)}`, 30);
+  if (slow) return slow;
   const code = new URL(req.url).searchParams.get("code") ?? "";
   const crew = await crewByCode(code);
   if (!crew) return error("That invite link is not valid", 404);

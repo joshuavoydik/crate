@@ -1,4 +1,5 @@
 import { noticesFor } from "./notices";
+import { isMaker } from "./maker";
 import { currentUser } from "./auth";
 import { crewsFor, avatarUrlFor } from "./queries";
 import { sourcesFor } from "./sync";
@@ -20,6 +21,7 @@ export async function buildMe(user: { id: string; name: string; isDj: boolean; p
     sources,
     connectors: await configured(),
     notices: await noticesFor(user.id),
+    isMaker: await isMaker(user.id),
   };
 }
 

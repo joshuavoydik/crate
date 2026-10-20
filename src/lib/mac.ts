@@ -166,7 +166,7 @@ echo "Crate on your Mac is removed."
  */
 export function terminalFile(opts: { url: string; token: string; remove?: boolean }): string {
   const url = opts.url.replace(/\/$/, "");
-  const line = `curl -fsSL "${url}/api/mac/install?key=${opts.token}${opts.remove ? "&remove=1" : ""}" | bash`;
+  const line = `curl -fsSL -H "authorization: Bearer ${opts.token}" "${url}/api/mac/install${opts.remove ? "?remove=1" : ""}" | bash`;
   const cmd = `/bin/bash -c '${line.replace(/'/g, `'\\''`)}; echo; echo "You can close this window."'`;
   const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
   return `<?xml version="1.0" encoding="UTF-8"?>

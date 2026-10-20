@@ -1,8 +1,9 @@
 import { createCipheriv, createDecipheriv, createHash, randomBytes } from "node:crypto";
+import { sessionSecret } from "./secret";
 
 /** AES-256-GCM with a key derived from SESSION_SECRET; used for connector tokens at rest. */
 function key(): Buffer {
-  const s = process.env.SESSION_SECRET || "crate-dev-secret-change-me-in-production";
+  const s = sessionSecret();
   return createHash("sha256").update(s).digest();
 }
 

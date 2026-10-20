@@ -2,7 +2,7 @@ import { createClient } from "@libsql/client";
 import { writeFileSync } from "node:fs";
 import { json, error } from "@/lib/api";
 import { db } from "@/lib/db";
-import { signSession } from "@/lib/auth";
+import { signSignInLink } from "@/lib/auth";
 import { appUrl } from "@/lib/session";
 
 export const maxDuration = 60;
@@ -69,6 +69,6 @@ export async function POST(req: Request) {
   }
   const people = (await live.execute("SELECT id, name FROM users")).rows as unknown as Array<{ id: string; name: string }>;
   const links = [];
-  for (const p of people) links.push({ id: p.id, name: p.name, signin: `${appUrl()}/api/admin/signin?token=${await signSession(p.id)}` });
+  for (const p of people) links.push({ id: p.id, name: p.name, signin: `${appUrl()}/api/admin/signin?token=${await signSignInLink(p.id)}` });
   return json({ imported: counts, people: links });
 }

@@ -4,6 +4,8 @@ import { candidatesApple, lookupApple } from "@/lib/resolve/itunes";
 import { accentFromImage } from "@/lib/resolve/color";
 import { fingerprint } from "@/lib/resolve/parse";
 import { one, run } from "@/lib/db";
+import { canTouchTrack } from "@/lib/maker";
+import { publicHttpUrl } from "@/lib/safe-url";
 
 /**
  * When the resolver picked the wrong version or artwork. GET lists catalog candidates;
@@ -15,6 +17,7 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
   const { id } = await ctx.params;
   const track = await getTrack(id);
   if (!track) return error("Unknown track", 404);
+  if (!(await canTouchTrack(auth.user.id, id))) return error("Not your track", 403);
   const candidates = await candidatesApple(track.artist || undefined, track.title, 8);
   return json({
     candidates: candidates.map((c) => ({
@@ -35,10 +38,12 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
   const { id } = await ctx.params;
   const track = await getTrack(id);
   if (!track) return error("Unknown track", 404);
+  if (!(await canTouchTrack(auth.user.id, id))) return error("Not your track", 403);
   const body = await readJson<{ appleId?: string; artworkUrl?: string }>(req);
   const appleId = str(body?.appleId, 40);
   const artworkUrl = str(body?.artworkUrl, 2000);
   if (!appleId && !artworkUrl) return error("Pick a version or an artwork");
+  if (artworkUrl && !(await publicHttpUrl(artworkUrl))) return error("Artwork needs to be a public https image link");
 
   if (appleId) {
     const c = await lookupApple(appleId).catch(() => null);

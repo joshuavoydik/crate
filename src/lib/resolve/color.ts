@@ -1,4 +1,5 @@
 import sharp from "sharp";
+import { publicHttpUrl } from "../safe-url";
 
 /**
  * Samples a single accent color from artwork: the most saturated, mid-lightness hue
@@ -6,12 +7,16 @@ import sharp from "sharp";
  */
 export async function accentFromImage(url: string): Promise<string | null> {
   try {
+    if (!(await publicHttpUrl(url))) return null;
     const ctrl = new AbortController();
     const t = setTimeout(() => ctrl.abort(), 6000);
     const r = await fetch(url, { signal: ctrl.signal });
     clearTimeout(t);
     if (!r.ok) return null;
+    const len = Number(r.headers.get("content-length") ?? 0);
+    if (len > 8_000_000) return null;
     const buf = Buffer.from(await r.arrayBuffer());
+    if (buf.length > 8_000_000) return null;
     const { data, info } = await sharp(buf).resize(32, 32, { fit: "cover" }).removeAlpha().raw().toBuffer({ resolveWithObject: true });
     return pickAccent(data, info.channels);
   } catch {

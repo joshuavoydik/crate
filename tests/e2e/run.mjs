@@ -72,7 +72,7 @@ async function main() {
       ...process.env,
       DATABASE_URL: `file:${DB}`,
       NEXT_PUBLIC_APP_URL: BASE,
-      SESSION_SECRET: "e2e-secret",
+      SESSION_SECRET: "e2e-secret-long-enough-for-production-rules",
       CRATE_TEST_HOOKS: "1",
       CRON_SECRET: "e2e-cron",
       GOOGLE_CLIENT_ID: "test-google-client",
@@ -761,7 +761,7 @@ async function main() {
     const term = await desk.request.get(`${BASE}/api/mac/terminal`);
     assert.equal(term.status(), 200);
     assert.ok((term.headers()["content-disposition"] ?? "").includes(".terminal"));
-    assert.ok((await term.text()).includes(`/api/mac/install?key=${tokenRes.token}`));
+    assert.ok((await term.text()).includes(`authorization: Bearer ${tokenRes.token}`));
     // An app that refuses the helper becomes a notice under the bell, and clears once it answers.
     await ingestCtx.request.post(`${BASE}/api/ingest/now`, {
       headers: { authorization: `Bearer ${tokenRes.token}`, "content-type": "text/plain" },

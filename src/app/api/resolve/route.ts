@@ -5,6 +5,7 @@ import { resolveUrl, resolveAppleId } from "@/lib/resolve";
 import { extractUrl } from "@/lib/resolve/parse";
 import { upsertTrack } from "@/lib/queries";
 import { suggestNote } from "@/lib/agent";
+import { throttled } from "@/lib/ratelimit";
 
 /**
  * Turns a link (or a catalog pick) into a stored Track plus a suggested note.
@@ -13,6 +14,8 @@ import { suggestNote } from "@/lib/agent";
 export async function POST(req: Request) {
   const auth = await requireUser();
   if ("response" in auth) return auth.response;
+  const slow = throttled(`resolve:${auth.user.id}`, 40);
+  if (slow) return slow;
   const body = await readJson<{ url?: string; appleId?: string; recipientIsDj?: boolean }>(req);
   if (!body) return error("Bad JSON");
 

@@ -5,6 +5,7 @@ import { userByIngestToken } from "@/lib/ingest";
 import { reportFromMac } from "@/lib/live";
 import { parseNowLines, permissionProblem } from "@/lib/mac";
 import { run } from "@/lib/db";
+import { throttled } from "@/lib/ratelimit";
 
 /**
  * POST /api/ingest/now with "Authorization: Bearer crate_..." from the Mac helper. Either the
@@ -42,6 +43,8 @@ async function post(req: Request) {
   const token = req.headers.get("authorization")?.replace(/^Bearer\s+/i, "") ?? "";
   const user = await userByIngestToken(token);
   if (!user) return error("Bad ingest token", 401);
+  const slow = throttled(`ingest:${user.id}`, 90);
+  if (slow) return slow;
   if (!/json/i.test(req.headers.get("content-type") ?? "")) {
     // The helper's report is a few lines; anything bigger is not the helper.
     const text = (await req.text().catch(() => "")).slice(0, 16_384);

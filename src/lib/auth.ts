@@ -1,4 +1,5 @@
 import { SignJWT, jwtVerify } from "jose";
+import { sessionSecret } from "./secret";
 import { cookies } from "next/headers";
 import { one, run, now, id } from "./db";
 
@@ -6,7 +7,7 @@ const COOKIE = "crate_session";
 const ONE_YEAR = 60 * 60 * 24 * 365;
 
 function secret(): Uint8Array {
-  const s = process.env.SESSION_SECRET || "crate-dev-secret-change-me-in-production";
+  const s = sessionSecret();
   return new TextEncoder().encode(s);
 }
 
@@ -26,6 +27,26 @@ export async function readSessionToken(token: string | undefined): Promise<strin
   if (!token) return null;
   try {
     const { payload } = await jwtVerify(token, secret());
+    // A sign-in link is not a session: it says so, and a cookie never does.
+    if (payload.use) return null;
+    return typeof payload.uid === "string" ? payload.uid : null;
+  } catch {
+    return null;
+  }
+}
+
+const SIGNIN_LINK_TTL = 60 * 60 * 24;
+
+/** A one-day link that signs its person in on this address (handed out by the import). It is not a session cookie and a cookie cannot stand in for it. */
+export async function signSignInLink(userId: string): Promise<string> {
+  return new SignJWT({ uid: userId, use: "signin" }).setProtectedHeader({ alg: "HS256" }).setIssuedAt().setExpirationTime(`${SIGNIN_LINK_TTL}s`).sign(secret());
+}
+
+export async function readSignInLink(token: string | undefined): Promise<string | null> {
+  if (!token) return null;
+  try {
+    const { payload } = await jwtVerify(token, secret());
+    if (payload.use !== "signin") return null;
     return typeof payload.uid === "string" ? payload.uid : null;
   } catch {
     return null;

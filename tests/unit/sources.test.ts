@@ -176,7 +176,9 @@ test("the installer carries the person's token, the AppleScript and a launchd ag
   assert.equal((s.match(/^CRATE_EOF$/gm) ?? []).length, 5);
   const t = terminalFile({ url: "http://localhost:3000", token: "crate_abc" });
   assert.ok(t.includes("<key>CommandString</key>"));
-  assert.ok(t.includes("/api/mac/install?key=crate_abc"));
+  assert.ok(t.includes("/api/mac/install"), "fetches the installer");
+  assert.ok(t.includes("authorization: Bearer crate_abc"), "the token rides in a header, not the URL");
+  assert.ok(!t.includes("?key="), "nothing secret in a query string");
   assert.ok(t.includes("<key>RunCommandAsShell</key>"));
 });
 
