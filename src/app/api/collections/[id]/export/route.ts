@@ -3,7 +3,7 @@ export const maxDuration = 60;
 import { json, error, readJson, requireUser } from "@/lib/api";
 import { isMember, membersOf } from "@/lib/queries";
 import { one } from "@/lib/db";
-import { collectionById } from "@/lib/collections";
+import { collectionById, isGuest } from "@/lib/collections";
 import { exportCollection, ExportError, type ExportTarget } from "@/lib/export";
 
 /**
@@ -16,7 +16,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
   const { id } = await ctx.params;
   const collection = await collectionById(id);
   if (!collection) return error("No such playlist", 404);
-  if (!(await isMember(auth.user.id, collection.crewId))) return error("Not in that crew", 403);
+  if (!(await isMember(auth.user.id, collection.crewId)) && !(await isGuest(collection.id, auth.user.id))) return error("Not in that crew", 403);
   const body = await readJson<{ to?: string }>(req);
   const to = body?.to;
   if (to !== "spotify" && to !== "apple") return error("Where to? spotify or apple");

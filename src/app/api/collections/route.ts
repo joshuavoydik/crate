@@ -1,6 +1,6 @@
 import { json, error, readJson, requireUser, str } from "@/lib/api";
 import { isMember, getTrack } from "@/lib/queries";
-import { collectionsFor, createCollection, addTrack } from "@/lib/collections";
+import { collectionsFor, createCollection, addTrack, guestCollectionsFor } from "@/lib/collections";
 
 /** GET ?crew=&track=: the crew's playlists (with whether each holds that track). */
 export async function GET(req: Request) {
@@ -9,7 +9,7 @@ export async function GET(req: Request) {
   const q = new URL(req.url).searchParams;
   const crewId = q.get("crew") ?? "";
   if (!crewId || !(await isMember(auth.user.id, crewId))) return error("Not in that crew", 403);
-  return json({ collections: await collectionsFor(crewId, q.get("track")) });
+  return json({ collections: await collectionsFor(crewId, q.get("track")), shared: await guestCollectionsFor(auth.user.id) });
 }
 
 /** POST { crew, name, trackId? }: a new playlist, with a first track when one is given. */

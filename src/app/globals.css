@@ -3608,6 +3608,35 @@ html.is-pocket {
 
 /* ---------- public radio ---------- */
 
+/* A guest on a crew's playlist: one line saying whose it is and what they can do here. */
+.cv__guest {
+  margin: 0 0 18px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--glass);
+  font-size: 14.5px;
+  color: var(--ink-2);
+}
+/* The door on a shared playlist: the song they tapped, one line, a name. */
+.comein {
+  display: grid;
+  gap: 10px;
+}
+.comein__track {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 4px;
+}
+.comein__track .row__art {
+  width: 56px;
+  height: 56px;
+}
+.comein__title {
+  font-size: 34px;
+  margin: 6px 0 2px;
+}
 .radio {
   position: relative;
   z-index: 1;
@@ -3779,22 +3808,8 @@ html.is-pocket {
   display: none;
 }
 .tuned__count {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
   font-weight: 600;
   color: var(--ink);
-}
-.tuned__dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--live);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--live) 22%, transparent);
-  animation: livedot 2s ease-in-out infinite;
-}
-.tuned__who {
-  font-size: 14px;
 }
 
 .lh {

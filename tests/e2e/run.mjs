@@ -643,7 +643,9 @@ async function main() {
     assert.ok(tuned.tunedIn >= 2, "both of them count as tuned in");
     assert.ok(tuned.history.length >= 1, "the session is remembered");
     await a.reload();
-    await a.getByText(/\d+ tuned in/).waitFor({ timeout: 15000 });
+    // Joshua sees Ariel by name, with the whole count when a station listener is there too; he never counts himself.
+    await a.getByText(/Ariel (is tuned in|· \d+ tuned in)/).waitFor({ timeout: 15000 });
+    assert.equal(await a.getByText(/just you/).count(), 0);
     await a.locator(".lh__row").first().waitFor();
     await a.getByText("Today", { exact: true }).waitFor();
     await settled(a);

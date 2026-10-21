@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { loadMe } from "@/lib/session";
 import { Shell } from "@/components/Shell";
@@ -12,7 +13,9 @@ export default async function CollectionPage({ params }: { params: Promise<{ id:
   const { id } = await params;
   return (
     <Shell initialMe={me} active="reel">
-      <CollectionView id={id} />
+      <Suspense fallback={<div className="pl" aria-busy />}>
+        <CollectionView id={id} />
+      </Suspense>
     </Shell>
   );
 }

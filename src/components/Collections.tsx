@@ -55,14 +55,18 @@ function NewPlaylistForm({ busy, onSubmit, onCancel, autoFocus }: { busy: boolea
 export function PlaylistShelf({ crewId }: { crewId: string }) {
   const { collectionsVersion, bumpCollections, toast } = useStore();
   const [list, setList] = useState<Collection[] | null>(null);
+  /** Playlists other crews let this person into by their link. */
+  const [shared, setShared] = useState<Array<Collection & { crewName: string }>>([]);
   const [creating, setCreating] = useState(false);
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     let stop = false;
-    api<{ collections: Collection[] }>(`/api/collections?crew=${encodeURIComponent(crewId)}`)
+    api<{ collections: Collection[]; shared?: Array<Collection & { crewName: string }> }>(`/api/collections?crew=${encodeURIComponent(crewId)}`)
       .then((r) => {
-        if (!stop) setList(r.collections);
+        if (stop) return;
+        setList(r.collections);
+        setShared(r.shared ?? []);
       })
       .catch(() => undefined);
     return () => {
@@ -110,6 +114,24 @@ export function PlaylistShelf({ crewId }: { crewId: string }) {
             </Link>
           ))}
         </div>
+      )}
+      {shared.length > 0 && (
+        <>
+          <div className="earlier__head" style={{ marginTop: 18 }}>
+            <span className="caps">Shared with you</span>
+          </div>
+          <div className="mixes">
+            {shared.map((c) => (
+              <Link key={c.id} href={`/playlists/${c.id}`} className="mix">
+                <Mosaic covers={c.covers} />
+                <div className="mix__name">{c.name}</div>
+                <div className="mix__n num">
+                  {c.crewName} · {c.count === 1 ? "1 track" : `${c.count} tracks`}
+                </div>
+              </Link>
+            ))}
+          </div>
+        </>
       )}
     </section>
   );

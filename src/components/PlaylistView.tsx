@@ -116,7 +116,6 @@ export function PlaylistView() {
       <LiveBand />
       <header className="pl__head">
         <div className="pl__titles">
-          <span className="caps">{crew.name}</span>
           <Link href="/crew" className="pl__namelink" title={playlist?.namedBy === "human" ? "Rename" : "Named after the moment. Rename it on the crew page."}>
             <h1 className="display pl__name">{playlist?.name ?? "…"}</h1>
           </Link>

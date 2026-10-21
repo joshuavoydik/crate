@@ -78,6 +78,30 @@ export async function collectionByPublicCode(code: string): Promise<{ collection
   return { collection: await hydrate(r), crewName: r.crew_name };
 }
 
+/**
+ * Guests: people who opened a playlist's link and signed up to hear it. They can see and play the
+ * list and save it to their own service; they are not in the crew and cannot change the list.
+ */
+export async function addGuest(collectionId: string, userId: string): Promise<void> {
+  await run("INSERT OR IGNORE INTO playlist_guests (playlist_id, user_id, joined_at) VALUES (?, ?, ?)", [collectionId, userId, now()]);
+}
+
+export async function isGuest(collectionId: string, userId: string): Promise<boolean> {
+  return !!(await one("SELECT 1 AS x FROM playlist_guests WHERE playlist_id = ? AND user_id = ?", [collectionId, userId]));
+}
+
+/** The playlists this person was let into as a guest, newest first, each with its crew's name. */
+export async function guestCollectionsFor(userId: string): Promise<Array<Collection & { crewName: string }>> {
+  const rows = await all<Row & { crew_name: string }>(
+    `SELECT ${COLS}, c.name AS crew_name FROM playlist_guests g JOIN playlists p ON p.id = g.playlist_id JOIN crews c ON c.id = p.crew_id
+     WHERE g.user_id = ? ORDER BY g.joined_at DESC`,
+    [userId],
+  );
+  const out: Array<Collection & { crewName: string }> = [];
+  for (const r of rows) out.push({ ...(await hydrate(r)), crewName: r.crew_name });
+  return out;
+}
+
 export async function renameCollection(collectionId: string, name: string): Promise<void> {
   await run("UPDATE playlists SET name = ? WHERE id = ?", [name.trim(), collectionId]);
 }

@@ -1,29 +1,45 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useStore } from "./Store";
 import { usePlayer } from "./Player";
-import { Avatar } from "./Avatar";
+import { Avatar, artFallback } from "./Avatar";
 import { Confirm } from "./Confirm";
 import { IconPlay, IconPause, IconClose } from "./Icons";
 import { api, timeAgo } from "@/lib/client";
-import type { Collection, CollectionTrack } from "@/lib/types";
+import { openable } from "@/lib/resolve/links";
+import type { Collection, CollectionTrack, Person } from "@/lib/types";
 
-/** One of the crew's playlists: its name (editable), its tracks in order, a Play all, a way out of it. */
+type Data = {
+  collection: Collection;
+  tracks: CollectionTrack[];
+  crew: { id: string; name: string; size: number };
+  /** A member of the crew, or a guest who came in by the playlist's link. */
+  role: "member" | "guest";
+  starter: Person | null;
+};
+
+/**
+ * One of a crew's playlists, whole: its name (editable by the crew), its tracks in order, a Play
+ * all, the way to each song, and a way out of it. A guest sees the same list and can play and
+ * save it, and nothing else.
+ */
 export function CollectionView({ id }: { id: string }) {
-  const { me, crew, toast, setAccentTrack, collectionsVersion, bumpCollections, openShare } = useStore();
+  const { me, toast, setAccentTrack, collectionsVersion, bumpCollections, openShare } = useStore();
   const player = usePlayer();
   const router = useRouter();
-  const [data, setData] = useState<{ collection: Collection; tracks: CollectionTrack[] } | null>(null);
+  const params = useSearchParams();
+  const [data, setData] = useState<Data | null>(null);
   const [name, setName] = useState("");
   const [playingAll, setPlayingAll] = useState(false);
   const [confirm, setConfirm] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
+  const jumped = useRef(false);
 
   const load = useCallback(async () => {
     try {
-      const r = await api<{ collection: Collection; tracks: CollectionTrack[] }>(`/api/collections/${encodeURIComponent(id)}`);
+      const r = await api<Data>(`/api/collections/${encodeURIComponent(id)}`);
       setData(r);
       setName((n) => n || r.collection.name);
     } catch (e) {
@@ -35,6 +51,17 @@ export function CollectionView({ id }: { id: string }) {
   useEffect(() => {
     load();
   }, [load, collectionsVersion]);
+
+  // Arriving from the shared page with a song in mind: scroll to it and start its preview.
+  useEffect(() => {
+    const want = params.get("track");
+    if (!want || !data || jumped.current) return;
+    jumped.current = true;
+    const hit = data.tracks.find((x) => x.track.id === want);
+    if (!hit) return;
+    document.getElementById(`cv-${want}`)?.scrollIntoView({ block: "center" });
+    if (hit.track.previewUrl) player.play(hit.track.id, hit.track.previewUrl);
+  }, [params, data, player]);
 
   useEffect(() => {
     const t = data?.tracks.find((x) => x.track.id === player.currentId)?.track ?? data?.tracks[0]?.track ?? null;
@@ -147,44 +174,50 @@ export function CollectionView({ id }: { id: string }) {
     router.replace("/");
   }
 
-  if (!crew) {
-    return (
-      <div className="empty">
-        <h2 className="display empty__title">No crew yet.</h2>
-      </div>
-    );
-  }
   if (!data) return <div className="pl" aria-busy />;
-  const { collection, tracks } = data;
-  const together = crew.members.length > 1;
-  const starter = crew.members.find((m) => m.id === collection.createdBy);
+  const { collection, tracks, crew, role, starter } = data;
+  const guest = role === "guest";
+  const together = crew.size > 1;
+  const starterName = starter ? (starter.id === me.id ? "you" : starter.name.split(" ")[0]) : null;
 
   return (
     <div className="pl dayview">
+      {guest && (
+        <div className="cv__guest" role="note">
+          <strong>{crew.name}</strong> shared this with you. Play it, save it to where you listen, and open any song where it lives.
+          {starter && starter.id !== me.id ? ` ${starter.name.split(" ")[0]} can invite you into the crew.` : ""}
+        </div>
+      )}
       <header className="pl__head">
         <div className="pl__titles">
           <span className="caps">{crew.name} · Hand-made playlist</span>
-          <form
-            className="crewpage__name"
-            onSubmit={(e) => {
-              e.preventDefault();
-              rename();
-            }}
-          >
-            <input className="display crewpage__input" value={name} onChange={(e) => setName(e.target.value)} aria-label="Playlist name" maxLength={60} />
-            {name.trim() && name.trim() !== collection.name && (
-              <button className="btn btn--sm" type="submit" disabled={busy === "name"}>
-                Save
-              </button>
-            )}
-          </form>
+          {guest ? (
+            <h1 className="display crewpage__input" style={{ margin: 0 }}>
+              {collection.name}
+            </h1>
+          ) : (
+            <form
+              className="crewpage__name"
+              onSubmit={(e) => {
+                e.preventDefault();
+                rename();
+              }}
+            >
+              <input className="display crewpage__input" value={name} onChange={(e) => setName(e.target.value)} aria-label="Playlist name" maxLength={60} />
+              {name.trim() && name.trim() !== collection.name && (
+                <button className="btn btn--sm" type="submit" disabled={busy === "name"}>
+                  Save
+                </button>
+              )}
+            </form>
+          )}
           <span className="muted pl__by">
             {tracks.length === 1 ? "1 track" : `${tracks.length} tracks`}
-            {starter ? ` · started by ${starter.id === me.id ? "you" : starter.name.split(" ")[0]}` : ""}
+            {starterName ? ` · started by ${starterName}` : ""}
             {` · ${timeAgo(collection.createdAt)}`}
-            {collection.publicCode ? (
+            {guest ? null : collection.publicCode ? (
               <>
-                {" · anyone with the link can open it · "}
+                {" · anyone with the link can look; they sign up to play it · "}
                 <button className="linklike" onClick={unshare}>
                   Turn the link off
                 </button>
@@ -195,9 +228,11 @@ export function CollectionView({ id }: { id: string }) {
           </span>
         </div>
         <div className="pl__actions">
-          <button className="btn btn--sm btn--primary" onClick={share}>
-            Share
-          </button>
+          {!guest && (
+            <button className="btn btn--sm btn--primary" onClick={share}>
+              Share
+            </button>
+          )}
           {me.sources.some((s) => s.kind === "spotify") && tracks.length > 0 && (
             <button className="btn btn--sm" onClick={() => saveTo("spotify")} disabled={busy === "export:spotify"}>
               {busy === "export:spotify" ? "Saving…" : "Save to Spotify"}
@@ -225,9 +260,11 @@ export function CollectionView({ id }: { id: string }) {
               {playingAll ? <IconPause size={14} /> : <IconPlay size={14} />} {playingAll ? "Stop" : "Play all"}
             </button>
           )}
-          <button className="btn btn--sm btn--ghost" onClick={() => setConfirm(true)}>
-            Delete playlist
-          </button>
+          {!guest && (
+            <button className="btn btn--sm btn--ghost" onClick={() => setConfirm(true)}>
+              Delete playlist
+            </button>
+          )}
         </div>
       </header>
 
@@ -237,9 +274,12 @@ export function CollectionView({ id }: { id: string }) {
         <ul className="pl__list">
           {tracks.map((x) => {
             const isCur = player.currentId === x.track.id;
+            const where = openable(x.track.links, me.preferredPlatform).direct[0];
+            const url = where ? x.track.links[where]?.url ?? null : null;
             return (
               <li
                 key={x.track.id}
+                id={`cv-${x.track.id}`}
                 className={`pl__row${isCur && player.playing ? " is-playing" : ""}`}
                 onClick={() => {
                   if (!x.track.previewUrl) return;
@@ -250,7 +290,7 @@ export function CollectionView({ id }: { id: string }) {
                 <div className="log__artwrap pl__artwrap">
                   {x.track.artworkUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img className="row__art" src={x.track.artworkUrl} alt="" />
+                    <img className="row__art" src={x.track.artworkUrl} alt="" onError={artFallback} />
                   ) : (
                     <div className="row__art" />
                   )}
@@ -271,19 +311,26 @@ export function CollectionView({ id }: { id: string }) {
                     </span>
                   )}
                   <span className="pl__when num">{timeAgo(x.addedAt)}</span>
-                  <button
-                    className="iconbtn iconbtn--sm cv__remove"
-                    aria-label={`Remove ${x.track.title} from this playlist`}
-                    title="Remove from this playlist"
-                    disabled={busy === x.track.id}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      remove(x.track.id);
-                    }}
-                    type="button"
-                  >
-                    <IconClose size={14} />
-                  </button>
+                  {url && (
+                    <a className="btn btn--sm btn--ghost" href={url} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()}>
+                      Open
+                    </a>
+                  )}
+                  {!guest && (
+                    <button
+                      className="iconbtn iconbtn--sm cv__remove"
+                      aria-label={`Remove ${x.track.title} from this playlist`}
+                      title="Remove from this playlist"
+                      disabled={busy === x.track.id}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        remove(x.track.id);
+                      }}
+                      type="button"
+                    >
+                      <IconClose size={14} />
+                    </button>
+                  )}
                 </div>
               </li>
             );

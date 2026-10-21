@@ -78,27 +78,30 @@ export function useNow(): number {
 }
 
 /**
- * Who has Live open right now, always on show: the crew's faces, a count of station listeners,
- * and a plain number. One person is still a number ("1 tuned in · just you"), because an empty
- * room is worth knowing about too.
+ * Who else has Live or the station open right now. The viewer never counts; an empty room shows
+ * nothing. Crew members get their face and name ("Dana is tuned in"); station listeners with no
+ * account are a number ("2 tuned in"); together it is the names and the whole count.
  */
 export function TunedIn({ tuned, meId }: { tuned: Tuned; meId: string }) {
-  const names = tuned.people.map((p) => (p.id === meId ? "you" : p.name.split(" ")[0]));
-  const parts: string[] = [];
-  if (names.length) parts.push(names.length === 1 ? (names[0] === "you" ? "just you" : names[0]) : `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}`);
-  if (tuned.anonymous) parts.push(`${tuned.anonymous} on the station`);
+  const others = tuned.people.filter((p) => p.id !== meId);
+  const total = others.length + tuned.anonymous;
+  if (total === 0) return null;
+  const names = others.map((p) => p.name.split(" ")[0]);
+  const list = names.length <= 1 ? names[0] ?? "" : `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}`;
+  let line: string;
+  if (others.length === 0) line = `${total} tuned in`;
+  else if (tuned.anonymous === 0) line = `${list} ${others.length === 1 ? "is" : "are"} tuned in`;
+  else line = `${list} · ${total} tuned in`;
   return (
     <div className="tuned" role="status" aria-live="polite" title="People with Live or the station open right now">
-      <span className="faces tuned__faces" aria-hidden>
-        {tuned.people.slice(0, 5).map((p) => (
-          <Avatar key={p.id} name={p.name} url={p.avatarUrl} size={24} />
-        ))}
-      </span>
-      <span className="tuned__count num">
-        <i className="tuned__dot" aria-hidden />
-        {tuned.count} tuned in
-      </span>
-      {parts.length > 0 && <span className="tuned__who muted">· {parts.join(" · ")}</span>}
+      {others.length > 0 && (
+        <span className="faces tuned__faces" aria-hidden>
+          {others.slice(0, 5).map((p) => (
+            <Avatar key={p.id} name={p.name} url={p.avatarUrl} size={24} />
+          ))}
+        </span>
+      )}
+      <span className="tuned__count">{line}</span>
     </div>
   );
 }

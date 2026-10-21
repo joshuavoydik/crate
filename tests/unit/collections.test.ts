@@ -65,3 +65,24 @@ test("a crew's playlists: start one, add a track once, see it, take it out, dele
   assert.equal(await collectionById(late.id), null);
   assert.deepEqual(await collectionsFor("c1"), []);
 });
+
+test("guests: let in by the link, they can read but are not members, and the shelf lists what was shared with them", async () => {
+  const { run } = await import("../../src/lib/db.ts");
+  const { createCollection, addGuest, isGuest, guestCollectionsFor, addTrack } = await import("../../src/lib/collections.ts");
+  const t = Date.now();
+  await run("INSERT INTO users (id, name, created_at) VALUES ('g1', 'Guest Gia', ?)", [t]);
+  await run("INSERT INTO crews (id, name, invite_code, created_by, created_at) VALUES ('c2', 'Them', 'them-crew', 'u1', ?)", [t]);
+  await run("INSERT INTO crew_members (crew_id, user_id, joined_at) VALUES ('c2', 'u1', ?)", [t]);
+  const list = await createCollection("c2", "u1", "Road trip");
+  await addTrack(list.id, "t1", "u1");
+  assert.equal(await isGuest(list.id, "g1"), false);
+  await addGuest(list.id, "g1");
+  await addGuest(list.id, "g1");
+  assert.equal(await isGuest(list.id, "g1"), true, "once is enough; twice is harmless");
+  const shared = await guestCollectionsFor("g1");
+  assert.deepEqual(
+    shared.map((c) => [c.name, c.crewName, c.count]),
+    [["Road trip", "Them", 1]],
+  );
+  assert.deepEqual(await guestCollectionsFor("u1"), [], "a member is not a guest of their own crew's lists");
+});

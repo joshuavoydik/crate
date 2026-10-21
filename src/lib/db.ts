@@ -145,6 +145,12 @@ CREATE TABLE IF NOT EXISTS playlist_tracks (
   added_at INTEGER NOT NULL,
   PRIMARY KEY (playlist_id, track_id)
 );
+CREATE TABLE IF NOT EXISTS playlist_guests (
+  playlist_id TEXT NOT NULL,
+  user_id TEXT NOT NULL,
+  joined_at INTEGER NOT NULL,
+  PRIMARY KEY (playlist_id, user_id)
+);
 CREATE TABLE IF NOT EXISTS tune_ins (
   crew_id TEXT NOT NULL,
   viewer TEXT NOT NULL,
