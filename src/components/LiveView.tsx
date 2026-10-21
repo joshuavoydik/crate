@@ -10,9 +10,11 @@ import { IconPlay, IconPause, IconPlus } from "./Icons";
 import { api, initials, timeAgo, sourceName } from "@/lib/client";
 import { openable, PLATFORM_LABELS } from "@/lib/resolve/links";
 import type { LivePerson, LiveSession } from "@/lib/live";
-import { artFallback } from "./Avatar";
+import type { Person } from "@/lib/types";
+import { Avatar, artFallback } from "./Avatar";
 
-type LiveResponse = { people: LivePerson[]; history: LiveSession[]; tunedIn: number; now: number };
+type Tuned = { count: number; people: Person[]; anonymous: number };
+type LiveResponse = { people: LivePerson[]; history: LiveSession[]; tunedIn: number; tuned?: Tuned; now: number };
 
 function fmt(ms: number): string {
   const s = Math.max(0, Math.floor(ms / 1000));
@@ -73,6 +75,32 @@ export function useNow(): number {
     return () => clearInterval(id);
   }, []);
   return t;
+}
+
+/**
+ * Who has Live open right now, always on show: the crew's faces, a count of station listeners,
+ * and a plain number. One person is still a number ("1 tuned in · just you"), because an empty
+ * room is worth knowing about too.
+ */
+export function TunedIn({ tuned, meId }: { tuned: Tuned; meId: string }) {
+  const names = tuned.people.map((p) => (p.id === meId ? "you" : p.name.split(" ")[0]));
+  const parts: string[] = [];
+  if (names.length) parts.push(names.length === 1 ? (names[0] === "you" ? "just you" : names[0]) : `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}`);
+  if (tuned.anonymous) parts.push(`${tuned.anonymous} on the station`);
+  return (
+    <div className="tuned" role="status" aria-live="polite" title="People with Live or the station open right now">
+      <span className="faces tuned__faces" aria-hidden>
+        {tuned.people.slice(0, 5).map((p) => (
+          <Avatar key={p.id} name={p.name} url={p.avatarUrl} size={24} />
+        ))}
+      </span>
+      <span className="tuned__count num">
+        <i className="tuned__dot" aria-hidden />
+        {tuned.count} tuned in
+      </span>
+      {parts.length > 0 && <span className="tuned__who muted">· {parts.join(" · ")}</span>}
+    </div>
+  );
 }
 
 export function LiveView() {
@@ -170,15 +198,14 @@ export function LiveView() {
           {stale ? (
             <span title="The last check did not get through; this is what Crate last heard">Out of touch · retrying</span>
           ) : data ? (
-            <>
-              {liveCount ? `${liveCount} playing` : "Quiet right now"}
-              {data.tunedIn > 1 ? <span className="live__tuned"> · {data.tunedIn} tuned in</span> : null}
-            </>
+            liveCount ? `${liveCount} playing` : "Quiet right now"
           ) : (
             "Listening…"
           )}
         </span>
       </div>
+
+      {data && <TunedIn tuned={data.tuned ?? { count: data.tunedIn, people: [], anonymous: 0 }} meId={me.id} />}
 
       {needsReconnect.map((n) => (
         <div key={n.id} className="live__notice" role="status">

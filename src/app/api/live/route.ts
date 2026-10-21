@@ -2,7 +2,7 @@ export const maxDuration = 60;
 
 import { json, error, readJson, requireUser } from "@/lib/api";
 import { isMember } from "@/lib/queries";
-import { heartbeat, liveFor, liveHistoryFor, tuneIn, tunedIn } from "@/lib/live";
+import { heartbeat, liveFor, liveHistoryFor, tuneIn, tunedInDetail } from "@/lib/live";
 
 /** GET: who is playing what, right now, in a crew. */
 export async function GET(req: Request) {
@@ -14,7 +14,8 @@ export async function GET(req: Request) {
   if (q.get("tune") === "1") await tuneIn(crewId, auth.user.id);
   const people = await liveFor(crewId);
   const history = q.get("history") === "1" ? await liveHistoryFor(crewId) : [];
-  return json({ people, history, tunedIn: await tunedIn(crewId), now: Date.now() });
+  const tuned = await tunedInDetail(crewId);
+  return json({ people, history, tunedIn: tuned.count, tuned, now: Date.now() });
 }
 
 /** POST: the Crate player reporting a preview playing or paused. */

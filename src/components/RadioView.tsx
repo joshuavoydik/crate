@@ -8,10 +8,10 @@ import { ThemeToggle } from "./ThemeToggle";
 import { IconPlay, IconPause } from "./Icons";
 import { api, timeAgo } from "@/lib/client";
 import { openable } from "@/lib/resolve/links";
-import type { Send } from "@/lib/types";
+import type { Send, Person } from "@/lib/types";
 import type { LivePerson, LiveSession } from "@/lib/live";
 
-type Feed = { crew: { name: string; playlistName: string | null }; people: LivePerson[]; sends: Send[]; history: LiveSession[]; tunedIn: number; now: number };
+type Feed = { crew: { name: string; playlistName: string | null }; people: LivePerson[]; sends: Send[]; history: LiveSession[]; tunedIn: number; tuned?: { count: number; people: Person[]; anonymous: number }; now: number };
 
 /** The public station: read-only, no account. Who is playing what, and the playlist. */
 export function RadioView({ code, crewName }: { code: string; crewName: string }) {
@@ -65,7 +65,7 @@ function Station({ code, crewName }: { code: string; crewName: string }) {
             ) : (
               "Off air, for now"
             )}
-            {listening > 1 ? <span className="live__tuned"> · {listening} listening</span> : null}
+            <span className="live__tuned"> · {listening} {listening === 1 ? "listener" : "listening"}</span>
           </span>
           <h1 className="display radio__name">{feed?.crew.playlistName ?? crewName}</h1>
           <div className="muted">{crewName} on Crate</div>

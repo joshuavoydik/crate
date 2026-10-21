@@ -3766,6 +3766,37 @@ html.is-pocket {
   color: var(--ink-3);
 }
 
+/* Who has Live open: faces, a count, names. Always on show, even when it is just you. */
+.tuned {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: -6px 0 18px;
+  min-height: 28px;
+  font-size: 14px;
+}
+.tuned__faces:empty {
+  display: none;
+}
+.tuned__count {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.tuned__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--live);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--live) 22%, transparent);
+  animation: livedot 2s ease-in-out infinite;
+}
+.tuned__who {
+  font-size: 14px;
+}
+
 .lh {
   max-width: 760px;
   margin: 44px auto 0;

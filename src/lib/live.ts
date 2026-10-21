@@ -486,6 +486,35 @@ export async function tunedIn(crewId: string): Promise<number> {
   return Number(r?.n ?? 0);
 }
 
+export type TunedIn = {
+  /** Everyone with the Live page or the station open right now: crew members and anonymous listeners together. */
+  count: number;
+  /** The crew members among them, faces first. */
+  people: Person[];
+  /** Listeners on the public station with no account. */
+  anonymous: number;
+};
+
+/** Who is tuned in, not just how many: members get their face, station listeners are a number. */
+export async function tunedInDetail(crewId: string): Promise<TunedIn> {
+  const rows = await all<{ viewer: string }>("SELECT viewer FROM tune_ins WHERE crew_id = ? AND seen_at > ? ORDER BY seen_at DESC", [crewId, now() - TUNED_WINDOW]);
+  const memberIds = rows.map((r) => r.viewer).filter((v) => !v.startsWith("anon:"));
+  const anonymous = rows.length - memberIds.length;
+  const people: Person[] = [];
+  if (memberIds.length) {
+    const users = await all<{ id: string; name: string; is_dj: number; avatar_v: number; has_avatar: number }>(
+      `SELECT id, name, is_dj, avatar_v, (avatar IS NOT NULL) AS has_avatar FROM users WHERE id IN (${memberIds.map(() => "?").join(", ")})`,
+      memberIds,
+    );
+    const byId = new Map(users.map((u) => [u.id, u]));
+    for (const id of memberIds) {
+      const u = byId.get(id);
+      if (u) people.push({ id: u.id, name: u.name, isDj: !!u.is_dj, avatarUrl: avatarUrlFor(u.id, u.avatar_v ?? 0, !!u.has_avatar) });
+    }
+  }
+  return { count: rows.length, people, anonymous };
+}
+
 /**
  * Follow along: play what someone else is playing, right now, on the follower's own Spotify.
  * Spotify to Spotify works at full quality on whatever device they have open; the position is
