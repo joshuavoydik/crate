@@ -451,14 +451,12 @@ async function main() {
     // Theme: one tap flips it and it sticks.
     await a.goto(`${BASE}/settings`);
     assert.equal(await a.evaluate(() => document.documentElement.getAttribute("data-theme")), null);
-    await a.getByRole("radio", { name: "Light" }).click();
+    await a.getByRole("radio", { name: "Paper" }).click();
     assert.equal(await a.evaluate(() => document.documentElement.getAttribute("data-theme")), "light");
     await a.reload();
     assert.equal(await a.evaluate(() => document.documentElement.getAttribute("data-theme")), "light");
-    await a.getByRole("radio", { name: "Dark" }).click();
+    await a.getByRole("radio", { name: "Black" }).click();
     assert.equal(await a.evaluate(() => document.documentElement.getAttribute("data-theme")), "dark");
-    await a.getByRole("radio", { name: "Auto" }).click();
-    assert.equal(await a.evaluate(() => document.documentElement.getAttribute("data-theme")), null);
     // The crew page: people, invite, the playlist name, rules, public radio; leaving asks first.
     await a.goto(`${BASE}/crew`);
     await a.getByRole("textbox", { name: "Crew name" }).waitFor();

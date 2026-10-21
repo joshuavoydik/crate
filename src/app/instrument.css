@@ -1,0 +1,1332 @@
+/*
+ * Instrument: the skin on top of the base layer. Black ground, one signal red, hairlines instead of cards,
+ * square tiles, a grotesk for reading, a mono for labels and a dot matrix for every number. Nothing here is
+ * in a cascade layer, so every rule beats the base without a specificity contest.
+ */
+
+:root {
+  --surface: #0b0b0c;
+  --surface-2: #121214;
+  --surface-3: #1c1c1f;
+  --ink: #eceae4;
+  --ink-2: #b5b3ac;
+  --ink-3: #9a9890;
+  --ink-4: #3a3a3e;
+  --line: #26262a;
+  --line-2: #38383d;
+  --signal: #ff4d2e;
+  --accent: var(--signal);
+  --live: var(--signal);
+  --glass: rgba(255, 255, 255, 0.03);
+  --glass-2: rgba(255, 255, 255, 0.06);
+  --r-card: 0;
+  --r-sheet: 0;
+  --mono: var(--font-mono), "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  --num: var(--font-num), "Doto", var(--mono);
+  --font-display: var(--font-sans);
+  --font-serif: var(--font-sans);
+  --font-pixel: var(--font-num);
+  color-scheme: dark;
+}
+
+/* Paper: the same instrument, printed. Only when someone asks for light in Settings. */
+:root[data-theme="light"] {
+  --surface: #f2f0ea;
+  --surface-2: #ffffff;
+  --surface-3: #e6e3dc;
+  --ink: #121212;
+  --ink-2: #4a4a47;
+  --ink-3: #6e6d68;
+  --ink-4: #cfcdc6;
+  --line: #dad8d1;
+  --line-2: #c4c2bb;
+  --glass: rgba(0, 0, 0, 0.03);
+  --glass-2: rgba(0, 0, 0, 0.06);
+  color-scheme: light;
+}
+
+html,
+body {
+  font-family: var(--font-sans), "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+  font-size: 15.5px;
+  line-height: 1.4;
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+[tabindex]:focus-visible {
+  outline: 1px solid var(--signal);
+  outline-offset: 3px;
+  border-radius: 0;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--signal) 40%, transparent);
+}
+
+/* ---------- type ---------- */
+
+.display {
+  font-family: var(--font-sans), "Space Grotesk", sans-serif;
+  font-style: normal;
+  font-weight: 500;
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+
+.caps,
+.hint,
+.wordmark,
+.crewname,
+.tab,
+.tag,
+.kbd,
+.pl__sender,
+.log__phrase,
+.lh__daylabel,
+.month__title,
+.earlier__all,
+.pl__back,
+.linklike,
+.pl__invite,
+.live__status,
+.notices__empty,
+.orb__who,
+.liveband__cta,
+.swipecue,
+.invite__code,
+.invite__url,
+.invite__prefix,
+.invite__slug,
+.code,
+.toast,
+.chip,
+.people__chip,
+.seg button,
+.btn {
+  font-family: var(--mono);
+}
+
+.caps {
+  font-size: 10.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  font-weight: 400;
+  color: var(--ink-3);
+}
+
+/* Numbers read off a dot matrix: times, counts, the odd readout. Heavy and upper case, or the dots thin out. */
+.readout,
+.pl__when,
+.lh__when,
+.log__time,
+.orb__meta,
+.bell__badge,
+.people__n,
+.stat__n,
+.tuned__count,
+.caps.num {
+  font-family: var(--num);
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.caps.num {
+  font-size: 12px;
+}
+
+.muted {
+  color: var(--ink-2);
+}
+
+.faint {
+  color: var(--ink-3);
+}
+
+/* ---------- shell ---------- */
+
+.backdrop {
+  display: none;
+}
+
+.topbar.is-scrolled {
+  background-color: color-mix(in srgb, var(--surface) 92%, transparent);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-bottom-color: var(--line);
+  box-shadow: none;
+}
+
+.wordmark {
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  font-weight: 400;
+  color: var(--ink-3);
+}
+
+.wordmark.is-active {
+  color: var(--ink);
+}
+
+.crewname {
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  font-weight: 400;
+  color: var(--ink);
+  border-radius: 0;
+}
+
+.crewname:hover {
+  background: transparent;
+  color: var(--signal);
+}
+
+.avatar {
+  background: var(--surface-3);
+  color: var(--ink);
+  font-family: var(--font-sans), sans-serif;
+  font-weight: 500;
+  border-color: var(--surface);
+}
+
+.iconbtn {
+  width: 36px;
+  height: 36px;
+  border-radius: 0;
+  border: 1px solid transparent;
+  background: transparent;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  color: var(--ink-2);
+}
+
+.iconbtn:hover {
+  background: transparent;
+  border-color: var(--line-2);
+  color: var(--ink);
+}
+
+.topbar__send,
+.topbar__bell,
+.topbar__you,
+.topbar__rail.is-on {
+  color: var(--ink);
+}
+
+.iconbtn--accent {
+  border-color: var(--signal);
+  box-shadow: none;
+}
+
+.topbar__bell.has-notices {
+  border-color: var(--signal);
+}
+
+.bell__badge {
+  border-radius: 0;
+  min-width: 16px;
+  height: 16px;
+  font-size: 11px;
+  box-shadow: 0 0 0 2px var(--surface);
+}
+
+.topbar__right [data-tip]::after {
+  border-radius: 0;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* The phone's tab bar: four words on a hairline, a signal dot on Live when someone is playing. */
+@media (max-width: 719px) {
+  .tabbar {
+    grid-template-columns: 1fr 1fr 1fr auto;
+    gap: 0;
+    padding: 0 20px calc(8px + var(--sab));
+    background: var(--surface);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    border-top: 1px solid var(--line);
+  }
+
+  .tab {
+    flex-direction: row;
+    justify-content: flex-start;
+    align-items: center;
+    gap: 7px;
+    min-height: 52px;
+    padding: 0;
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    font-weight: 400;
+    color: var(--ink-3);
+    border-radius: 0;
+  }
+
+  .tab svg {
+    display: none;
+  }
+
+  .tab.is-active {
+    color: var(--ink);
+  }
+
+  .beacon--tab {
+    position: static;
+    width: 6px;
+    height: 6px;
+    box-shadow: none;
+    order: -1;
+  }
+
+  .tab--send {
+    color: var(--ink);
+    justify-content: flex-end;
+  }
+
+  .tab--send .tab__icon {
+    width: auto;
+    height: auto;
+    border: 0;
+    box-shadow: none;
+    margin: 0;
+    border-radius: 0;
+  }
+
+  .tab--send .tab__icon::before {
+    content: "+";
+    font-size: 14px;
+    line-height: 1;
+  }
+
+  .shell {
+    padding-bottom: calc(66px + var(--sab));
+  }
+
+  .reel {
+    --stage-min: calc(100dvh - var(--topbar) - var(--sat) - 66px - var(--sab));
+  }
+
+  .toasts {
+    bottom: calc(78px + var(--sab));
+  }
+}
+
+/* ---------- buttons, chips, controls ---------- */
+
+.btn {
+  height: 42px;
+  padding: 0 18px;
+  border-radius: 0;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  border: 1px solid var(--line-2);
+  color: var(--ink);
+}
+
+.btn:hover {
+  background: transparent;
+  border-color: var(--ink);
+}
+
+.btn:active {
+  transform: none;
+}
+
+.btn--primary {
+  background: var(--ink);
+  color: var(--surface);
+  border-color: var(--ink);
+}
+
+.btn--primary:hover {
+  background: var(--signal);
+  border-color: var(--signal);
+  color: #fff;
+}
+
+.btn--accent {
+  border-color: var(--signal);
+  color: var(--signal);
+}
+
+.btn--sm {
+  height: 34px;
+  padding: 0 12px;
+  font-size: 10.5px;
+}
+
+.btn--ghost {
+  border-color: transparent;
+  color: var(--ink-3);
+}
+
+.btn--ghost:hover {
+  color: var(--ink);
+  border-color: transparent;
+}
+
+.chip,
+.people__chip {
+  border-radius: 0;
+  border: 1px solid var(--line-2);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+
+.chip.is-on,
+.people__chip.is-on {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--surface);
+}
+
+.people__chip .people__n {
+  font-size: 12px;
+}
+
+.seg {
+  border-radius: 0;
+  border: 1px solid var(--line-2);
+  padding: 0;
+}
+
+.seg button {
+  border-radius: 0;
+  height: 32px;
+  font-size: 10.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+.seg button + button {
+  border-left: 1px solid var(--line-2);
+}
+
+.seg button.is-on {
+  background: var(--ink);
+  color: var(--surface);
+}
+
+.toggle {
+  width: 44px;
+  height: 24px;
+  border-radius: 0;
+  background: transparent;
+  border: 1px solid var(--line-2);
+}
+
+.toggle::after {
+  width: 16px;
+  height: 16px;
+  border-radius: 0;
+  background: var(--ink-3);
+  top: 3px;
+  left: 3px;
+}
+
+.toggle.is-on {
+  background: transparent;
+  border-color: var(--signal);
+}
+
+.toggle.is-on::after {
+  background: var(--signal);
+  transform: translateX(20px);
+}
+
+.kbd {
+  border-radius: 0;
+  font-size: 10px;
+}
+
+.tag {
+  border-radius: 0;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  backdrop-filter: none;
+  background: var(--surface);
+  color: var(--ink);
+}
+
+.tag--played {
+  background: var(--signal);
+  color: #fff;
+}
+
+.toast {
+  border-radius: 0;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  box-shadow: none;
+  border: 1px solid var(--ink);
+}
+
+.skeleton {
+  border-radius: 0;
+}
+
+.field,
+.textarea {
+  border-bottom-color: var(--line-2);
+}
+
+.field:focus,
+.textarea:focus {
+  border-bottom-color: var(--signal);
+}
+
+.field:focus-visible,
+.textarea:focus-visible {
+  outline: none;
+  border-radius: 0;
+}
+
+.field--lg {
+  font-size: 22px;
+  letter-spacing: -0.02em;
+}
+
+/* ---------- popovers and sheets ---------- */
+
+.pop {
+  border-radius: 0;
+  border: 1px solid var(--line-2);
+  box-shadow: 0 24px 48px -24px rgba(0, 0, 0, 0.8);
+  background: var(--surface);
+}
+
+.pop__item {
+  border-radius: 0;
+  font-size: 13.5px;
+}
+
+.pop__item:hover {
+  background: var(--glass-2);
+}
+
+.pop__x {
+  border-radius: 0;
+}
+
+.sheet {
+  border-radius: 0;
+  background: var(--surface);
+  border-top: 1px solid var(--line-2);
+  box-shadow: none;
+}
+
+.sheet__handle {
+  width: 28px;
+  height: 2px;
+  border-radius: 0;
+  background: var(--ink-4);
+}
+
+@media (min-width: 720px) {
+  .sheet {
+    border: 1px solid var(--line-2);
+  }
+}
+
+.notice {
+  border-radius: 0;
+  border-left: 2px solid var(--signal);
+}
+
+.live__notice,
+.cv__guest,
+.chrome__status,
+.chromecard,
+.errorpage__msg,
+.invite__link,
+.invite__editrow,
+.share__target,
+.code {
+  border-radius: 0;
+  background: transparent;
+  border: 1px solid var(--line);
+}
+
+.share__target:hover {
+  background: var(--glass);
+}
+
+.share__glyph {
+  border-radius: 0;
+  background: transparent;
+  border: 1px solid var(--line-2);
+}
+
+.chrome__site {
+  border-radius: 0;
+  background: transparent;
+  border: 1px solid var(--line);
+  font-family: var(--mono);
+  font-size: 11px;
+}
+
+.chrome__dot {
+  border-radius: 0;
+}
+
+.chromecard.is-on {
+  border-color: var(--line-2);
+  background: transparent;
+}
+
+/* ---------- artwork: squares, always ---------- */
+
+.cover,
+.tc__art,
+.row__art,
+.result__art,
+.preview__art,
+.tile__art,
+.strip__art,
+.rail__art,
+.queue__art,
+.addto__art,
+.livesheet__art,
+.share__cover img,
+.day__covers img,
+.day__blank,
+.mosaic,
+.mosaic--sm,
+.conn__mark,
+.lcd__art,
+.log__artwrap img,
+.comein__track .row__art {
+  border-radius: 0;
+}
+
+.tile:hover .tile__art,
+.preview__art,
+.livesheet__art {
+  box-shadow: none;
+}
+
+.log__play {
+  border-radius: 0;
+  background: rgba(11, 11, 12, 0.6);
+  color: #fff;
+}
+
+.log__play:hover,
+.log__play:focus-visible {
+  background: var(--signal);
+}
+
+/* ---------- the stage: a tile with corner marks and a segmented meter under it ---------- */
+
+.cover {
+  overflow: visible;
+  box-shadow: none;
+  border-radius: 0;
+}
+
+.cover img {
+  display: block;
+}
+
+.cover::before {
+  content: "";
+  position: absolute;
+  inset: -7px;
+  pointer-events: none;
+  --m: linear-gradient(var(--signal), var(--signal));
+  background:
+    var(--m) top left / 14px 1px no-repeat,
+    var(--m) top left / 1px 14px no-repeat,
+    var(--m) top right / 14px 1px no-repeat,
+    var(--m) top right / 1px 14px no-repeat,
+    var(--m) bottom left / 14px 1px no-repeat,
+    var(--m) bottom left / 1px 14px no-repeat,
+    var(--m) bottom right / 14px 1px no-repeat,
+    var(--m) bottom right / 1px 14px no-repeat;
+}
+
+.cover--empty {
+  border: 1px solid var(--line);
+}
+
+.cover__play {
+  background: rgba(11, 11, 12, 0.45);
+}
+
+.cover__progress {
+  left: 0;
+  right: 0;
+  bottom: -16px;
+  height: 5px;
+  background: var(--surface-3);
+  -webkit-mask: repeating-linear-gradient(90deg, #000 0 calc(100% / 24 - 2px), transparent calc(100% / 24 - 2px) calc(100% / 24));
+  mask: repeating-linear-gradient(90deg, #000 0 calc(100% / 24 - 2px), transparent calc(100% / 24 - 2px) calc(100% / 24));
+}
+
+.cover__progress i {
+  background: var(--signal);
+  box-shadow: none;
+}
+
+.stagecard__from {
+  margin-top: 30px;
+}
+
+.stagecard__artist {
+  color: var(--ink-3);
+  font-size: 16px;
+}
+
+.stagecard__note {
+  font-size: 15px;
+  color: var(--ink);
+}
+
+.dot {
+  border-radius: 0;
+  width: 5px;
+  height: 5px;
+  box-shadow: none;
+}
+
+.swipecue {
+  border-radius: 0;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  background: var(--surface);
+  font-size: 11px;
+  font-weight: 500;
+}
+
+/* Keep and Next sit together as one control: Keep inverted, Next outlined, one hairline between them. */
+.stage__actions {
+  gap: 0;
+}
+
+.stage__actions .btn {
+  height: 40px;
+  min-width: 118px;
+}
+
+.stage__actions .btn + .btn {
+  margin-left: -1px;
+}
+
+.stage__actions .btn--ghost {
+  border-color: var(--line-2);
+  color: var(--ink);
+}
+
+.stage__actions .btn--ghost:hover {
+  border-color: var(--ink);
+}
+
+.stage__actions .btn:not(.btn--ghost):not(.btn--accent):not(.btn--primary) {
+  background: var(--ink);
+  color: var(--surface);
+  border-color: var(--ink);
+}
+
+.stage__actions .btn:not(.btn--ghost):not(.btn--accent):not(.btn--primary):hover {
+  background: var(--signal);
+  border-color: var(--signal);
+  color: #fff;
+}
+
+.hint {
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+.empty__title {
+  font-size: 40px;
+}
+
+/* The card panel beside the stage on a wide screen: a hairline box, nothing behind it. */
+.panel {
+  border-radius: 0;
+  border: 1px solid var(--line);
+  background: transparent;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+.queue__item {
+  border-radius: 0;
+  margin: 0;
+  width: 100%;
+  padding: 8px 0;
+  border-top: 1px solid var(--line);
+}
+
+.queue__item:hover {
+  background: transparent;
+}
+
+.queue__item:hover .queue__title {
+  color: var(--signal);
+}
+
+.queue__item.is-current {
+  background: transparent;
+  box-shadow: inset 2px 0 0 var(--signal);
+  padding-left: 10px;
+}
+
+/* ---------- track card in the sheet ---------- */
+
+.tc__art {
+  width: 64px;
+  height: 64px;
+}
+
+.tc__title {
+  font-size: 24px;
+}
+
+.tc__reply,
+.pl__note,
+.pl__excerpt,
+.tc__note {
+  font-style: normal;
+}
+
+.tc__back {
+  border-top: 1px solid var(--line);
+}
+
+.replybox .field {
+  font-size: 14px;
+}
+
+.meta__v {
+  font-size: 16px;
+}
+
+/* ---------- send flow ---------- */
+
+.result {
+  margin: 0;
+  width: 100%;
+  padding: 8px 0;
+  border-radius: 0;
+  border-top: 1px solid var(--line);
+}
+
+.result:hover {
+  background: transparent;
+  color: var(--signal);
+}
+
+.result:first-child {
+  border-top: 0;
+}
+
+.preview__title {
+  font-size: 26px;
+}
+
+/* ---------- lists: hairlines, not cards ---------- */
+
+.pl__row,
+.log__row,
+.lh__row,
+.rail__row,
+.day__head,
+.conn,
+.addto__row,
+.mix {
+  margin: 0;
+  width: 100%;
+  border-radius: 0;
+  border-top: 1px solid var(--line);
+  padding-left: 0;
+  padding-right: 0;
+}
+
+.pl__row {
+  grid-template-columns: 44px 1fr auto;
+  gap: 12px;
+  padding-top: 10px;
+  padding-bottom: 10px;
+}
+
+.pl__row .row__art,
+.pl__row .log__artwrap img {
+  width: 44px;
+  height: 44px;
+}
+
+.pl__row:hover,
+.log__row:hover,
+.lh__row:hover,
+.rail__row:hover,
+.day__head:hover,
+.conn:hover,
+.addto__row:hover,
+.mix:hover {
+  background: transparent;
+}
+
+.pl__row:hover .pl__title,
+.log__row:hover .log__title,
+.lh__row:hover .lh__title,
+.rail__row:hover .rail__title,
+.day__head:hover .day__label,
+.mix:hover .mix__name {
+  color: var(--signal);
+}
+
+.pl__row.is-playing,
+.lh__row.is-playing {
+  background: transparent;
+  box-shadow: inset 2px 0 0 var(--signal);
+  padding-left: 10px;
+}
+
+.pl__row.is-new .pl__title::before {
+  width: 5px;
+  height: 5px;
+  border-radius: 0;
+  background: var(--signal);
+}
+
+.pl__list > .pl__row:last-child,
+.lh__list > .lh__row:last-child,
+.log__day > .log__row:last-child {
+  border-bottom: 1px solid var(--line);
+}
+
+.pl__sub,
+.pl__meta,
+.log__time,
+.lh__sub,
+.lh__when,
+.row__sub,
+.rail__when,
+.rail__sub,
+.day__sub,
+.mix__n,
+.tile__artist,
+.source__sub,
+.conn__sub {
+  color: var(--ink-3);
+}
+
+.pl__when,
+.lh__when,
+.log__time {
+  font-size: 14px;
+  color: var(--ink-3);
+}
+
+.pl__name {
+  font-style: normal;
+  font-size: clamp(36px, 5.2vw, 56px);
+  letter-spacing: -0.03em;
+}
+
+.pl__namelink:hover .pl__name {
+  color: var(--signal);
+}
+
+.pl__by {
+  font-size: 13.5px;
+  color: var(--ink-3);
+}
+
+.pl__sender {
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  color: var(--ink-3);
+}
+
+.pl__badge {
+  border-radius: 0;
+  background: transparent;
+  border: 1px solid var(--line-2);
+}
+
+.earlier__head,
+.log__dayhead,
+.lh__head,
+.rail__head,
+.month__title {
+  border-bottom: 0;
+}
+
+.day__covers img,
+.day__blank {
+  box-shadow: 0 0 0 1px var(--surface);
+}
+
+.faces .avatar,
+.day__faces .avatar,
+.invite__faces .avatar {
+  box-shadow: 0 0 0 2px var(--surface);
+}
+
+.mix {
+  padding: 12px 0;
+  background: transparent;
+}
+
+.mixes > .mix:last-child {
+  border-bottom: 1px solid var(--line);
+}
+
+.mosaic {
+  background: var(--surface-3);
+}
+
+.addto__check,
+.addto__plus,
+.invite__plus {
+  border-radius: 0;
+}
+
+.addto__check.is-on {
+  background: var(--signal);
+  color: #fff;
+}
+
+.conn__mark {
+  font-family: var(--mono);
+  font-size: 13px;
+}
+
+.conn__sub.is-on {
+  color: var(--ink);
+}
+
+.conn__sub.is-error,
+.source__sub.is-error {
+  color: var(--signal);
+}
+
+.stat__n {
+  font-size: 34px;
+}
+
+/* ---------- live: a sleeve around each record ---------- */
+
+.live__status {
+  color: var(--ink-3);
+}
+
+.live__dot {
+  border-radius: 0;
+  width: 6px;
+  height: 6px;
+  box-shadow: none;
+  animation: none;
+}
+
+.beacon {
+  box-shadow: none;
+  animation: none;
+}
+
+.beacon--title {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+}
+
+.live__following {
+  border-radius: 0;
+  background: transparent;
+  border: 1px solid var(--signal);
+  color: var(--signal);
+}
+
+.tuned__count {
+  font-size: 15px;
+}
+
+.orb {
+  border-radius: 0;
+  padding: 18px 0 14px;
+}
+
+.orb:hover {
+  background: transparent;
+}
+
+.orb__stage {
+  border-radius: 0;
+  border: 1px solid var(--line);
+  padding: 10%;
+  background: var(--surface-2);
+  transition: border-color 300ms var(--ease);
+}
+
+.orb.is-live .orb__stage {
+  border-color: var(--line-2);
+}
+
+.orb__stage:active {
+  transform: none;
+}
+
+.orb.is-live .orb__stage::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  pointer-events: none;
+  --m: linear-gradient(var(--signal), var(--signal));
+  background:
+    var(--m) top left / 10px 1px no-repeat,
+    var(--m) top left / 1px 10px no-repeat,
+    var(--m) top right / 10px 1px no-repeat,
+    var(--m) top right / 1px 10px no-repeat,
+    var(--m) bottom left / 10px 1px no-repeat,
+    var(--m) bottom left / 1px 10px no-repeat,
+    var(--m) bottom right / 10px 1px no-repeat,
+    var(--m) bottom right / 1px 10px no-repeat;
+}
+
+.orb__arc {
+  inset: calc(10% - 5px);
+  width: auto;
+  height: auto;
+}
+
+.orb__arc-track {
+  stroke: var(--line);
+}
+
+.orb__arc-fill {
+  stroke: var(--signal);
+  stroke-linecap: butt;
+}
+
+.orb__disc,
+.orb.is-live:not(.is-spinning) .orb__disc,
+.orb.is-spinning .orb__disc {
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+}
+
+.orb__label {
+  font-family: var(--font-sans), sans-serif;
+  font-weight: 500;
+  font-size: 22px;
+  letter-spacing: -0.02em;
+  box-shadow: 0 0 0 2px var(--surface);
+}
+
+.orb__text {
+  border-radius: 0;
+}
+
+.orb__who {
+  gap: 6px;
+}
+
+.orb__title {
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.orb__artist {
+  font-size: 13px;
+  color: var(--ink-3);
+}
+
+.orb__meta {
+  font-size: 14px;
+  color: var(--ink-2);
+}
+
+.liveband {
+  border-radius: 0;
+  background: transparent;
+  border: 1px solid var(--line);
+  font-size: 13px;
+}
+
+.liveband__disc {
+  box-shadow: none;
+}
+
+.liveband__cta {
+  color: var(--signal);
+}
+
+.lh__row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+}
+
+.lh__row.is-playing {
+  padding-left: 10px;
+}
+
+.livesheet__title {
+  font-size: 30px;
+}
+
+.srcmark {
+  font-family: var(--font-sans), sans-serif;
+}
+
+/* ---------- log ---------- */
+
+.log__row {
+  padding-top: 10px;
+  padding-bottom: 10px;
+}
+
+.log__phrase {
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+/* ---------- settings, connections, crew ---------- */
+
+.switch,
+.source,
+.people__row {
+  border-bottom-color: var(--line);
+}
+
+.conn {
+  padding: 14px 0;
+}
+
+.conn__cta {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+.code {
+  font-family: var(--mono);
+  font-size: 12px;
+}
+
+.crewpage__input {
+  font-family: var(--font-sans), sans-serif;
+  font-weight: 500;
+  letter-spacing: -0.03em;
+}
+
+.crewpage__photo .avatar {
+  font-family: var(--font-sans), sans-serif;
+  font-weight: 500;
+}
+
+.crewpage__photobtn {
+  border-radius: 0;
+}
+
+.fold__sum::after {
+  font-family: var(--mono);
+}
+
+.invite__url,
+.invite__prefix,
+.invite__slug,
+.invite__code b {
+  font-family: var(--mono);
+}
+
+.invite__copy {
+  color: var(--signal);
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+/* ---------- welcome and the public pages ---------- */
+
+.glow {
+  display: none;
+}
+
+.welcome__mark {
+  font-family: var(--font-sans), sans-serif;
+  font-style: normal;
+  font-weight: 500;
+  letter-spacing: -0.05em;
+}
+
+.welcome__tag {
+  color: var(--ink-3);
+}
+
+.radio__name {
+  font-style: normal;
+  letter-spacing: -0.03em;
+}
+
+.radio__foot,
+.platforms__note {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: var(--ink-3);
+}
+
+.comein__title {
+  font-size: 32px;
+}
+
+/* ---------- pocket mode: the LCD reads in dot matrix now ---------- */
+
+.lcd {
+  font-family: var(--num);
+  font-weight: 500;
+}
+
+.pocket__brand {
+  font-family: var(--num);
+  font-style: normal;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-size: 12px;
+}
+
+.pocket-exit {
+  border-radius: 0;
+  background: transparent;
+}
+
+/* On a phone the exit is just the cross; the caps rule above must not give its text a size back. */
+@media (max-width: 719px) {
+  .pocket-exit {
+    font-size: 0;
+  }
+}
+
+.pocket-hint {
+  font-family: var(--mono);
+}
+
+/* ---------- motion: the instrument does not bounce ---------- */
+
+.btn,
+.iconbtn,
+.chip,
+.orb__stage {
+  transition-duration: 160ms;
+}

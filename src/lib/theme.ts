@@ -28,9 +28,9 @@ export function setThemeMode(mode: ThemeMode): void {
   applyTheme(mode);
 }
 
-/** What is actually showing right now. */
+/** What is actually showing right now. The instrument is black unless someone asked for paper. */
 export function effectiveTheme(): "light" | "dark" {
   const forced = document.documentElement.getAttribute("data-theme");
   if (forced === "light" || forced === "dark") return forced;
-  return window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
+  return "dark";
 }

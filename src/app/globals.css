@@ -1,3 +1,8 @@
+/*
+ * The base stylesheet: layout, motion and every component's bones. It sits in the `base` cascade layer so
+ * the skin in instrument.css (unlayered, so it always wins) can restyle anything without a specificity fight.
+ */
+@layer base {
 :root {
   --surface: #0a0a0b;
   --surface-2: #141416;
@@ -4491,4 +4496,5 @@ html.is-pocket {
 .chromecard.is-on .chrome__dot {
   background: #1db954;
   box-shadow: 0 0 0 4px rgba(29, 185, 84, 0.18);
+}
 }

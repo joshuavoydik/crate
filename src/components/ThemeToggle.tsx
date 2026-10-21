@@ -42,7 +42,7 @@ export function ThemeToggle() {
   );
 }
 
-/** System / Light / Dark, for Settings. */
+/** Black / Paper, for Settings. Nothing chosen means black. */
 export function ThemePicker() {
   const [mode, setMode] = useState<ThemeMode>("system");
   useEffect(() => setMode(getThemeMode()), []);
@@ -50,11 +50,12 @@ export function ThemePicker() {
     setThemeMode(m);
     setMode(m);
   };
+  const on = mode === "light" ? "light" : "dark";
   return (
     <div className="seg" role="radiogroup" aria-label="Appearance">
-      {(["system", "light", "dark"] as ThemeMode[]).map((m) => (
-        <button key={m} role="radio" aria-checked={mode === m} className={mode === m ? "is-on" : ""} onClick={() => pick(m)}>
-          {m === "system" ? "Auto" : m === "light" ? "Light" : "Dark"}
+      {(["dark", "light"] as ThemeMode[]).map((m) => (
+        <button key={m} role="radio" aria-checked={on === m} className={on === m ? "is-on" : ""} onClick={() => pick(m)}>
+          {m === "dark" ? "Black" : "Paper"}
         </button>
       ))}
     </div>

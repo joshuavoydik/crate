@@ -271,7 +271,7 @@ export function SettingsView({ appUrl }: { appUrl: string }) {
         <div>
           <div>Appearance</div>
           <div className="faint" style={{ fontSize: 13 }}>
-            Auto follows your device.
+            Black is the instrument. Paper is the same thing printed.
           </div>
         </div>
         <ThemePicker />
