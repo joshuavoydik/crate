@@ -95,6 +95,8 @@ export type Me = {
   imessageHandle: string | null;
   crews: Crew[];
   sources: SourceInfo[];
+  /** Platforms this person actually plays on, most recent first, from what Crate has seen them play and what they connected. */
+  listensOn: string[];
   /** Which connectors this deployment has keys for. */
   connectors: Record<string, boolean>;
   /** What needs this person's hand right now; the bell top right. */

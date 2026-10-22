@@ -7,7 +7,7 @@ import { usePlayer } from "./Player";
 import { Sheet } from "./Sheet";
 import { SourceMark } from "./SourceMark";
 import { IconPlay, IconPause, IconPlus } from "./Icons";
-import { api, initials, timeAgo, sourceName } from "@/lib/client";
+import { api, initials, timeAgo, sourceName, openOrder } from "@/lib/client";
 import { openable, PLATFORM_LABELS } from "@/lib/resolve/links";
 import type { LivePerson, LiveSession } from "@/lib/live";
 import type { Person } from "@/lib/types";
@@ -301,14 +301,14 @@ export function LiveView() {
                 </button>
               )}
               {open.track &&
-                openable(open.track.links, me.preferredPlatform)
+                openable(open.track.links, openOrder(me, { via: open.source, sourceUrl: open.url }))
                   .direct.slice(0, 2)
                   .map((k) => (
                     <a key={k} className="btn btn--sm btn--ghost" href={open.track!.links[k]!.url} target="_blank" rel="noreferrer">
                       Open in {PLATFORM_LABELS[k]}
                     </a>
                   ))}
-              {(!open.track || !openable(open.track.links, me.preferredPlatform).direct.length) && open.url && (
+              {(!open.track || !openable(open.track.links, openOrder(me, { via: open.source, sourceUrl: open.url })).direct.length) && open.url && (
                 <a className="btn btn--sm btn--ghost" href={open.url} target="_blank" rel="noreferrer">
                   Open
                 </a>

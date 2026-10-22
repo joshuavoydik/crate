@@ -306,7 +306,13 @@ export function SettingsView({ appUrl }: { appUrl: string }) {
       </div>
 
       <span className="label caps">Open tracks in</span>
+      <div className="faint" style={{ fontSize: 13, margin: "4px 0 10px" }}>
+        Auto opens a song on the platform you play on (Crate goes by what you play and what you connected), or on the one it was sent from.
+      </div>
       <div className="chips">
+        <button className={`chip${!me.preferredPlatform ? " is-on" : ""}`} onClick={() => patch({ preferredPlatform: "" })}>
+          Auto
+        </button>
         {orderPlatforms(null)
           .filter((k) => k !== "youtubeMusic")
           .map((k) => (

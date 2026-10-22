@@ -25,10 +25,9 @@ export async function PATCH(req: Request) {
     sets.push("is_dj = ?");
     args.push(body.isDj ? 1 : 0);
   }
-  const platform = str(body.preferredPlatform, 30);
-  if (platform) {
+  if (typeof body.preferredPlatform === "string") {
     sets.push("preferred_platform = ?");
-    args.push(platform);
+    args.push(str(body.preferredPlatform, 30) ?? "");
   }
   if (body.lastfmUser !== undefined) {
     sets.push("lastfm_user = ?");

@@ -129,3 +129,28 @@ export function viaLabel(via: string | null | undefined): string | null {
   if (via === "lastfm") return `loved on ${sourceName(via)}`;
   return `liked on ${sourceName(via)}`;
 }
+
+/**
+ * The order to offer platforms in for a track: the platform this person pinned in Settings, then
+ * where Crate has seen them listen, then where the track came from (the sender's platform or the
+ * pasted link), then the catalog order. A friend on Apple Music sending from Apple Music still
+ * opens in Spotify for someone who lives in Spotify.
+ */
+export function openOrder(me: { preferredPlatform: string; listensOn?: string[] }, send?: { via?: string | null; sourceUrl?: string | null } | null): string[] {
+  const hints: string[] = [me.preferredPlatform, ...(me.listensOn ?? [])];
+  if (send) {
+    const via = (send.via ?? "").replace(/^played:/, "");
+    if (via && via !== "app" && via !== "imessage" && via !== "lastfm") hints.push(via);
+    if (send.sourceUrl) {
+      try {
+        const host = new URL(send.sourceUrl).hostname.toLowerCase();
+        if (host.startsWith("music.youtube.")) hints.push("youtubemusic");
+        else if (host === "youtu.be") hints.push("youtube");
+        else hints.push(host.replace(/^(www|m|open|listen|music)\./, "").split(".")[0]);
+      } catch {
+        /* not a URL */
+      }
+    }
+  }
+  return hints;
+}

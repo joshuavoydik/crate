@@ -131,3 +131,25 @@ test("openable splits a track's links into real places and mere searches", async
   const resolved = buildLinks("Burial", "Archangel", { apple: "https://music.apple.com/x", youtube: "https://youtu.be/y" });
   assert.deepEqual(openable(resolved, "spotify").direct, ["apple", "youtube"]);
 });
+
+test("open-in order: the viewer's pin, then where they listen, then where it came from, then the catalog", async () => {
+  const { orderPlatforms, buildLinks, openable } = await import("../../src/lib/resolve/links.ts");
+  const { openOrder } = await import("../../src/lib/client.ts");
+  // A ranked list of hints; unknown and empty ones are skipped, nothing repeats.
+  assert.deepEqual(orderPlatforms(["", "spotify", "lastfm", "spotify", "apple"]).slice(0, 3), ["spotify", "apple", "youtube"]);
+  assert.deepEqual(orderPlatforms(null).slice(0, 2), ["apple", "spotify"]);
+  // Nothing pinned, listens on Spotify: a track an Apple Music friend played still opens in Spotify.
+  const spotifyPerson = { preferredPlatform: "", listensOn: ["spotify"] };
+  assert.equal(orderPlatforms(openOrder(spotifyPerson, { via: "played:apple", sourceUrl: null }))[0], "spotify");
+  // Nothing known about the viewer: the track's own platform leads.
+  const stranger = { preferredPlatform: "", listensOn: [] };
+  assert.equal(orderPlatforms(openOrder(stranger, { via: "played:apple", sourceUrl: null }))[0], "apple");
+  assert.equal(orderPlatforms(openOrder(stranger, { via: "app", sourceUrl: "https://open.spotify.com/track/abc" }))[0], "spotify");
+  assert.equal(orderPlatforms(openOrder(stranger, { via: "imessage", sourceUrl: "https://youtu.be/xyz" }))[0], "youtube");
+  // A pin in Settings beats everything.
+  const pinned = { preferredPlatform: "tidal", listensOn: ["spotify"] };
+  assert.equal(orderPlatforms(openOrder(pinned, { via: "played:apple", sourceUrl: null }))[0], "tidal");
+  // And the direct links follow the same order.
+  const links = buildLinks("Burial", "Archangel", { apple: "https://music.apple.com/x", spotify: "https://open.spotify.com/track/y" });
+  assert.deepEqual(openable(links, openOrder(spotifyPerson, { via: "played:apple", sourceUrl: null })).direct, ["spotify", "apple"]);
+});

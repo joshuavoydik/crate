@@ -8,7 +8,7 @@ import { TrackCard } from "./TrackCard";
 import { Sheet } from "./Sheet";
 import { artFallback } from "./Avatar";
 import { IconKeep, IconNext, IconDeck, IconPlay, IconPause } from "./Icons";
-import { api, flag, setFlag, timeAgo } from "@/lib/client";
+import { api, flag, setFlag, timeAgo, openOrder } from "@/lib/client";
 import { analyzeTrack } from "@/lib/audio/analyze";
 import { openable } from "@/lib/resolve/links";
 import type { Send, ReactionStatus, Track, LogItem } from "@/lib/types";
@@ -211,10 +211,10 @@ export function Reel({ embedded = false, onCaughtUp }: { embedded?: boolean; onC
 
   const openPreferred = useCallback(() => {
     if (!current) return;
-    const key = openable(current.track.links, me.preferredPlatform).direct[0];
+    const key = openable(current.track.links, openOrder(me, current)).direct[0];
     const url = key ? current.track.links[key]!.url : current.sourceUrl;
     if (url) window.open(url, "_blank", "noopener");
-  }, [current, me.preferredPlatform]);
+  }, [current, me]);
 
   // Keyboard: space play, j/k next/prev, s keep, p played out, o open, enter card.
   useEffect(() => {

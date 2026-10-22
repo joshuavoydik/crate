@@ -43,13 +43,18 @@ export function buildLinks(artist: string, title: string, direct: Partial<Record
   return out;
 }
 
-/** The order platforms are shown in, with the viewer's preference first. */
-export function orderPlatforms(preferred: string | null | undefined): PlatformKey[] {
-  const base: PlatformKey[] = ["apple", "spotify", "youtube", "soundcloud", "bandcamp", "beatport", "tidal", "youtubeMusic", "deezer"];
-  if (preferred && (base as string[]).includes(preferred)) {
-    return [preferred as PlatformKey, ...base.filter((p) => p !== preferred)];
-  }
-  return base;
+const BASE_ORDER: PlatformKey[] = ["apple", "spotify", "youtube", "soundcloud", "bandcamp", "beatport", "tidal", "youtubeMusic", "deezer"];
+
+/**
+ * The order platforms are shown in. Takes one preference or a ranked list of hints (the viewer's
+ * chosen platform, then where they actually listen, then where the track came from); unknown or
+ * empty hints are skipped and the catalog order fills in the rest.
+ */
+export function orderPlatforms(preferred: string | null | undefined | Array<string | null | undefined>): PlatformKey[] {
+  const hints = (Array.isArray(preferred) ? preferred : [preferred]).map((h) => platformKeyOf(h)).filter((h): h is PlatformKey => !!h);
+  const out: PlatformKey[] = [];
+  for (const k of [...hints, ...BASE_ORDER]) if (!out.includes(k)) out.push(k);
+  return out;
 }
 
 /** The platform a source URL lives on, as a link key, when it is one we list. */
@@ -73,7 +78,7 @@ export function platformKeyOf(platform: string | null | undefined): PlatformKey 
  * search on each remaining platform. A track that only exists on one platform (a YouTube cover,
  * a SoundCloud upload) gets that as its one real place and the rest as plain searches.
  */
-export function openable(links: Links, preferred: string | null | undefined): { direct: PlatformKey[]; search: PlatformKey[] } {
+export function openable(links: Links, preferred: string | null | undefined | Array<string | null | undefined>): { direct: PlatformKey[]; search: PlatformKey[] } {
   const order = orderPlatforms(preferred);
   return {
     direct: order.filter((k) => links[k]?.direct),

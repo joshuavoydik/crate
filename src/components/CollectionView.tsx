@@ -7,7 +7,7 @@ import { usePlayer } from "./Player";
 import { Avatar, artFallback } from "./Avatar";
 import { Confirm } from "./Confirm";
 import { IconPlay, IconPause, IconClose } from "./Icons";
-import { api, timeAgo } from "@/lib/client";
+import { api, timeAgo, openOrder } from "@/lib/client";
 import { openable } from "@/lib/resolve/links";
 import type { Collection, CollectionTrack, Person } from "@/lib/types";
 
@@ -274,7 +274,7 @@ export function CollectionView({ id }: { id: string }) {
         <ul className="pl__list">
           {tracks.map((x) => {
             const isCur = player.currentId === x.track.id;
-            const where = openable(x.track.links, me.preferredPlatform).direct[0];
+            const where = openable(x.track.links, openOrder(me)).direct[0];
             const url = where ? x.track.links[where]?.url ?? null : null;
             return (
               <li

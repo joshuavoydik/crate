@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useStore } from "./Store";
 import { IconCheck, IconKeep, IconOut, IconDeck, IconCopy, IconPlus } from "./Icons";
 import { artFallback } from "./Avatar";
-import { formatDuration, timeAgo, viaLabel } from "@/lib/client";
+import { formatDuration, timeAgo, viaLabel, openOrder } from "@/lib/client";
 import { openable, PLATFORM_LABELS, BUY_PLATFORMS, type PlatformKey } from "@/lib/resolve/links";
 import { api } from "@/lib/client";
 import type { Send, Track } from "@/lib/types";
@@ -75,7 +75,7 @@ export function TrackCard({
     }
   }
   const t = send.track;
-  const { direct, search } = openable(t.links, me.preferredPlatform);
+  const { direct, search } = openable(t.links, openOrder(me, send));
   const primaryKey = direct[0] ?? null;
   const primary = primaryKey ? t.links[primaryKey] : null;
   const rest = direct.filter((k) => k !== primaryKey);

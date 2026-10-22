@@ -14,7 +14,7 @@ CREATE TABLE IF NOT EXISTS users (
   id TEXT PRIMARY KEY,
   name TEXT NOT NULL,
   is_dj INTEGER NOT NULL DEFAULT 0,
-  preferred_platform TEXT NOT NULL DEFAULT 'apple',
+  preferred_platform TEXT NOT NULL DEFAULT '',
   lastfm_user TEXT,
   created_at INTEGER NOT NULL
 );
@@ -256,6 +256,12 @@ export async function db(): Promise<Client> {
         await c.execute(
           "DELETE FROM log_entries WHERE id IN (SELECT l.id FROM log_entries l JOIN sources s ON s.user_id = l.user_id AND s.kind = l.source_kind WHERE l.at < s.created_at + 120000)",
         );
+      });
+      // "Open in" follows where each person actually listens; the old fixed default (Apple Music for
+      // everyone) was never a choice anyone made, so it is cleared once. Picking a platform in Settings
+      // still pins it.
+      await once("migr:platform_auto_v1", async () => {
+        await c.execute("UPDATE users SET preferred_platform = ''");
       });
       // Plays stream into every crew's playlist from now on; each person can narrow it per crew.
       await once("migr:auto_share_v1", async () => {

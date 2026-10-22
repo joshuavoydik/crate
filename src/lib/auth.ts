@@ -84,7 +84,7 @@ export async function getUser(uid: string): Promise<SessionUser | null> {
 
 export async function createUser(name: string): Promise<string> {
   const uid = id("u");
-  await run("INSERT INTO users (id, name, created_at) VALUES (?, ?, ?)", [uid, name.trim(), now()]);
+  await run("INSERT INTO users (id, name, preferred_platform, created_at) VALUES (?, ?, '', ?)", [uid, name.trim(), now()]);
   return uid;
 }
 

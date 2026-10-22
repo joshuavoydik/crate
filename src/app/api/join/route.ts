@@ -23,7 +23,7 @@ export async function POST(req: Request) {
     if (!yourName) return error("Tell us your name first");
     const uid = await createUser(yourName);
     await setSessionCookie(uid);
-    user = { id: uid, name: yourName, isDj: false, preferredPlatform: "apple", lastfmUser: null };
+    user = { id: uid, name: yourName, isDj: false, preferredPlatform: "", lastfmUser: null };
   }
   if (crew.members.length >= CREW_MAX && !crew.members.some((m) => m.id === user!.id)) {
     return error(`This crew is full (${CREW_MAX} people)`, 409);

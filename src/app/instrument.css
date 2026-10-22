@@ -242,6 +242,20 @@ textarea:focus-visible,
   text-transform: uppercase;
 }
 
+/* The hints on the last two icons hang from their right edge, so nothing runs off the page. */
+.topbar__right [data-tip]:nth-last-child(-n + 2)::after {
+  left: auto;
+  right: 0;
+  transform: translate(0, -4px);
+}
+
+@media (hover: hover) {
+  .topbar__right [data-tip]:nth-last-child(-n + 2):hover::after,
+  .topbar__right [data-tip]:nth-last-child(-n + 2):focus-visible::after {
+    transform: translate(0, 0);
+  }
+}
+
 /* The phone's tab bar: four words on a hairline, a signal dot on Live when someone is playing. */
 @media (max-width: 719px) {
   .tabbar {

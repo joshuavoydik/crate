@@ -48,7 +48,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ code: string }
     const uid = await createUser(yourName);
     await createCrew(`${yourName.split(" ")[0]}'s crew`, uid);
     await setSessionCookie(uid);
-    user = { id: uid, name: yourName, isDj: false, preferredPlatform: "apple", lastfmUser: null };
+    user = { id: uid, name: yourName, isDj: false, preferredPlatform: "", lastfmUser: null };
   }
   if (!(await isMember(user.id, found.collection.crewId))) await addGuest(found.collection.id, user.id);
   return json({ open: `/playlists/${found.collection.id}` });
