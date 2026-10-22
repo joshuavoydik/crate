@@ -19,6 +19,7 @@
   --live: var(--signal);
   --glass: rgba(255, 255, 255, 0.03);
   --glass-2: rgba(255, 255, 255, 0.06);
+  --sleeve: #121214;
   --r-card: 0;
   --r-sheet: 0;
   --mono: var(--font-mono), "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
@@ -32,7 +33,7 @@
 /* Paper: the same instrument, printed. Only when someone asks for light in Settings. */
 :root[data-theme="light"] {
   --surface: #f2f0ea;
-  --surface-2: #ffffff;
+  --surface-2: #f8f7f3;
   --surface-3: #e6e3dc;
   --ink: #121212;
   --ink-2: #4a4a47;
@@ -42,6 +43,7 @@
   --line-2: #c4c2bb;
   --glass: rgba(0, 0, 0, 0.03);
   --glass-2: rgba(0, 0, 0, 0.06);
+  --sleeve: #e9e7e1;
   color-scheme: light;
 }
 
@@ -537,6 +539,13 @@ textarea:focus-visible,
 @media (min-width: 720px) {
   .sheet {
     border: 1px solid var(--line-2);
+  }
+}
+
+/* The sticky action strip at the foot of a phone sheet matches the sheet, not a second surface. */
+@media (max-width: 719px) {
+  .sheet .tc__actions {
+    background: color-mix(in srgb, var(--surface) 94%, transparent);
   }
 }
 
@@ -1067,11 +1076,12 @@ textarea:focus-visible,
   background: transparent;
 }
 
+/* The sleeve is a shade off the ground on both themes: card stock, never a white box. */
 .orb__stage {
   border-radius: 0;
   border: 1px solid var(--line);
   padding: 10%;
-  background: var(--surface-2);
+  background: var(--sleeve);
   transition: border-color 300ms var(--ease);
 }
 
