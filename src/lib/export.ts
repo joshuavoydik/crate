@@ -16,9 +16,12 @@ export type ExportTarget = "spotify" | "apple";
 
 export class ExportError extends Error {
   code: "not_connected" | "reconnect" | "nothing";
-  constructor(message: string, code: ExportError["code"]) {
+  /** What the platform actually said, for whoever runs this Crate. */
+  detail: string | null;
+  constructor(message: string, code: ExportError["code"], detail?: string | null) {
     super(message);
     this.code = code;
+    this.detail = detail ?? null;
   }
 }
 
@@ -57,7 +60,8 @@ export async function exportCollection(userId: string, collection: Collection, c
       if (r.uri) uris.push(r.uri);
     } catch (e) {
       // A refused sign-in is not a track that could not be found: say so, once, with the way back in.
-      if (e instanceof SpotifyScopeError || /^40[13] from/.test((e as Error).message)) throw new ExportError("Reconnect Spotify once so Crate may save playlists there", "reconnect");
+      if (e instanceof SpotifyScopeError || /^40[13] from/.test((e as Error).message))
+        throw new ExportError("Reconnect Spotify once so Crate may save playlists there", "reconnect", `search: ${(e as Error).message}`);
       /* one that could not be looked up is one missed */
     }
   }
@@ -68,7 +72,7 @@ export async function exportCollection(userId: string, collection: Collection, c
     if (tok !== token) await run("UPDATE sources SET token_enc = ? WHERE id = ?", [encrypt(JSON.stringify(tok)), source.id]);
     return { url: made.url, added: uris.length, missed: tracks.length - uris.length };
   } catch (e) {
-    if (e instanceof SpotifyScopeError) throw new ExportError(e.message, "reconnect");
+    if (e instanceof SpotifyScopeError) throw new ExportError(e.message, "reconnect", `create: ${e.message}`);
     throw e;
   }
 }

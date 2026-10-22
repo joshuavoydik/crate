@@ -5,6 +5,7 @@ import { isMember, membersOf } from "@/lib/queries";
 import { one } from "@/lib/db";
 import { collectionById, isGuest } from "@/lib/collections";
 import { exportCollection, ExportError, type ExportTarget } from "@/lib/export";
+import { isMaker } from "@/lib/maker";
 
 /**
  * POST { to: "spotify" | "apple" }: this playlist, saved to the caller's own Spotify or Apple Music.
@@ -26,7 +27,10 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
     const r = await exportCollection(auth.user.id, collection, crew?.name ?? "a crew", to as ExportTarget);
     return json({ ...r, to });
   } catch (e) {
-    if (e instanceof ExportError) return json({ error: e.message, code: e.code, reconnect: e.code === "reconnect" }, e.code === "reconnect" ? 409 : 400);
+    if (e instanceof ExportError) {
+      const detail = e.detail && (await isMaker(auth.user.id)) ? e.detail : undefined;
+      return json({ error: e.message, code: e.code, reconnect: e.code === "reconnect", detail }, e.code === "reconnect" ? 409 : 400);
+    }
     return error((e as Error).message.slice(0, 200), 502);
   }
 }

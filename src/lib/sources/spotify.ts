@@ -316,7 +316,7 @@ async function postJson<T>(url: string, token: Token, body: unknown): Promise<T>
 
 /** A private playlist on this person's Spotify with these tracks, in order. Returns its link and the refreshed token, when it rotated. */
 export async function spotifyCreatePlaylist(token: Token, name: string, description: string, uris: string[]): Promise<{ url: string; token?: Token }> {
-  if (!spotifyHasScope(token, PLAYLIST_SCOPE)) throw new SpotifyScopeError("Reconnect Spotify once so Crate may save playlists there");
+  if (!spotifyHasScope(token, PLAYLIST_SCOPE)) throw new SpotifyScopeError(`Reconnect Spotify once so Crate may save playlists there (token scope: ${String(token.scope ?? "").slice(0, 200) || "none recorded"})`);
   const tok = await ensure(token);
   const me = await getJson<{ id: string }>("https://api.spotify.com/v1/me", { headers: { authorization: `Bearer ${tok.access_token}` } });
   const made = await postJson<{ id: string; external_urls: { spotify: string } }>(`https://api.spotify.com/v1/users/${encodeURIComponent(me.id)}/playlists`, tok, {

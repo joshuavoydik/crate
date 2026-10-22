@@ -150,9 +150,9 @@ export function CollectionView({ id }: { id: string }) {
     setBusy(`export:${to}`);
     try {
       const r = await fetch(`/api/collections/${data.collection.id}/export`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ to }) });
-      const j = (await r.json()) as { url?: string | null; added?: number; missed?: number; error?: string; reconnect?: boolean };
+      const j = (await r.json()) as { url?: string | null; added?: number; missed?: number; error?: string; reconnect?: boolean; detail?: string };
       if (r.status === 409 && j.reconnect) {
-        toast(j.error ?? `Reconnect ${label} once`, { label: "Reconnect", run: () => (window.location.href = `/api/connect/${to}`) });
+        toast(j.detail ? `${j.error ?? `Reconnect ${label} once`} · ${j.detail}` : (j.error ?? `Reconnect ${label} once`), { label: "Reconnect", run: () => (window.location.href = `/api/connect/${to}`) });
         return;
       }
       if (!r.ok) throw new Error(j.error ?? `Could not save to ${label}`);
