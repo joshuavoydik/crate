@@ -2,6 +2,7 @@ import { all, one, run, now } from "./db";
 import { sourcesFor } from "./sync";
 import { SOURCE_LABELS, type SourceKind } from "./sources";
 import type { Notice } from "./types";
+import { weekRecap, recapLine, weekStart } from "./recap";
 
 /**
  * Notices: the few things that need a person's hand, shown under the bell top right until they
@@ -93,13 +94,75 @@ export async function backNotices(userId: string, dismissed: Set<string>): Promi
     .filter((n) => !dismissed.has(n.id));
 }
 
+/** Once, for someone in a crew with others who has no device pinging them yet. */
+async function pingsNudge(userId: string, dismissed: Set<string>): Promise<Notice | null> {
+  const id = "nudge:pings";
+  if (dismissed.has(id)) return null;
+  const subs = await one<{ n: number }>("SELECT COUNT(*) AS n FROM push_subs WHERE user_id = ?", [userId]);
+  if (Number(subs?.n ?? 0) > 0) return null;
+  const company = await one<{ n: number }>(
+    "SELECT COUNT(*) AS n FROM crew_members o JOIN crew_members m ON m.crew_id = o.crew_id WHERE m.user_id = ? AND o.user_id != ?",
+    [userId, userId],
+  );
+  if (!Number(company?.n ?? 0)) return null;
+  return {
+    id,
+    kind: "nudge",
+    title: "Get a ping when someone sends you a song",
+    body: "Or writes back on one of yours. Nothing else, ever.",
+    action: { label: "Turn on pings", href: "/settings#pings" },
+    at: null,
+  };
+}
+
+/** The week that just ended, in each of this person's crews, for its first three days. */
+async function recapNotices(userId: string, dismissed: Set<string>): Promise<Notice[]> {
+  const to = weekStart();
+  if (now() - to > 3 * 86400000) return [];
+  const crews = await all<{ crew_id: string }>("SELECT crew_id FROM crew_members WHERE user_id = ?", [userId]);
+  const out: Notice[] = [];
+  for (const c of crews) {
+    const id = `recap:${c.crew_id}:${to}`;
+    if (dismissed.has(id)) continue;
+    const r = await weekRecap(c.crew_id, to);
+    if (!r) continue;
+    out.push({ id, kind: "recap", title: `This week in ${r.crewName}`, body: recapLine(r), action: { label: "Open the log", href: "/" }, at: to });
+  }
+  return out;
+}
+
+/** Nothing hooked up and nothing ever heard from this person: the bell points at the connect page, once. */
+async function connectNudge(userId: string, sources: SourceLike[], dismissed: Set<string>): Promise<Notice | null> {
+  const id = "nudge:connect";
+  if (dismissed.has(id) || sources.length) return null;
+  const heard = await one("SELECT 1 AS x FROM live_history WHERE user_id = ? LIMIT 1", [userId]);
+  if (heard) return null;
+  return {
+    id,
+    kind: "nudge",
+    title: "Hook up where you listen",
+    body: "Spotify from a phone, or Crate on your Mac or in Chrome on a computer: then what you play shows up for the crew on its own.",
+    action: { label: "Where you listen", href: "/connect" },
+    at: null,
+  };
+}
+
 export async function noticesFor(userId: string): Promise<Notice[]> {
   const sources = await sourcesFor(userId);
   const rows = await all<{ notice_id: string }>("SELECT notice_id FROM notice_dismissals WHERE user_id = ?", [userId]);
   const dismissed = new Set(rows.map((r) => r.notice_id));
   const u = await one<{ mac_blocked: string | null }>("SELECT mac_blocked FROM users WHERE id = ?", [userId]);
   const mac = macNotice(u?.mac_blocked ?? null);
-  return [...deriveNotices(sources, dismissed), ...(mac && !dismissed.has(mac.id) ? [mac] : []), ...(await backNotices(userId, dismissed))];
+  const nudge = await pingsNudge(userId, dismissed);
+  const connect = await connectNudge(userId, sources, dismissed);
+  return [
+    ...deriveNotices(sources, dismissed),
+    ...(mac && !dismissed.has(mac.id) ? [mac] : []),
+    ...(await backNotices(userId, dismissed)),
+    ...(await recapNotices(userId, dismissed)),
+    ...(connect ? [connect] : []),
+    ...(nudge ? [nudge] : []),
+  ];
 }
 
 export async function dismissNotice(userId: string, id: string): Promise<void> {

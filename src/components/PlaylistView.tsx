@@ -19,8 +19,9 @@ const RECENT_DAYS = 7;
  * The crew's playlist: today's stream under the name of the moment, with earlier days folded
  * beneath it. New-to-you tracks are caught up on the swipe stage; the rest is the list.
  */
-export function PlaylistView() {
-  const { me, crew, toast, sendsVersion, setAccentTrack, openInvite } = useStore();
+export function PlaylistView({ welcome = false }: { welcome?: boolean }) {
+  const { me, crew, toast, sendsVersion, setAccentTrack, openInvite, openSend } = useStore();
+  const [firstSend, setFirstSend] = useState(welcome);
   const player = usePlayer();
   const [playlist, setPlaylist] = useState<Playlist | null>(null);
   const [mode, setMode] = useState<"stage" | "list">("stage");
@@ -112,6 +113,28 @@ export function PlaylistView() {
 
   return (
     <div className="pl">
+      {firstSend && (
+        <div className="firstsend" role="status">
+          <div className="firstsend__text">
+            <div className="caps" style={{ color: "var(--signal)" }}>You&rsquo;re in</div>
+            <div>
+              This is {crew.name}&rsquo;s log: what everyone plays lands here on its own. The thing that makes it good is a song sent by hand with a line about why.
+              Send one now, and when you are on a computer, hook up where you listen so your plays show too.
+            </div>
+          </div>
+          <div className="firstsend__actions">
+            <button className="btn btn--sm btn--primary" onClick={() => openSend()}>
+              Send a song
+            </button>
+            <Link href="/connect" className="btn btn--sm">
+              Where you listen
+            </Link>
+            <button className="btn btn--sm btn--ghost" onClick={() => setFirstSend(false)}>
+              Later
+            </button>
+          </div>
+        </div>
+      )}
       <LiveBand />
       <header className="pl__head">
         <div className="pl__titles">

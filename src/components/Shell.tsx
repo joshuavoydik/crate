@@ -27,6 +27,7 @@ export function Shell({ initialMe, active, incomingUrl, children }: { initialMe:
         <GlobalIntake incomingUrl={incomingUrl ?? null} />
         <SourceSync />
         <LivePulse />
+        <Visit />
         <RailFrame>{children}</RailFrame>
         <TabBar active={active} />
         <SendFlow />
@@ -53,6 +54,22 @@ function RailFrame({ children }: { children: React.ReactNode }) {
       <FriendsRail />
     </>
   );
+}
+
+/** One mark per device per day: the pulse page counts who actually comes back. */
+function Visit() {
+  useEffect(() => {
+    const day = new Date().toISOString().slice(0, 10);
+    const key = `crate:visit:${day}`;
+    try {
+      if (sessionStorage.getItem(key)) return;
+      sessionStorage.setItem(key, "1");
+    } catch {
+      /* private mode: count it anyway */
+    }
+    fetch("/api/visit", { method: "POST", keepalive: true }).catch(() => undefined);
+  }, []);
+  return null;
 }
 
 /** Asks every half minute whether anyone in the crew is playing, so the nav can show its red dot. */

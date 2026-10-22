@@ -8,7 +8,7 @@ import { Sheet } from "./Sheet";
 import { TrackCard } from "./TrackCard";
 import { Avatar, artFallback } from "./Avatar";
 import { SourceMark, platformOfVia } from "./SourceMark";
-import { IconPlay, IconPause, IconKeep, IconDeck, IconChevron } from "./Icons";
+import { IconPlay, IconPause, IconKeep, IconDeck, IconChevron, IconPlus } from "./Icons";
 import { api, timeAgo, viaLabel } from "@/lib/client";
 import type { DaySummary, Send, ReactionStatus, Track, Person } from "@/lib/types";
 
@@ -89,7 +89,7 @@ export function SendRows({
   /** Time of day instead of "2h ago", for a day that is over. */
   showDate?: boolean;
 }) {
-  const { me } = useStore();
+  const { me, openAddTo } = useStore();
   const player = usePlayer();
   return (
     <ul className="pl__list">
@@ -161,6 +161,9 @@ export function SendRows({
                   <IconDeck size={12} />
                 </span>
               )}
+              <button type="button" className="rowadd" aria-label="Add to a playlist" title="Add to a playlist" onClick={() => openAddTo(s.track)}>
+                <IconPlus size={14} />
+              </button>
             </div>
           </li>
         );

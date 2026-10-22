@@ -1,4 +1,5 @@
 import { json, error, readJson, requireUser, str } from "@/lib/api";
+import { announceSend } from "@/lib/push";
 import { createSend, getTrack, isMember, reelFor, sendsIn } from "@/lib/queries";
 import { receivedUnheard } from "@/lib/log";
 import { throttled } from "@/lib/ratelimit";
@@ -41,5 +42,6 @@ export async function POST(req: Request) {
     noteBy: note ? noteBy : "human",
     sourceUrl: str(body.sourceUrl, 2000),
   });
+  announceSend(send).catch(() => undefined);
   return json({ send }, 201);
 }

@@ -2,6 +2,7 @@ import { all, one, run, now, id } from "./db";
 import { randomToken } from "./crypto";
 import { resolveUrl } from "./resolve";
 import { upsertTrack, createSend } from "./queries";
+import { announceSend } from "./push";
 import type { SessionUser } from "./auth";
 
 /**
@@ -94,6 +95,7 @@ export async function ingestLink(input: {
           sourceUrl: input.url,
           via: "imessage",
         });
+        announceSend(send).catch(() => undefined);
         // Remember it in the log too, so a re-send of the same link is a no-op.
         await run(
           "INSERT OR IGNORE INTO log_entries (id, user_id, track_id, source_kind, external_id, action, at, meta_json, status, created_at) VALUES (?, ?, ?, 'imessage', ?, 'received', ?, ?, 'seen', ?)",

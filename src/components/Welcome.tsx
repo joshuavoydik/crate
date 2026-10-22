@@ -34,7 +34,7 @@ export function Welcome({ invite }: { invite?: { code: string; crewName: string;
     const c = code.trim().split("/").filter(Boolean).pop() ?? "";
     try {
       await api("/api/join", { method: "POST", json: { yourName, code: c } });
-      router.replace("/connect");
+      router.replace("/?welcome=1");
       router.refresh();
     } catch (x) {
       setErr((x as Error).message);

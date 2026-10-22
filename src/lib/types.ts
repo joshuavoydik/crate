@@ -107,7 +107,7 @@ export type Me = {
 
 export type Notice = {
   id: string;
-  kind: "reconnect" | "error" | "back";
+  kind: "reconnect" | "error" | "back" | "nudge" | "recap";
   title: string;
   body: string | null;
   action: { label: string; href: string } | null;

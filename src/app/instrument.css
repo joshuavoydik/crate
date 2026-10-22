@@ -449,6 +449,11 @@ textarea:focus-visible,
   left: 3px;
 }
 
+.toggle:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
 .toggle.is-on {
   background: transparent;
   border-color: var(--signal);
@@ -1201,6 +1206,35 @@ textarea:focus-visible,
   font-family: var(--font-sans), sans-serif;
 }
 
+/* ---------- the plus on every row: straight into a playlist ---------- */
+
+.rowadd {
+  position: relative;
+  z-index: 1;
+  width: 28px;
+  height: 28px;
+  flex: none;
+  display: inline-grid;
+  place-items: center;
+  border: 1px solid var(--line-2);
+  color: var(--ink-3);
+  transition: color 160ms var(--ease), border-color 160ms var(--ease);
+}
+
+.rowadd:hover,
+.rowadd:focus-visible {
+  color: var(--signal);
+  border-color: var(--signal);
+}
+
+.log__row {
+  grid-template-columns: 52px 1fr auto auto;
+}
+
+.lh__row {
+  grid-template-columns: 44px 1fr auto auto;
+}
+
 /* ---------- log ---------- */
 
 .log__row {
@@ -1346,4 +1380,56 @@ textarea:focus-visible,
 .chip,
 .orb__stage {
   transition-duration: 160ms;
+}
+
+/* ---------- pulse: the maker's numbers ---------- */
+
+.pulse__crew {
+  max-width: 640px;
+  margin-top: 22px;
+}
+
+.pulse__table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 6px;
+}
+
+.pulse__table td {
+  padding: 9px 0;
+  border-top: 1px solid var(--line);
+  font-size: 14px;
+}
+
+.pulse__table td.readout {
+  text-align: right;
+  width: 64px;
+  font-size: 15px;
+}
+
+.pulse__table tr:last-child td {
+  border-bottom: 1px solid var(--line);
+}
+
+/* ---------- the first ten minutes: one strip on the log, once ---------- */
+
+.firstsend {
+  margin: 0 0 18px;
+  padding: 14px 16px;
+  border: 1px solid var(--signal);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  font-size: 14.5px;
+  line-height: 1.45;
+}
+
+.firstsend__text > .caps {
+  margin-bottom: 6px;
+}
+
+.firstsend__actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
 }

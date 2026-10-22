@@ -9,6 +9,7 @@ import { Connections } from "./Connections";
 import { PhoneNote } from "./ConnectView";
 import { ChromeCard } from "./ChromeView";
 import { ThemePicker } from "./ThemeToggle";
+import { PushCard } from "./PushCard";
 import { Avatar, squareDataUrl } from "./Avatar";
 import { api, sourceName, timeAgo } from "@/lib/client";
 import { PLATFORM_LABELS, orderPlatforms } from "@/lib/resolve/links";
@@ -190,6 +191,8 @@ export function SettingsView({ appUrl }: { appUrl: string }) {
           )}
         </div>
       </div>
+
+      <PushCard />
 
       <div className="switch">
         <div>
@@ -426,9 +429,14 @@ export function SettingsView({ appUrl }: { appUrl: string }) {
           Sign out on this device
         </button>
         {me.isMaker && (
-          <Link href="/setup" className="caps" style={{ color: "var(--ink-3)" }}>
-            App setup (you run this Crate)
-          </Link>
+          <span style={{ display: "flex", gap: 16 }}>
+            <Link href="/pulse" className="caps" style={{ color: "var(--ink-3)" }}>
+              Pulse
+            </Link>
+            <Link href="/setup" className="caps" style={{ color: "var(--ink-3)" }}>
+              App setup (you run this Crate)
+            </Link>
+          </span>
         )}
       </div>
 

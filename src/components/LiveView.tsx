@@ -107,7 +107,7 @@ export function TunedIn({ tuned, meId }: { tuned: Tuned; meId: string }) {
 }
 
 export function LiveView() {
-  const { me, crew, setAccentTrack, openSend, toast, refreshMe } = useStore();
+  const { me, crew, setAccentTrack, openSend, toast, refreshMe, openAddTo } = useStore();
   const player = usePlayer();
   const { data, skew, stale } = useLive(crew?.id ?? null, 8000, { tune: true, history: true });
   const now = useNow() - skew;
@@ -298,6 +298,11 @@ export function LiveView() {
               {open.track?.previewUrl && (
                 <button className="btn btn--sm" onClick={() => player.play(open.track!.id, open.track!.previewUrl)}>
                   {player.currentId === open.track.id && player.playing ? <IconPause size={14} /> : <IconPlay size={14} />} Preview
+                </button>
+              )}
+              {open.track && (
+                <button className="btn btn--sm btn--ghost" onClick={() => openAddTo(open.track!)}>
+                  <IconPlus size={14} /> Add to a playlist
                 </button>
               )}
               {open.track &&
@@ -498,6 +503,7 @@ export function History({
   onPlay: (t: NonNullable<LiveSession["track"]>) => void;
   playingId: string | null;
 }) {
+  const { openAddTo } = useStore();
   const groups: Array<{ label: string; items: LiveSession[] }> = [];
   for (const s of sessions) {
     const label = dayLabel(s.startedAt);
@@ -546,6 +552,11 @@ export function History({
                     {new Date(s.startedAt).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}
                     {mins > 1 ? <span className="faint"> · {mins} min</span> : null}
                   </span>
+                  {s.track && (
+                    <button type="button" className="rowadd" aria-label="Add to a playlist" title="Add to a playlist" onClick={() => openAddTo(s.track!)}>
+                      <IconPlus size={14} />
+                    </button>
+                  )}
                 </li>
               );
             })}

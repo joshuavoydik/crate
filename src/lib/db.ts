@@ -151,6 +151,22 @@ CREATE TABLE IF NOT EXISTS playlist_guests (
   joined_at INTEGER NOT NULL,
   PRIMARY KEY (playlist_id, user_id)
 );
+CREATE TABLE IF NOT EXISTS push_subs (
+  endpoint TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL,
+  sub_enc TEXT NOT NULL,
+  ua TEXT,
+  created_at INTEGER NOT NULL,
+  last_ok_at INTEGER,
+  fails INTEGER NOT NULL DEFAULT 0
+);
+CREATE INDEX IF NOT EXISTS push_subs_user ON push_subs (user_id);
+CREATE TABLE IF NOT EXISTS visits (
+  user_id TEXT NOT NULL,
+  day TEXT NOT NULL,
+  n INTEGER NOT NULL DEFAULT 1,
+  PRIMARY KEY (user_id, day)
+);
 CREATE TABLE IF NOT EXISTS tune_ins (
   crew_id TEXT NOT NULL,
   viewer TEXT NOT NULL,

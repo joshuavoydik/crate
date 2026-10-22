@@ -2,6 +2,7 @@ import { json, error, readJson, requireUser, str } from "@/lib/api";
 import { getSend, isMember, react } from "@/lib/queries";
 import { isLogId, reactToLog, receivedById } from "@/lib/log";
 import type { ReactionStatus } from "@/lib/types";
+import { announceBack } from "@/lib/push";
 
 const STATUSES: ReactionStatus[] = ["seen", "skipped", "saved", "played"];
 
@@ -25,6 +26,9 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
   if (!(await isMember(auth.user.id, send.crewId))) return error("Not in that crew", 403);
   if (send.from.id === auth.user.id) return error("You can't react to your own send", 400);
   const reply = body.reply === undefined ? undefined : body.reply === null ? null : str(body.reply, 200);
+  const before = send.reaction?.status ?? null;
   await react(id, auth.user.id, status, reply);
+  // A ping only when something new came back: a first Keep or Played out, or a line that was just written.
+  if (reply || (status !== before && (status === "saved" || status === "played"))) announceBack(send, auth.user, status, reply).catch(() => undefined);
   return json({ send: await getSend(id, auth.user.id) });
 }

@@ -15,7 +15,7 @@ export function JoinExisting({ code, crewName, members, already }: { code: strin
     setErr(null);
     try {
       await api("/api/join", { method: "POST", json: { code } });
-      router.replace("/connect");
+      router.replace("/?welcome=1");
       router.refresh();
     } catch (x) {
       setErr((x as Error).message);

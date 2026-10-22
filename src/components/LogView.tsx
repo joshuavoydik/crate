@@ -7,7 +7,7 @@ import { usePlayer } from "./Player";
 import { Sheet } from "./Sheet";
 import { Confirm } from "./Confirm";
 import { TrackCard } from "./TrackCard";
-import { IconPlay, IconPause } from "./Icons";
+import { IconPlay, IconPause, IconPlus } from "./Icons";
 import { api, sourceName, timeAgo, viaLabel } from "@/lib/client";
 import type { LogItem, Send, Track } from "@/lib/types";
 import { artFallback } from "./Avatar";
@@ -53,7 +53,7 @@ function phrase(i: LogItem): string {
 }
 
 export function LogView({ initialFilter }: { initialFilter: string }) {
-  const { me, toast, setAccentTrack, sendsVersion } = useStore();
+  const { me, toast, setAccentTrack, sendsVersion, openAddTo } = useStore();
   const player = usePlayer();
   const [items, setItems] = useState<LogItem[] | null>(null);
   const [likes, setLikes] = useState<Array<{ source: string; n: number }>>([]);
@@ -279,6 +279,18 @@ export function LogView({ initialFilter }: { initialFilter: string }) {
                   <div className="caps log__phrase">{phrase(i)}</div>
                 </div>
                 <div className="faint num log__time">{timeAgo(i.at)}</div>
+                <button
+                  type="button"
+                  className="rowadd"
+                  aria-label="Add to a playlist"
+                  title="Add to a playlist"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    openAddTo(i.track);
+                  }}
+                >
+                  <IconPlus size={14} />
+                </button>
               </div>
             );
           })}

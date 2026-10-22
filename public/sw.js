@@ -1,6 +1,6 @@
 /* Crate service worker: makes the app installable and keeps the shell reachable offline.
    Data always comes from the network; only static assets are cached. */
-const VERSION = "crate-v1";
+const VERSION = "crate-v2";
 const SHELL = ["/", "/manifest.webmanifest", "/icons/icon-192.png", "/icons/icon-512.png"];
 
 self.addEventListener("install", (event) => {
@@ -45,4 +45,40 @@ self.addEventListener("fetch", (event) => {
       ),
     );
   }
+});
+
+/* Pings: a tap lands where the ping points. */
+self.addEventListener("push", (event) => {
+  let data = { title: "Crate", body: "", url: "/", tag: "crate" };
+  try {
+    data = Object.assign(data, event.data ? event.data.json() : {});
+  } catch (e) {
+    /* a plain-text push */
+  }
+  event.waitUntil(
+    self.registration.showNotification(data.title, {
+      body: data.body,
+      icon: "/icons/icon-192.png",
+      badge: "/icons/icon-192.png",
+      tag: data.tag,
+      renotify: true,
+      data: { url: data.url },
+    }),
+  );
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const url = new URL((event.notification.data && event.notification.data.url) || "/", self.location.origin).href;
+  event.waitUntil(
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((list) => {
+      for (const c of list) {
+        if ("focus" in c) {
+          c.navigate(url).catch(() => {});
+          return c.focus();
+        }
+      }
+      return self.clients.openWindow(url);
+    }),
+  );
 });

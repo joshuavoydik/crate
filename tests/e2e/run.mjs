@@ -124,8 +124,10 @@ async function main() {
     await b.screenshot({ path: `${OUT}/02-invite-phone.png` });
     await b.locator("#join-name").fill("Ariel");
     await b.getByRole("button", { name: /Join Joshua & Ariel/ }).click();
-    await b.getByText("Where do you listen?").waitFor({ timeout: 20000 });
-    await b.getByRole("link", { name: "Skip for now" }).click();
+    // A joiner lands on the crew's log, with the one ask that matters: send a song with a line.
+    await b.getByText("You’re in").waitFor({ timeout: 20000 });
+    await b.getByRole("button", { name: "Send a song" }).waitFor();
+    await b.getByRole("button", { name: "Later" }).click();
     await b.getByText("Nothing new.").waitFor({ timeout: 20000 });
     // Mobile navigation lives in a bottom tab bar.
     await b.locator(".tabbar").waitFor();

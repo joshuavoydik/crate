@@ -5,12 +5,13 @@ import { Welcome } from "@/components/Welcome";
 
 export const dynamic = "force-dynamic";
 
-export default async function Home() {
+export default async function Home({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const me = await loadMe();
   if (!me) return <Welcome />;
+  const sp = await searchParams;
   return (
     <Shell initialMe={me} active="log">
-      <PlaylistView />
+      <PlaylistView welcome={sp.welcome === "1"} />
     </Shell>
   );
 }
