@@ -43,6 +43,16 @@ export type Send = {
   activeAt: number;
   /** What came back from other people: kept, played out, or a line in reply. Never the viewer's own. */
   replies: Array<{ person: Person; status: ReactionStatus; reply: string | null; at: number }>;
+  /** How many comments the crew has left on this send. */
+  commentCount: number;
+};
+
+export type Comment = {
+  id: string;
+  sendId: string;
+  person: Person;
+  body: string;
+  at: number;
 };
 
 export type LogAction = "liked" | "played" | "received" | "sent" | "kept" | "playedOut" | "back";

@@ -187,6 +187,7 @@ export function LogView({ initialFilter }: { initialFilter: string }) {
     echoes: [],
     activeAt: i.at,
     replies: [],
+    commentCount: 0,
   });
 
   const weekLine = likes.length ? `This week: ${likes.map((l) => `${l.n} ${l.n === 1 ? "like" : "likes"} from ${sourceName(l.source)}`).join(", ")}.` : null;

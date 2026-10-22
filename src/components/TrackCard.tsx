@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useStore } from "./Store";
 import { IconCheck, IconKeep, IconOut, IconDeck, IconCopy, IconPlus, IconPlay, IconPause } from "./Icons";
 import { usePlayer } from "./Player";
+import { Comments } from "./Comments";
 import { artFallback } from "./Avatar";
 import { formatDuration, timeAgo, viaLabel, openOrder, metaOf } from "@/lib/client";
 import { openable, PLATFORM_LABELS, BUY_PLATFORMS, type PlatformKey } from "@/lib/resolve/links";
@@ -319,7 +320,8 @@ export function TrackCard({
         </div>
       )}
 
-      {!mine && onReply && (
+      {send.crewId && !send.id.startsWith("log:") && <Comments sendId={send.id} initialCount={send.commentCount} />}
+      {!send.crewId && !mine && onReply && (
         <form
           className="replybox"
           onSubmit={(e) => {

@@ -161,6 +161,11 @@ export function SendRows({
                   <IconDeck size={12} />
                 </span>
               )}
+              {s.commentCount > 0 && (
+                <span className="pl__badge pl__badge--n readout" title={s.commentCount === 1 ? "1 comment" : `${s.commentCount} comments`}>
+                  {s.commentCount}
+                </span>
+              )}
               <button type="button" className="rowadd" aria-label="Add to a playlist" title="Add to a playlist" onClick={() => openAddTo(s.track)}>
                 <IconPlus size={14} />
               </button>

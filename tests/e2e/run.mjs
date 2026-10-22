@@ -225,11 +225,12 @@ async function main() {
     await a.getByRole("heading", { name: "Archangel" }).first().waitFor();
     await settled(a);
     await a.screenshot({ path: `${OUT}/06-reel-desktop-burial.png` });
-    // Reply on the card panel.
-    await a.getByLabel("Reply").first().fill("yes. this.");
-    await a.getByLabel("Reply").first().press("Enter");
-    await a.getByText("Sent back").waitFor();
-    await a.getByLabel("Reply").first().blur();
+    // A comment on the card panel: the thread under the song, for the whole crew.
+    await a.getByRole("textbox", { name: "Comment" }).first().fill("yes. this.");
+    await a.getByRole("textbox", { name: "Comment" }).first().press("Enter");
+    await a.getByText("1 comment").waitFor();
+    await a.getByText("yes. this.").first().waitFor();
+    await a.getByRole("textbox", { name: "Comment" }).first().blur();
     await a.keyboard.press("j");
     // The stage ran dry, so the page becomes the playlist itself, under the agent's name.
     await a.locator(".pl__list").waitFor({ timeout: 10000 });

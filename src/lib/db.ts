@@ -151,6 +151,14 @@ CREATE TABLE IF NOT EXISTS playlist_guests (
   joined_at INTEGER NOT NULL,
   PRIMARY KEY (playlist_id, user_id)
 );
+CREATE TABLE IF NOT EXISTS comments (
+  id TEXT PRIMARY KEY,
+  send_id TEXT NOT NULL,
+  user_id TEXT NOT NULL,
+  body TEXT NOT NULL,
+  created_at INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS comments_send ON comments (send_id, created_at);
 CREATE TABLE IF NOT EXISTS push_subs (
   endpoint TEXT PRIMARY KEY,
   user_id TEXT NOT NULL,

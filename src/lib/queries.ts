@@ -245,10 +245,11 @@ export type SendRow = TrackRow & {
   r_status: ReactionStatus | null;
   r_reply: string | null;
   r_updated_at: number | null;
+  comment_count?: number | null;
 };
 
 const SEND_SELECT = `SELECT s.id AS send_id, s.crew_id, s.from_user_id, u.name AS from_name, u.is_dj AS from_is_dj, u.avatar_v AS from_avatar_v, (u.avatar IS NOT NULL) AS from_has_avatar, s.note, s.note_by, s.source_url, s.via, s.created_at AS send_created_at,
-  r.status AS r_status, r.reply AS r_reply, r.updated_at AS r_updated_at, ${TRACK_COLS}
+  r.status AS r_status, r.reply AS r_reply, r.updated_at AS r_updated_at, (SELECT COUNT(*) FROM comments cm WHERE cm.send_id = s.id) AS comment_count, ${TRACK_COLS}
   FROM sends s
   JOIN tracks t ON t.id = s.track_id
   JOIN users u ON u.id = s.from_user_id
@@ -336,6 +337,7 @@ export function sendFromRow(r: SendRow, history: Send["history"] = [], echoes: S
     echoes,
     activeAt: Math.max(r.send_created_at, ...echoes.map((e) => e.at)),
     replies,
+    commentCount: Number(r.comment_count ?? 0),
   };
 }
 

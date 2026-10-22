@@ -56,6 +56,7 @@ function receivedAsSend(r: LogRow): Send {
     echoes: [],
     activeAt: r.at,
     replies: [],
+    commentCount: 0,
   };
 }
 
@@ -172,6 +173,24 @@ export async function logFor(userId: string, limit = 300): Promise<LogItem[]> {
       track: trackFromRow(r),
       source: "app",
       detail: what,
+      sendId: r.send_id,
+    });
+  }
+
+  const commented = await all<TrackRow & { send_id: string; body: string; created_at: number; who: string; comment_id: string }>(
+    `SELECT s.id AS send_id, c.id AS comment_id, c.body, c.created_at, u.name AS who, ${TRACK_COLS}
+     FROM comments c JOIN sends s ON s.id = c.send_id JOIN tracks t ON t.id = s.track_id JOIN users u ON u.id = c.user_id
+     WHERE s.from_user_id = ? AND c.user_id != ? ORDER BY c.created_at DESC LIMIT ?`,
+    [userId, userId, limit],
+  );
+  for (const r of commented) {
+    items.push({
+      id: `back:c:${r.comment_id}`,
+      action: "back",
+      at: r.created_at,
+      track: trackFromRow(r),
+      source: "app",
+      detail: `${r.who.split(" ")[0]}: ${r.body}`,
       sendId: r.send_id,
     });
   }

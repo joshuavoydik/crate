@@ -78,20 +78,35 @@ export async function backNotices(userId: string, dismissed: Set<string>): Promi
      ORDER BY r.updated_at DESC LIMIT 20`,
     [userId, userId, now() - BACK_WINDOW],
   );
-  return rows
-    .map((r) => {
-      const first = r.who.split(" ")[0];
-      const did = r.reply ? "wrote back on" : r.status === "played" ? "played out" : "kept";
-      return {
-        id: `back:${r.send_id}:${r.user_id}:${r.updated_at}`,
-        kind: "back" as const,
-        title: `${first} ${did} ${r.title}`,
-        body: r.reply ? `“${r.reply}”` : `${r.title} · ${r.artist}`,
-        action: { label: "Open your history", href: "/history?filter=back" },
-        at: r.updated_at,
-      };
-    })
-    .filter((n) => !dismissed.has(n.id));
+  const comments = await all<{ id: string; send_id: string; user_id: string; who: string; body: string; created_at: number; title: string; artist: string }>(
+    `SELECT c.id, c.send_id, c.user_id, u.name AS who, c.body, c.created_at, t.title, t.artist
+     FROM comments c JOIN sends s ON s.id = c.send_id JOIN users u ON u.id = c.user_id JOIN tracks t ON t.id = s.track_id
+     WHERE s.from_user_id = ? AND c.user_id != ? AND c.created_at >= ? ORDER BY c.created_at DESC LIMIT 20`,
+    [userId, userId, now() - BACK_WINDOW],
+  );
+  const out: Notice[] = rows.map((r) => {
+    const first = r.who.split(" ")[0];
+    const did = r.reply ? "wrote back on" : r.status === "played" ? "played out" : "kept";
+    return {
+      id: `back:${r.send_id}:${r.user_id}:${r.updated_at}`,
+      kind: "back" as const,
+      title: `${first} ${did} ${r.title}`,
+      body: r.reply ? `“${r.reply}”` : `${r.title} · ${r.artist}`,
+      action: { label: "Open your history", href: "/history?filter=back" },
+      at: r.updated_at,
+    };
+  });
+  for (const c of comments) {
+    out.push({
+      id: `back:c:${c.id}`,
+      kind: "back",
+      title: `${c.who.split(" ")[0]} wrote back on ${c.title}`,
+      body: `“${c.body}”`,
+      action: { label: "Open your history", href: "/history?filter=back" },
+      at: c.created_at,
+    });
+  }
+  return out.filter((n) => !dismissed.has(n.id)).sort((a, b) => (b.at ?? 0) - (a.at ?? 0));
 }
 
 /** Once, for someone in a crew with others who has no device pinging them yet. */

@@ -1612,3 +1612,73 @@ html:has(.nowbar) .shell {
 .nowbar.is-preview .nowbar__meter i.is-lit {
   background: var(--ink-2);
 }
+
+/* ---------- the thread under a song ---------- */
+
+.thread {
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+
+.thread__head {
+  margin-bottom: 8px;
+}
+
+.thread__list {
+  list-style: none;
+  margin: 0 0 6px;
+  padding: 0;
+}
+
+.thread__item {
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr);
+  gap: 10px;
+  padding: 8px 0;
+  border-top: 1px solid var(--line);
+}
+
+.thread__item:first-child {
+  border-top: 0;
+}
+
+.thread__who {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.thread__when {
+  font-size: 12px;
+  color: var(--ink-3);
+}
+
+.thread__x {
+  margin-left: auto;
+  color: var(--ink-3);
+  font-size: 16px;
+  line-height: 1;
+  padding: 0 4px;
+}
+
+.thread__x:hover {
+  color: var(--signal);
+}
+
+.thread__text {
+  margin-top: 2px;
+  font-size: 14.5px;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.pl__badge--n {
+  width: auto;
+  min-width: 22px;
+  padding: 0 6px;
+  font-size: 12px;
+}
