@@ -306,7 +306,7 @@ async function postJson<T>(url: string, token: Token, body: unknown): Promise<T>
       cache: "no-store",
     });
     const text = await r.text();
-    if (r.status === 403) throw new SpotifyScopeError("Reconnect Spotify once so Crate may save playlists there");
+    if (r.status === 403) throw new SpotifyScopeError(`Reconnect Spotify once so Crate may save playlists there (Spotify said: ${text.slice(0, 160).replace(/\s+/g, " ")}; token scope: ${String(token.scope ?? "").slice(0, 200) || "none recorded"})`);
     if (!r.ok) throw new Error(`${r.status} from api.spotify.com: ${text.slice(0, 160)}`);
     return (text ? JSON.parse(text) : {}) as T;
   } finally {
