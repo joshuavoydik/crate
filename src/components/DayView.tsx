@@ -39,7 +39,7 @@ export function DayView({ date }: { date: string }) {
   useEffect(() => {
     if (!playingAll || !data || player.playing || player.progress < 1) return;
     const i = data.sends.findIndex((s) => s.track.id === player.currentId);
-    const next = data.sends.slice(i + 1).find((s) => s.track.previewUrl);
+    const next = data.sends.slice(i + 1).find((s) => player.canPlay(s.track));
     if (next) player.play(next.track.id, next.track.previewUrl);
     else setPlayingAll(false);
   }, [playingAll, player.playing, player.progress, player.currentId, data, player]);
@@ -75,7 +75,7 @@ export function DayView({ date }: { date: string }) {
           </span>
         </div>
         <div className="pl__actions">
-          {data && data.sends.some((s) => s.track.previewUrl) && (
+          {data && data.sends.some((s) => player.canPlay(s.track)) && (
             <button
               className="btn btn--sm"
               onClick={() => {
@@ -84,7 +84,7 @@ export function DayView({ date }: { date: string }) {
                   player.pause();
                   return;
                 }
-                const first = data.sends.find((s) => s.track.previewUrl);
+                const first = data.sends.find((s) => player.canPlay(s.track));
                 if (!first) return;
                 setPlayingAll(true);
                 player.play(first.track.id, first.track.previewUrl);

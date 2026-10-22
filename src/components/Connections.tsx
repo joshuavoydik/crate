@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { useStore } from "./Store";
+import { usePlayer } from "./Player";
 import { Confirm } from "./Confirm";
 import { api, sourceName, timeAgo } from "@/lib/client";
 import type { SourceInfo } from "@/lib/types";
@@ -41,6 +42,7 @@ declare global {
 
 export function Connections({ showUnavailable = true, onMac }: { showUnavailable?: boolean; onMac?: () => void }) {
   const { me, refreshMe, toast } = useStore();
+  const { full } = usePlayer();
   const [busy, setBusy] = useState<string | null>(null);
   const [confirm, setConfirm] = useState<string | null>(null);
   const [lastfmName, setLastfmName] = useState("");
@@ -105,7 +107,7 @@ export function Connections({ showUnavailable = true, onMac }: { showUnavailable
 
   function tap(kind: string) {
     const s = connected.get(kind);
-    if (s && s.status === "reauth" && me.connectors[kind] && kind !== "apple" && kind !== "lastfm") {
+    if (s && ((s.status === "reauth" && kind !== "apple" && kind !== "lastfm") || (kind === "spotify" && full === "reconnect")) && me.connectors[kind]) {
       window.location.href = `/api/connect/${kind}`;
       return;
     }
@@ -134,23 +136,36 @@ export function Connections({ showUnavailable = true, onMac }: { showUnavailable
         const available = !!me.connectors[kind];
         const otherWay = !s && !available && !!NOT_HERE[kind];
         const dim = !s && !available && !otherWay;
+        // Spotify's row also says whether whole songs play, since that is what most people want from it.
+        const whole =
+          kind === "spotify" && s && s.status !== "error" && s.status !== "reauth"
+            ? full === "reconnect"
+              ? " · reconnect once to play whole songs in Crate"
+              : full === "premium"
+                ? " · whole songs here need Spotify Premium, so previews play"
+                : full === "ready"
+                  ? " · whole songs play right here"
+                  : full === "app"
+                    ? " · whole songs play on your Spotify app"
+                    : ""
+            : "";
         const sub = s
           ? s.status === "error"
             ? `Problem syncing: ${s.error}`
             : s.status === "reauth"
               ? (s.error ?? "Reconnect to turn on the newest features")
-              : `Connected${s.label && s.label !== sourceName(kind) ? ` as ${s.label}` : ""}${s.lastSyncAt ? ` · synced ${timeAgo(s.lastSyncAt)}` : ""}`
+              : `Connected${s.label && s.label !== sourceName(kind) ? ` as ${s.label}` : ""}${s.lastSyncAt ? ` · synced ${timeAgo(s.lastSyncAt)}` : ""}${whole}`
           : available
             ? WHAT[kind]
             : (NOT_HERE[kind] ?? NOT_YET);
-        const cta = busy === kind ? "…" : s ? (s.status === "reauth" ? "Reconnect" : "Connected") : available ? "Connect" : otherWay && onMac ? "On a Mac" : "";
+        const cta = busy === kind ? "…" : s ? (s.status === "reauth" || (kind === "spotify" && full === "reconnect") ? "Reconnect" : "Connected") : available ? "Connect" : otherWay && onMac ? "On a Mac" : "";
         return (
           <div key={kind}>
             <button
               className="conn"
               onClick={() => tap(kind)}
               disabled={busy === kind || dim || (otherWay && !onMac)}
-              aria-label={`${s ? (s.status === "reauth" ? "Reconnect" : "Disconnect") : otherWay ? "How to bring in" : "Connect"} ${sourceName(kind)}`}
+              aria-label={`${s ? (s.status === "reauth" || (kind === "spotify" && full === "reconnect") ? "Reconnect" : "Disconnect") : otherWay ? "How to bring in" : "Connect"} ${sourceName(kind)}`}
             >
               <span className="conn__mark" style={{ background: MARK[kind].bg, boxShadow: kind === "tidal" ? "inset 0 0 0 1px rgba(255,255,255,0.18)" : undefined, opacity: dim ? 0.35 : 1 }} aria-hidden>
                 <SourceGlyph kind={kind} size={30} />

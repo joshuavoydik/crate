@@ -252,7 +252,7 @@ export function LogView({ initialFilter }: { initialFilter: string }) {
                   ) : (
                     <div className="row__art" />
                   )}
-                  {i.track.previewUrl && (
+                  {player.canPlay(i.track) && (
                     <button
                       className="log__play"
                       aria-label={playing ? "Pause" : "Preview"}

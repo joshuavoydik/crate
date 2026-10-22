@@ -1433,3 +1433,98 @@ textarea:focus-visible,
   gap: 8px;
   flex-wrap: wrap;
 }
+
+/* ---------- now playing: the strip for a whole song ---------- */
+
+.nowbar {
+  position: fixed;
+  z-index: 39;
+  left: 50%;
+  bottom: calc(14px + var(--sab));
+  transform: translateX(-50%);
+  width: min(560px, calc(100vw - 2 * var(--gutter)));
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) auto 36px;
+  gap: 12px;
+  align-items: center;
+  padding: 8px 10px 8px 8px;
+  background: var(--surface);
+  border: 1px solid var(--line-2);
+  box-shadow: 0 24px 48px -24px rgba(0, 0, 0, 0.8);
+}
+
+@media (max-width: 719px) {
+  .nowbar {
+    bottom: calc(74px + var(--sab));
+    width: calc(100vw - 2 * var(--gutter));
+  }
+}
+
+.nowbar__art {
+  width: 44px;
+  height: 44px;
+  object-fit: cover;
+  background: var(--surface-3);
+  display: block;
+}
+
+.nowbar__text {
+  min-width: 0;
+}
+
+.nowbar__title,
+.nowbar__sub {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.nowbar__title {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.nowbar__sub {
+  font-size: 12px;
+  color: var(--ink-3);
+}
+
+.nowbar__meter {
+  margin-top: 6px;
+  display: grid;
+  grid-template-columns: repeat(24, minmax(0, 1fr));
+  gap: 2px;
+  height: 4px;
+}
+
+.nowbar__meter i {
+  background: var(--surface-3);
+}
+
+.nowbar__meter i.is-lit {
+  background: var(--signal);
+}
+
+.nowbar__time {
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.nowbar__btn {
+  width: 36px;
+  height: 36px;
+  display: inline-grid;
+  place-items: center;
+  border: 1px solid var(--line-2);
+  color: var(--ink);
+}
+
+.nowbar__btn:hover {
+  border-color: var(--signal);
+  color: var(--signal);
+}
+
+/* Room for the strip at the foot of a page while a whole song plays. */
+html:has(.nowbar) .shell {
+  padding-bottom: calc(140px + var(--sab));
+}

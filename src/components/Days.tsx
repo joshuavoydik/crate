@@ -114,7 +114,7 @@ export function SendRows({
               ) : (
                 <div className="row__art" />
               )}
-              {s.track.previewUrl && (
+              {player.canPlay(s.track) && (
                 <button
                   className="log__play"
                   aria-label={isCur && player.playing ? "Pause" : "Preview"}
@@ -231,7 +231,7 @@ export function DayCard({
   useEffect(() => {
     if (!playingAll || !sends || player.playing || player.progress < 1) return;
     const i = sends.findIndex((s) => s.track.id === player.currentId);
-    const next = sends.slice(i + 1).find((s) => s.track.previewUrl);
+    const next = sends.slice(i + 1).find((s) => player.canPlay(s.track));
     if (next) player.play(next.track.id, next.track.previewUrl);
     else setPlayingAll(false);
   }, [playingAll, player.playing, player.progress, player.currentId, sends, player]);
@@ -267,7 +267,7 @@ export function DayCard({
       {open && (
         <div className="day__body">
           <div className="day__tools">
-            {sends && sends.some((s) => s.track.previewUrl) && (
+            {sends && sends.some((s) => player.canPlay(s.track)) && (
               <button
                 className="btn btn--sm"
                 onClick={() => {
@@ -276,7 +276,7 @@ export function DayCard({
                     player.pause();
                     return;
                   }
-                  const first = sends.find((s) => s.track.previewUrl);
+                  const first = sends.find((s) => player.canPlay(s.track));
                   if (!first) return;
                   setPlayingAll(true);
                   player.play(first.track.id, first.track.previewUrl);

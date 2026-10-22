@@ -261,7 +261,7 @@ export function LiveView() {
         <History
           sessions={data.history}
           meId={me.id}
-          onPlay={(t) => t.previewUrl && player.play(t.id, t.previewUrl)}
+          onPlay={(t) => player.canPlay(t) && player.play(t.id, t.previewUrl)}
           playingId={player.playing ? player.currentId : null}
         />
       )}
@@ -295,9 +295,9 @@ export function LiveView() {
                   {following?.id === open.person.id ? "Following along" : "Follow along"}
                 </button>
               )}
-              {open.track?.previewUrl && (
+              {open.track && player.canPlay(open.track) && (
                 <button className="btn btn--sm" onClick={() => player.play(open.track!.id, open.track!.previewUrl)}>
-                  {player.currentId === open.track.id && player.playing ? <IconPause size={14} /> : <IconPlay size={14} />} Preview
+                  {player.currentId === open.track.id && player.playing ? <IconPause size={14} /> : <IconPlay size={14} />} {player.full === "ready" || player.full === "app" ? "Play" : "Preview"}
                 </button>
               )}
               {open.track && (
@@ -373,7 +373,7 @@ export function Orb({
 
   function tap() {
     if (mineInCrate) {
-      if (track?.previewUrl) {
+      if (track && player.canPlay(track)) {
         if (inMyPlayer) player.toggle();
         else player.play(track.id, track.previewUrl);
       }
@@ -385,7 +385,7 @@ export function Orb({
       return;
     }
     setStopped(false);
-    if (track?.previewUrl) {
+    if (track && player.canPlay(track)) {
       if (inMyPlayer) player.toggle();
       else player.play(track.id, track.previewUrl);
     }
@@ -396,7 +396,7 @@ export function Orb({
       <button
         className="orb__stage"
         onClick={tap}
-        aria-label={`${first}: ${p.title ?? "nothing playing"}. ${spinning ? "Tap to stop" : track?.previewUrl ? "Tap to play the preview" : "Tap to start"}`}
+        aria-label={`${first}: ${p.title ?? "nothing playing"}. ${spinning ? "Tap to stop" : track && player.canPlay(track) ? (player.full === "ready" || player.full === "app" ? "Tap to play" : "Tap to play the preview") : "Tap to start"}`}
       >
         <svg className="orb__arc" viewBox="0 0 100 100" aria-hidden>
           <circle cx="50" cy="50" r={r} className="orb__arc-track" />
@@ -504,6 +504,7 @@ export function History({
   playingId: string | null;
 }) {
   const { openAddTo } = useStore();
+  const player = usePlayer();
   const groups: Array<{ label: string; items: LiveSession[] }> = [];
   for (const s of sessions) {
     const label = dayLabel(s.startedAt);
@@ -521,7 +522,7 @@ export function History({
             {g.items.map((s) => {
               const first = s.person.id === meId ? "You" : s.person.name.split(" ")[0];
               const mins = Math.max(1, Math.round((s.endedAt - s.startedAt) / 60000));
-              const canPlay = !!s.track?.previewUrl;
+              const canPlay = !!s.track && player.canPlay(s.track);
               const isPlaying = !!s.track && playingId === s.track.id;
               return (
                 <li key={s.id} className={`lh__row${isPlaying ? " is-playing" : ""}`}>

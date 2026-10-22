@@ -145,12 +145,12 @@ export function StageCard({
           ) : (
             <span className="caps">No artwork</span>
           )}
-          {t.previewUrl && (
+          {player.canPlay(t) && (
             <div className={`cover__play${!playing && (!player.armed || !isCurrent) ? " is-visible" : ""}`}>
               <IconPlay size={44} />
             </div>
           )}
-          {t.previewUrl && (
+          {player.canPlay(t) && (
             <div className="cover__progress" aria-hidden>
               <i style={{ width: `${Math.round(progress * 100)}%` }} />
             </div>

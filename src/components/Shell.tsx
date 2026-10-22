@@ -9,6 +9,7 @@ import { Backdrop } from "./Backdrop";
 import { SendFlow } from "./SendFlow";
 import { InviteSheet } from "./InviteSheet";
 import { AddToPlaylistSheet } from "./Collections";
+import { NowBar } from "./NowBar";
 import { ShareSheet } from "./ShareSheet";
 import { Pocket } from "./Pocket";
 import { FriendsRail } from "./FriendsRail";
@@ -29,6 +30,7 @@ export function Shell({ initialMe, active, incomingUrl, children }: { initialMe:
         <LivePulse />
         <Visit />
         <RailFrame>{children}</RailFrame>
+        <NowBar />
         <TabBar active={active} />
         <SendFlow />
         <InviteSheet />

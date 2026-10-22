@@ -11,7 +11,9 @@ import { similarity } from "../resolve/parse";
 export const LIVE_SCOPES = "user-library-read user-read-recently-played user-read-currently-playing user-read-playback-state user-modify-playback-state";
 /** Saving a Crate playlist to Spotify needs this too; asked for at connect time, checked only when saving. */
 export const PLAYLIST_SCOPE = "playlist-modify-private";
-export const SPOTIFY_SCOPES = `${LIVE_SCOPES} ${PLAYLIST_SCOPE}`;
+/** Whole songs inside Crate, through Spotify's Web Playback SDK. Premium only; the SDK says so itself. */
+export const STREAM_SCOPES = "streaming user-read-email user-read-private";
+export const SPOTIFY_SCOPES = `${LIVE_SCOPES} ${PLAYLIST_SCOPE} ${STREAM_SCOPES}`;
 
 export async function spotifyConfigured(): Promise<boolean> {
   return !!(await getKeys()).SPOTIFY_CLIENT_ID;
@@ -91,6 +93,9 @@ async function ensure(token: Token): Promise<Token> {
   if (exp - Date.now() > 60_000) return token;
   return refresh(token);
 }
+
+/** A token good for at least a minute, refreshed when it is not. */
+export const spotifyEnsure = ensure;
 
 export async function spotifyMe(token: Token): Promise<string> {
   const me = await getJson<{ display_name?: string; id: string }>("https://api.spotify.com/v1/me", {
@@ -246,8 +251,8 @@ export async function spotifyTrackUri(token: Token, artist: string, title: strin
   return { uri: best && best.score >= 0.5 ? `spotify:track:${best.t.id}` : null, token: tok !== token ? tok : undefined };
 }
 
-/** Starts a track on whatever device this person's Spotify is open on, at a position. */
-export async function spotifyPlay(token: Token, uri: string, positionMs: number): Promise<{ token?: Token; device: string | null }> {
+/** Starts a track on a given device, else on whatever device this person's Spotify is open on, at a position. */
+export async function spotifyPlay(token: Token, uri: string, positionMs: number, onDevice?: string | null): Promise<{ token?: Token; device: string | null }> {
   const tok = await ensure(token);
   const auth = { authorization: `Bearer ${tok.access_token}`, "content-type": "application/json" };
   const body = JSON.stringify({ uris: [uri], position_ms: Math.max(0, Math.round(positionMs)) });
@@ -266,9 +271,9 @@ export async function spotifyPlay(token: Token, uri: string, positionMs: number)
       clearTimeout(t);
     }
   };
-  let r = await attempt();
+  let r = await attempt(onDevice ?? undefined);
   let device: string | null = null;
-  if (r.status === 404) {
+  if (r.status === 404 && !onDevice) {
     // No active device: pick the first one Spotify knows about (a phone with the app open, a desktop).
     const d = await getJson<{ devices?: Array<{ id: string; name: string; is_restricted?: boolean }> }>("https://api.spotify.com/v1/me/player/devices", {
       headers: { authorization: `Bearer ${tok.access_token}` },

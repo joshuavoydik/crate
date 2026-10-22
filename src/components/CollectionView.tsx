@@ -60,7 +60,7 @@ export function CollectionView({ id }: { id: string }) {
     const hit = data.tracks.find((x) => x.track.id === want);
     if (!hit) return;
     document.getElementById(`cv-${want}`)?.scrollIntoView({ block: "center" });
-    if (hit.track.previewUrl) player.play(hit.track.id, hit.track.previewUrl);
+    if (player.canPlay(hit.track)) player.play(hit.track.id, hit.track.previewUrl);
   }, [params, data, player]);
 
   useEffect(() => {
@@ -72,7 +72,7 @@ export function CollectionView({ id }: { id: string }) {
   useEffect(() => {
     if (!playingAll || !data || player.playing || player.progress < 1) return;
     const i = data.tracks.findIndex((x) => x.track.id === player.currentId);
-    const next = data.tracks.slice(i + 1).find((x) => x.track.previewUrl);
+    const next = data.tracks.slice(i + 1).find((x) => player.canPlay(x.track));
     if (next) player.play(next.track.id, next.track.previewUrl);
     else setPlayingAll(false);
   }, [playingAll, player.playing, player.progress, player.currentId, data, player]);
@@ -243,7 +243,7 @@ export function CollectionView({ id }: { id: string }) {
               {busy === "export:apple" ? "Saving…" : "Save to Apple Music"}
             </button>
           )}
-          {tracks.some((x) => x.track.previewUrl) && (
+          {tracks.some((x) => player.canPlay(x.track)) && (
             <button
               className="btn btn--sm"
               onClick={() => {
@@ -252,7 +252,7 @@ export function CollectionView({ id }: { id: string }) {
                   player.pause();
                   return;
                 }
-                const first = tracks.find((x) => x.track.previewUrl)!;
+                const first = tracks.find((x) => player.canPlay(x.track))!;
                 setPlayingAll(true);
                 player.play(first.track.id, first.track.previewUrl);
               }}
@@ -282,7 +282,7 @@ export function CollectionView({ id }: { id: string }) {
                 id={`cv-${x.track.id}`}
                 className={`pl__row${isCur && player.playing ? " is-playing" : ""}`}
                 onClick={() => {
-                  if (!x.track.previewUrl) return;
+                  if (!player.canPlay(x.track)) return;
                   setPlayingAll(false);
                   player.play(x.track.id, x.track.previewUrl);
                 }}
@@ -294,7 +294,7 @@ export function CollectionView({ id }: { id: string }) {
                   ) : (
                     <div className="row__art" />
                   )}
-                  {x.track.previewUrl && (
+                  {player.canPlay(x.track) && (
                     <button className="log__play" aria-label={isCur && player.playing ? "Pause" : "Preview"} type="button">
                       {isCur && player.playing ? <IconPause size={14} /> : <IconPlay size={14} />}
                     </button>

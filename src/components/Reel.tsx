@@ -323,7 +323,7 @@ export function Reel({ embedded = false, onCaughtUp }: { embedded?: boolean; onC
                       ) : (
                         <div className="strip__art" />
                       )}
-                      {i.track.previewUrl && (
+                      {player.canPlay(i.track) && (
                         <button
                           className="log__play"
                           aria-label="Preview"

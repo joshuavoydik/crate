@@ -60,6 +60,11 @@ export function useStore(): Store {
   return s;
 }
 
+/** The store when there is one; null on pages without a signed-in person (the public station). */
+export function useStoreMaybe(): Store | null {
+  return useContext(Ctx);
+}
+
 export function StoreProvider({ initialMe, children }: { initialMe: Me; children: React.ReactNode }) {
   const [me, setMe] = useState<Me>(initialMe);
   const [crewId, setCrewIdState] = useState<string | null>(null);

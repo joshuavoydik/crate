@@ -79,7 +79,7 @@ export function PlaylistView({ welcome = false }: { welcome?: boolean }) {
   useEffect(() => {
     if (!playingAll || !playlist || player.playing || player.progress < 1) return;
     const i = playlist.sends.findIndex((s) => s.track.id === player.currentId);
-    const next = playlist.sends.slice(i + 1).find((s) => s.track.previewUrl);
+    const next = playlist.sends.slice(i + 1).find((s) => player.canPlay(s.track));
     if (next) player.play(next.track.id, next.track.previewUrl);
     else setPlayingAll(false);
   }, [playingAll, player.playing, player.progress, player.currentId, playlist, player]);
@@ -170,7 +170,7 @@ export function PlaylistView({ welcome = false }: { welcome?: boolean }) {
                   player.pause();
                   return;
                 }
-                const first = playlist!.sends.find((s) => s.track.previewUrl);
+                const first = playlist!.sends.find((s) => player.canPlay(s.track));
                 if (!first) return toast("No previews in here yet");
                 setPlayingAll(true);
                 player.play(first.track.id, first.track.previewUrl);
