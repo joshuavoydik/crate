@@ -152,6 +152,15 @@ export function Welcome({ invite }: { invite?: { code: string; crewName: string;
       <p className="faint" style={{ marginTop: 10, fontSize: 12.5, maxWidth: "40ch" }}>
         Already in a crew on another device? Open Crate there, then Settings → Crate on another device, and send yourself the link.
       </p>
+      <p className="faint" style={{ marginTop: 10, fontSize: 12.5 }}>
+        <a href="/privacy" style={{ textDecoration: "underline", textUnderlineOffset: 3 }}>
+          Privacy
+        </a>{" "}
+        ·{" "}
+        <a href="/terms" style={{ textDecoration: "underline", textUnderlineOffset: 3 }}>
+          Terms
+        </a>
+      </p>
     </div>
   );
 }

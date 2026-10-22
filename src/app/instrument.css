@@ -1528,3 +1528,28 @@ textarea:focus-visible,
 html:has(.nowbar) .shell {
   padding-bottom: calc(140px + var(--sab));
 }
+
+/* ---------- plain pages: privacy, terms ---------- */
+
+.plain {
+  max-width: 640px;
+  margin: 0 auto;
+  padding-top: 40px;
+}
+
+.plain__body p {
+  font-size: 15.5px;
+  line-height: 1.55;
+  color: var(--ink-2);
+  margin: 0 0 16px;
+}
+
+.plain__body h2 {
+  margin: 26px 0 8px;
+}
+
+.plain__body a {
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
