@@ -149,6 +149,9 @@ export function Welcome({ invite }: { invite?: { code: string; crewName: string;
       <p className="faint" style={{ marginTop: 40, fontSize: 12.5, maxWidth: "40ch" }}>
         No passwords: the invite link is the key. Add Crate to your home screen for the full-screen version.
       </p>
+      <p className="faint" style={{ marginTop: 10, fontSize: 12.5, maxWidth: "40ch" }}>
+        Already in a crew on another device? Open Crate there, then Settings → Crate on another device, and send yourself the link.
+      </p>
     </div>
   );
 }

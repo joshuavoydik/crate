@@ -2,6 +2,7 @@ export const maxDuration = 60;
 
 import { json, error } from "@/lib/api";
 import { syncAll } from "@/lib/sync";
+import { cronMark } from "@/lib/problems";
 
 /** For a scheduler (Vercel Cron, launchd, anything): GET /api/cron/sync with CRON_SECRET. */
 export async function GET(req: Request) {
@@ -9,5 +10,7 @@ export async function GET(req: Request) {
   if (!secret) return error("CRON_SECRET is not set", 501);
   const given = new URL(req.url).searchParams.get("key") ?? req.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
   if (given !== secret) return error("Forbidden", 403);
-  return json({ users: await syncAll() });
+  const users = await syncAll();
+  await cronMark("sync");
+  return json({ users });
 }
