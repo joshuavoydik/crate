@@ -154,3 +154,8 @@ export function openOrder(me: { preferredPlatform: string; listensOn?: string[] 
   }
   return hints;
 }
+
+/** What the player strip shows for a track. */
+export function metaOf(t: { title: string; artist: string; artworkUrl: string | null }): { title: string; artist: string; art: string | null } {
+  return { title: t.title, artist: t.artist, art: t.artworkUrl };
+}

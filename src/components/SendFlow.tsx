@@ -5,7 +5,7 @@ import { Sheet } from "./Sheet";
 import { useStore } from "./Store";
 import { usePlayer } from "./Player";
 import { IconPlay, IconPause } from "./Icons";
-import { api } from "@/lib/client";
+import { api, metaOf } from "@/lib/client";
 import { extractUrl } from "@/lib/resolve/parse";
 import type { Track, Send, Collection } from "@/lib/types";
 
@@ -345,7 +345,7 @@ export function SendFlow() {
                 </div>
               )}
               {t.previewUrl && (
-                <button className="btn btn--sm btn--ghost" style={{ marginLeft: -14, marginTop: 6 }} onClick={() => player.play(t.id, t.previewUrl)}>
+                <button className="btn btn--sm btn--ghost" style={{ marginLeft: -14, marginTop: 6 }} onClick={() => player.play(t.id, t.previewUrl, metaOf(t))}>
                   {player.currentId === t.id && player.playing ? <IconPause size={14} /> : <IconPlay size={14} />}
                   {player.currentId === t.id && player.playing ? "Pause" : "Preview"}
                 </button>

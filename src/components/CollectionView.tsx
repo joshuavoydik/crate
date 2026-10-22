@@ -7,7 +7,7 @@ import { usePlayer } from "./Player";
 import { Avatar, artFallback } from "./Avatar";
 import { Confirm } from "./Confirm";
 import { IconPlay, IconPause, IconClose } from "./Icons";
-import { api, timeAgo, openOrder } from "@/lib/client";
+import { api, timeAgo, openOrder, metaOf } from "@/lib/client";
 import { openable } from "@/lib/resolve/links";
 import type { Collection, CollectionTrack, Person } from "@/lib/types";
 
@@ -60,7 +60,7 @@ export function CollectionView({ id }: { id: string }) {
     const hit = data.tracks.find((x) => x.track.id === want);
     if (!hit) return;
     document.getElementById(`cv-${want}`)?.scrollIntoView({ block: "center" });
-    if (player.canPlay(hit.track)) player.play(hit.track.id, hit.track.previewUrl);
+    if (player.canPlay(hit.track)) player.play(hit.track.id, hit.track.previewUrl, metaOf(hit.track));
   }, [params, data, player]);
 
   useEffect(() => {
@@ -73,7 +73,7 @@ export function CollectionView({ id }: { id: string }) {
     if (!playingAll || !data || player.playing || player.progress < 1) return;
     const i = data.tracks.findIndex((x) => x.track.id === player.currentId);
     const next = data.tracks.slice(i + 1).find((x) => player.canPlay(x.track));
-    if (next) player.play(next.track.id, next.track.previewUrl);
+    if (next) player.play(next.track.id, next.track.previewUrl, metaOf(next.track));
     else setPlayingAll(false);
   }, [playingAll, player.playing, player.progress, player.currentId, data, player]);
 
@@ -254,7 +254,7 @@ export function CollectionView({ id }: { id: string }) {
                 }
                 const first = tracks.find((x) => player.canPlay(x.track))!;
                 setPlayingAll(true);
-                player.play(first.track.id, first.track.previewUrl);
+                player.play(first.track.id, first.track.previewUrl, metaOf(first.track));
               }}
             >
               {playingAll ? <IconPause size={14} /> : <IconPlay size={14} />} {playingAll ? "Stop" : "Play all"}
@@ -284,7 +284,7 @@ export function CollectionView({ id }: { id: string }) {
                 onClick={() => {
                   if (!player.canPlay(x.track)) return;
                   setPlayingAll(false);
-                  player.play(x.track.id, x.track.previewUrl);
+                  player.play(x.track.id, x.track.previewUrl, metaOf(x.track));
                 }}
               >
                 <div className="log__artwrap pl__artwrap">

@@ -8,7 +8,7 @@ import { Sheet } from "./Sheet";
 import { Confirm } from "./Confirm";
 import { TrackCard } from "./TrackCard";
 import { IconPlay, IconPause, IconPlus } from "./Icons";
-import { api, sourceName, timeAgo, viaLabel } from "@/lib/client";
+import { api, sourceName, timeAgo, viaLabel, metaOf } from "@/lib/client";
 import type { LogItem, Send, Track } from "@/lib/types";
 import { artFallback } from "./Avatar";
 
@@ -258,7 +258,7 @@ export function LogView({ initialFilter }: { initialFilter: string }) {
                       aria-label={playing ? "Pause" : "Preview"}
                       onClick={(e) => {
                         e.stopPropagation();
-                        player.play(i.track.id, i.track.previewUrl);
+                        player.play(i.track.id, i.track.previewUrl, metaOf(i.track));
                       }}
                     >
                       {playing ? <IconPause size={14} /> : <IconPlay size={14} />}

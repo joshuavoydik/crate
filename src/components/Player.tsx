@@ -13,6 +13,8 @@ import { api } from "@/lib/client";
  */
 
 /** Whether whole songs can play, and how. */
+export type NowMeta = { title: string; artist: string; art: string | null };
+
 export type Full =
   | "off" // no Spotify connected
   | "loading"
@@ -20,8 +22,6 @@ export type Full =
   | "app" // this browser cannot run the SDK: whole songs play on the Spotify app that is open
   | "reconnect" // the Spotify connection predates the streaming permission
   | "premium"; // Spotify only streams here for Premium accounts
-
-type NowMeta = { title: string; artist: string; art: string | null };
 
 type PlayerState = {
   currentId: string | null;
@@ -37,10 +37,12 @@ type PlayerState = {
   now: NowMeta | null;
   /** True when this track can play at all: a whole song through Spotify, or a preview. */
   canPlay: (t: { previewUrl: string | null }) => boolean;
-  /** Play a track; the same id toggles pause. The url is its preview, the fallback. */
-  play: (id: string, url: string | null) => void;
+  /** Play a track; the same id toggles pause. The url is its preview, the fallback; the meta is for the strip. */
+  play: (id: string, url: string | null, meta?: NowMeta | null) => void;
   pause: () => void;
   toggle: () => void;
+  /** Jump to a point in the current song, 0 to 1. */
+  seek: (fraction: number) => void;
   arm: () => void;
 };
 
@@ -59,6 +61,7 @@ type SdkPlayer = {
   togglePlay: () => Promise<void>;
   pause: () => Promise<void>;
   resume: () => Promise<void>;
+  seek: (ms: number) => Promise<void>;
   activateElement?: () => Promise<void>;
 };
 type SdkState = {
@@ -114,6 +117,8 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   const device = useRef<string | null>(null);
   const fullRef = useRef<Full>("off");
   const lastPos = useRef(0);
+  /** Where the whole song was at the last word from Spotify, so the strip can keep moving between words. */
+  const anchor = useRef({ pos: 0, at: 0 });
   const spotifyConnected = !!store?.me.sources.some((s) => s.kind === "spotify" && s.status !== "off");
 
   useEffect(() => {
@@ -127,7 +132,11 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     audio.current = a;
     const onTime = () => {
       if (current.current?.mode !== "preview") return;
-      if (a.duration && isFinite(a.duration)) setProgress(a.currentTime / a.duration);
+      if (a.duration && isFinite(a.duration)) {
+        setProgress(a.currentTime / a.duration);
+        setPosition(a.currentTime * 1000);
+        setDuration(a.duration * 1000);
+      }
     };
     const onEnd = () => {
       if (current.current?.mode !== "preview") return;
@@ -200,6 +209,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
         // The end of a song arrives as "paused at 0" right after it was near the end.
         const ended = s.paused && s.position === 0 && s.duration > 0 && lastPos.current >= s.duration - 3000;
         lastPos.current = s.position;
+        anchor.current = { pos: ended ? s.duration : s.position, at: Date.now() };
         setPlaying(!s.paused);
         setPosition(ended ? s.duration : s.position);
         setDuration(s.duration);
@@ -218,30 +228,29 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     };
   }, [spotifyConnected]);
 
-  // Between state events a whole song keeps moving.
+  // Between words from Spotify a whole song keeps moving.
   useEffect(() => {
     if (mode !== "spotify" || !playing || !duration) return;
-    const started = Date.now();
-    const base = position;
     const t = setInterval(() => {
-      const pos = Math.min(duration, base + (Date.now() - started));
+      const pos = Math.min(duration, anchor.current.pos + (Date.now() - anchor.current.at));
       setPosition(pos);
       setProgress(pos / duration);
     }, 500);
     return () => clearInterval(t);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode, playing, duration]);
 
   const arm = useCallback(() => setArmed(true), []);
 
-  const playPreview = useCallback((id: string, url: string | null) => {
+  const playPreview = useCallback((id: string, url: string | null, meta?: NowMeta | null) => {
     const a = audio.current;
     if (!a) return;
     current.current = { id, url, mode: "preview" };
     setMode("preview");
     setCurrentId(id);
     setProgress(0);
-    setNow(null);
+    setPosition(0);
+    setDuration(0);
+    setNow(meta ?? null);
     if (!url) {
       a.pause();
       a.removeAttribute("src");
@@ -256,7 +265,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const playWhole = useCallback(
-    async (id: string, url: string | null, how: "ready" | "app") => {
+    async (id: string, url: string | null, how: "ready" | "app", meta?: NowMeta | null) => {
       const a = audio.current;
       a?.pause();
       current.current = { id, url, mode: "spotify" };
@@ -265,6 +274,8 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       setCurrentId(id);
       setProgress(0);
       setPosition(0);
+      setDuration(0);
+      if (meta) setNow(meta);
       setArmed(true);
       if (how === "ready") {
         setPlaying(true);
@@ -279,7 +290,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       } catch (e) {
         const msg = (e as Error).message;
         if (url) {
-          playPreview(id, url);
+          playPreview(id, url, meta);
           toast(/premium/i.test(msg) ? "Whole songs need Spotify Premium; here is the preview." : /open spotify/i.test(msg) ? "Open Spotify first for the whole song. Here is the preview." : "Spotify could not play it; here is the preview.");
           if (/premium/i.test(msg)) setFull("premium");
         } else {
@@ -295,7 +306,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   // Live follows the platforms (Spotify, Last.fm, the Mac helper, Crate in Chrome), not this player.
 
   const play = useCallback(
-    (id: string, url: string | null) => {
+    (id: string, url: string | null, meta?: NowMeta | null) => {
       const cur = current.current;
       const a = audio.current;
       if (cur?.id === id) {
@@ -310,13 +321,34 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
         }
       }
       if (fullRef.current === "ready" || fullRef.current === "app") {
-        void playWhole(id, url, fullRef.current);
+        void playWhole(id, url, fullRef.current, meta);
         return;
       }
-      playPreview(id, url);
+      playPreview(id, url, meta);
     },
     [playPreview, playWhole],
   );
+
+  const seek = useCallback((fraction: number) => {
+    const f = Math.min(1, Math.max(0, fraction));
+    const cur = current.current;
+    if (!cur) return;
+    if (cur.mode === "spotify") {
+      if (!duration) return;
+      const ms = Math.round(f * duration);
+      lastPos.current = ms;
+      anchor.current = { pos: ms, at: Date.now() };
+      setPosition(ms);
+      setProgress(f);
+      sdk.current?.seek(ms).catch(() => undefined);
+      return;
+    }
+    const a = audio.current;
+    if (!a || !a.duration || !isFinite(a.duration)) return;
+    a.currentTime = f * a.duration;
+    setProgress(f);
+    setPosition(a.currentTime * 1000);
+  }, [duration]);
 
   const pause = useCallback(() => {
     if (current.current?.mode === "spotify") sdk.current?.pause().catch(() => undefined);
@@ -339,8 +371,8 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   const canPlay = useCallback((t: { previewUrl: string | null }) => full === "ready" || full === "app" || !!t.previewUrl, [full]);
 
   const value = useMemo<PlayerState>(
-    () => ({ currentId, playing, progress, position, duration, armed, full, mode, now, canPlay, play, pause, toggle, arm }),
-    [currentId, playing, progress, position, duration, armed, full, mode, now, canPlay, play, pause, toggle, arm],
+    () => ({ currentId, playing, progress, position, duration, armed, full, mode, now, canPlay, play, pause, toggle, seek, arm }),
+    [currentId, playing, progress, position, duration, armed, full, mode, now, canPlay, play, pause, toggle, seek, arm],
   );
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

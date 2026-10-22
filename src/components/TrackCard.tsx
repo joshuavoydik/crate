@@ -2,9 +2,10 @@
 
 import { useState } from "react";
 import { useStore } from "./Store";
-import { IconCheck, IconKeep, IconOut, IconDeck, IconCopy, IconPlus } from "./Icons";
+import { IconCheck, IconKeep, IconOut, IconDeck, IconCopy, IconPlus, IconPlay, IconPause } from "./Icons";
+import { usePlayer } from "./Player";
 import { artFallback } from "./Avatar";
-import { formatDuration, timeAgo, viaLabel, openOrder } from "@/lib/client";
+import { formatDuration, timeAgo, viaLabel, openOrder, metaOf } from "@/lib/client";
 import { openable, PLATFORM_LABELS, BUY_PLATFORMS, type PlatformKey } from "@/lib/resolve/links";
 import { api } from "@/lib/client";
 import type { Send, Track } from "@/lib/types";
@@ -44,6 +45,7 @@ export function TrackCard({
   compact?: boolean;
 }) {
   const { me, toast, openAddTo } = useStore();
+  const player = usePlayer();
   const [reply, setReply] = useState(send.reaction?.reply ?? "");
   const [fixing, setFixing] = useState(false);
   const [candidates, setCandidates] = useState<Candidate[] | null>(null);
@@ -113,10 +115,20 @@ export function TrackCard({
           ) : (
             <div className="tc__art" />
           )}
-          <div style={{ minWidth: 0 }}>
+          <div style={{ minWidth: 0, flex: 1 }}>
             <h3 className="display tc__title">{t.title}</h3>
             <div className="tc__artist">{t.artist}</div>
           </div>
+          {player.canPlay(t) && (
+            <button
+              className={`tc__play${player.currentId === t.id && player.playing ? " is-on" : ""}`}
+              onClick={() => player.play(t.id, t.previewUrl, metaOf(t))}
+              aria-label={player.currentId === t.id && player.playing ? "Pause" : player.full === "ready" || player.full === "app" ? "Play" : "Play the preview"}
+              title={player.full === "ready" ? "Whole song, right here" : player.full === "app" ? "Whole song, on your Spotify" : "30-second preview"}
+            >
+              {player.currentId === t.id && player.playing ? <IconPause size={18} /> : <IconPlay size={18} />}
+            </button>
+          )}
         </div>
       )}
 

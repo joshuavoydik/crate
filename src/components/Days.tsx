@@ -9,7 +9,7 @@ import { TrackCard } from "./TrackCard";
 import { Avatar, artFallback } from "./Avatar";
 import { SourceMark, platformOfVia } from "./SourceMark";
 import { IconPlay, IconPause, IconKeep, IconDeck, IconChevron, IconPlus } from "./Icons";
-import { api, timeAgo, viaLabel } from "@/lib/client";
+import { api, timeAgo, viaLabel, metaOf } from "@/lib/client";
 import type { DaySummary, Send, ReactionStatus, Track, Person } from "@/lib/types";
 
 /**
@@ -121,7 +121,7 @@ export function SendRows({
                   onClick={(e) => {
                     e.stopPropagation();
                     onPreview?.();
-                    player.play(s.track.id, s.track.previewUrl);
+                    player.play(s.track.id, s.track.previewUrl, metaOf(s.track));
                   }}
                 >
                   {isCur && player.playing ? <IconPause size={14} /> : <IconPlay size={14} />}
@@ -232,7 +232,7 @@ export function DayCard({
     if (!playingAll || !sends || player.playing || player.progress < 1) return;
     const i = sends.findIndex((s) => s.track.id === player.currentId);
     const next = sends.slice(i + 1).find((s) => player.canPlay(s.track));
-    if (next) player.play(next.track.id, next.track.previewUrl);
+    if (next) player.play(next.track.id, next.track.previewUrl, metaOf(next.track));
     else setPlayingAll(false);
   }, [playingAll, player.playing, player.progress, player.currentId, sends, player]);
 
@@ -279,7 +279,7 @@ export function DayCard({
                   const first = sends.find((s) => player.canPlay(s.track));
                   if (!first) return;
                   setPlayingAll(true);
-                  player.play(first.track.id, first.track.previewUrl);
+                  player.play(first.track.id, first.track.previewUrl, metaOf(first.track));
                 }}
               >
                 {playingAll ? <IconPause size={14} /> : <IconPlay size={14} />} {playingAll ? "Stop" : "Play all"}

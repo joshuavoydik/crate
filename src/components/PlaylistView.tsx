@@ -9,7 +9,7 @@ import { LiveBand } from "./LiveView";
 import { Avatar } from "./Avatar";
 import { IconPlay, IconPause } from "./Icons";
 import { SendRows, DayCards, useTrackSheet, facesOf, tz } from "./Days";
-import { api } from "@/lib/client";
+import { api, metaOf } from "@/lib/client";
 import type { Playlist, Send } from "@/lib/types";
 
 /** How many earlier days the main page shows before pointing at the Days page. */
@@ -80,7 +80,7 @@ export function PlaylistView({ welcome = false }: { welcome?: boolean }) {
     if (!playingAll || !playlist || player.playing || player.progress < 1) return;
     const i = playlist.sends.findIndex((s) => s.track.id === player.currentId);
     const next = playlist.sends.slice(i + 1).find((s) => player.canPlay(s.track));
-    if (next) player.play(next.track.id, next.track.previewUrl);
+    if (next) player.play(next.track.id, next.track.previewUrl, metaOf(next.track));
     else setPlayingAll(false);
   }, [playingAll, player.playing, player.progress, player.currentId, playlist, player]);
 
@@ -173,7 +173,7 @@ export function PlaylistView({ welcome = false }: { welcome?: boolean }) {
                 const first = playlist!.sends.find((s) => player.canPlay(s.track));
                 if (!first) return toast("No previews in here yet");
                 setPlayingAll(true);
-                player.play(first.track.id, first.track.previewUrl);
+                player.play(first.track.id, first.track.previewUrl, metaOf(first.track));
               }}
             >
               {playingAll ? <IconPause size={14} /> : <IconPlay size={14} />} {playingAll ? "Stop" : "Play today"}

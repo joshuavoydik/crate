@@ -8,7 +8,7 @@ import { TrackCard } from "./TrackCard";
 import { Sheet } from "./Sheet";
 import { artFallback } from "./Avatar";
 import { IconKeep, IconNext, IconDeck, IconPlay, IconPause } from "./Icons";
-import { api, flag, setFlag, timeAgo, openOrder } from "@/lib/client";
+import { api, flag, setFlag, timeAgo, openOrder, metaOf } from "@/lib/client";
 import { analyzeTrack } from "@/lib/audio/analyze";
 import { openable } from "@/lib/resolve/links";
 import type { Send, ReactionStatus, Track, LogItem } from "@/lib/types";
@@ -128,7 +128,7 @@ export function Reel({ embedded = false, onCaughtUp }: { embedded?: boolean; onC
   useEffect(() => {
     setAccentTrack(current?.track ?? null);
     if (!current) return;
-    if (player.armed) player.play(current.track.id, current.track.previewUrl);
+    if (player.armed) player.play(current.track.id, current.track.previewUrl, metaOf(current.track));
     if (current.track.previewUrl && (!current.track.bpm || !current.track.camelot)) {
       setAnalyzing(current.track.id);
       analyzeTrack(current.track).then((t) => {
@@ -226,7 +226,7 @@ export function Reel({ embedded = false, onCaughtUp }: { embedded?: boolean; onC
       switch (e.key) {
         case " ":
           e.preventDefault();
-          player.play(current.track.id, current.track.previewUrl);
+          player.play(current.track.id, current.track.previewUrl, metaOf(current.track));
           break;
         case "j":
         case "ArrowDown":
@@ -330,7 +330,7 @@ export function Reel({ embedded = false, onCaughtUp }: { embedded?: boolean; onC
                           onClick={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
-                            player.play(i.track.id, i.track.previewUrl);
+                            player.play(i.track.id, i.track.previewUrl, metaOf(i.track));
                           }}
                         >
                           {player.currentId === i.track.id && player.playing ? <IconPause size={14} /> : <IconPlay size={14} />}

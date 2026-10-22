@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { usePlayer } from "./Player";
 import { IconPlay } from "./Icons";
 import { artFallback } from "./Avatar";
-import { timeAgo, viaLabel } from "@/lib/client";
+import { timeAgo, viaLabel, metaOf } from "@/lib/client";
 import type { Send } from "@/lib/types";
 
 export type Exit = "up" | "right" | "down" | null;
@@ -94,7 +94,7 @@ export function StageCard({
     const quick = Date.now() - s.t < 350;
     setDrag(null);
     if (s.axis === null && Math.hypot(dx, dy) < 8) {
-      player.play(t.id, t.previewUrl);
+      player.play(t.id, t.previewUrl, metaOf(t));
       return;
     }
     if (s.axis === "x" && (dx > 100 || (quick && dx > 50))) return onSave();

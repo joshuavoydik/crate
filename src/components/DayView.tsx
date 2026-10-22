@@ -7,7 +7,7 @@ import { usePlayer } from "./Player";
 import { Avatar } from "./Avatar";
 import { IconPlay, IconPause } from "./Icons";
 import { SendRows, useTrackSheet, facesOf, tz } from "./Days";
-import { api } from "@/lib/client";
+import { api, metaOf } from "@/lib/client";
 import type { Send } from "@/lib/types";
 
 /** One earlier day of the crew's playlist, whole: its own page, its own Play all. */
@@ -40,7 +40,7 @@ export function DayView({ date }: { date: string }) {
     if (!playingAll || !data || player.playing || player.progress < 1) return;
     const i = data.sends.findIndex((s) => s.track.id === player.currentId);
     const next = data.sends.slice(i + 1).find((s) => player.canPlay(s.track));
-    if (next) player.play(next.track.id, next.track.previewUrl);
+    if (next) player.play(next.track.id, next.track.previewUrl, metaOf(next.track));
     else setPlayingAll(false);
   }, [playingAll, player.playing, player.progress, player.currentId, data, player]);
 
@@ -87,7 +87,7 @@ export function DayView({ date }: { date: string }) {
                 const first = data.sends.find((s) => player.canPlay(s.track));
                 if (!first) return;
                 setPlayingAll(true);
-                player.play(first.track.id, first.track.previewUrl);
+                player.play(first.track.id, first.track.previewUrl, metaOf(first.track));
               }}
             >
               {playingAll ? <IconPause size={14} /> : <IconPlay size={14} />} {playingAll ? "Stop" : "Play all"}

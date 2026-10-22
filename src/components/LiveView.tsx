@@ -7,7 +7,7 @@ import { usePlayer } from "./Player";
 import { Sheet } from "./Sheet";
 import { SourceMark } from "./SourceMark";
 import { IconPlay, IconPause, IconPlus } from "./Icons";
-import { api, initials, timeAgo, sourceName, openOrder } from "@/lib/client";
+import { api, initials, timeAgo, sourceName, openOrder, metaOf } from "@/lib/client";
 import { openable, PLATFORM_LABELS } from "@/lib/resolve/links";
 import type { LivePerson, LiveSession } from "@/lib/live";
 import type { Person } from "@/lib/types";
@@ -261,7 +261,7 @@ export function LiveView() {
         <History
           sessions={data.history}
           meId={me.id}
-          onPlay={(t) => player.canPlay(t) && player.play(t.id, t.previewUrl)}
+          onPlay={(t) => player.canPlay(t) && player.play(t.id, t.previewUrl, metaOf(t))}
           playingId={player.playing ? player.currentId : null}
         />
       )}
@@ -296,7 +296,7 @@ export function LiveView() {
                 </button>
               )}
               {open.track && player.canPlay(open.track) && (
-                <button className="btn btn--sm" onClick={() => player.play(open.track!.id, open.track!.previewUrl)}>
+                <button className="btn btn--sm" onClick={() => player.play(open.track!.id, open.track!.previewUrl, metaOf(open.track!))}>
                   {player.currentId === open.track.id && player.playing ? <IconPause size={14} /> : <IconPlay size={14} />} {player.full === "ready" || player.full === "app" ? "Play" : "Preview"}
                 </button>
               )}
@@ -375,7 +375,7 @@ export function Orb({
     if (mineInCrate) {
       if (track && player.canPlay(track)) {
         if (inMyPlayer) player.toggle();
-        else player.play(track.id, track.previewUrl);
+        else player.play(track.id, track.previewUrl, metaOf(track));
       }
       return;
     }
@@ -387,7 +387,7 @@ export function Orb({
     setStopped(false);
     if (track && player.canPlay(track)) {
       if (inMyPlayer) player.toggle();
-      else player.play(track.id, track.previewUrl);
+      else player.play(track.id, track.previewUrl, metaOf(track));
     }
   }
 

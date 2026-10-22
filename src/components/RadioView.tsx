@@ -6,7 +6,7 @@ import { Orb, useNow, History } from "./LiveView";
 import { Avatar, artFallback } from "./Avatar";
 import { ThemeToggle } from "./ThemeToggle";
 import { IconPlay, IconPause } from "./Icons";
-import { api, timeAgo } from "@/lib/client";
+import { api, timeAgo, metaOf } from "@/lib/client";
 import { openable } from "@/lib/resolve/links";
 import type { Send, Person } from "@/lib/types";
 import type { LivePerson, LiveSession } from "@/lib/live";
@@ -75,7 +75,7 @@ function Station({ code, crewName }: { code: string; crewName: string }) {
 
       <section className="live__grid" aria-label="Playing now">
         {(feed?.people ?? []).map((p) => (
-          <Orb key={p.person.id} p={p} now={now} isMe={false} onOpen={() => p.track?.previewUrl && player.play(p.track.id, p.track.previewUrl)} />
+          <Orb key={p.person.id} p={p} now={now} isMe={false} onOpen={() => p.track?.previewUrl && player.play(p.track.id, p.track.previewUrl, metaOf(p.track))} />
         ))}
       </section>
 
@@ -83,7 +83,7 @@ function Station({ code, crewName }: { code: string; crewName: string }) {
         <History
           sessions={feed.history}
           meId={null}
-          onPlay={(t) => t.previewUrl && player.play(t.id, t.previewUrl)}
+          onPlay={(t) => t.previewUrl && player.play(t.id, t.previewUrl, metaOf(t))}
           playingId={player.playing ? player.currentId : null}
         />
       )}
@@ -99,7 +99,7 @@ function Station({ code, crewName }: { code: string; crewName: string }) {
               <li
                 key={s.id}
                 className={`pl__row${isCur && player.playing ? " is-playing" : ""}`}
-                onClick={() => s.track.previewUrl && player.play(s.track.id, s.track.previewUrl)}
+                onClick={() => s.track.previewUrl && player.play(s.track.id, s.track.previewUrl, metaOf(s.track))}
               >
                 <div className="log__artwrap">
                   {s.track.artworkUrl ? (

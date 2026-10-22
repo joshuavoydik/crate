@@ -643,10 +643,12 @@ textarea:focus-visible,
   box-shadow: none;
 }
 
+/* The play square on artwork is always there, so a song is one tap away on any device. */
 .log__play {
   border-radius: 0;
-  background: rgba(11, 11, 12, 0.6);
+  background: rgba(11, 11, 12, 0.55);
   color: #fff;
+  opacity: 1;
 }
 
 .log__play:hover,
@@ -1552,4 +1554,61 @@ html:has(.nowbar) .shell {
   color: var(--ink);
   text-decoration: underline;
   text-underline-offset: 3px;
+}
+
+/* ---------- the card's own play ---------- */
+
+.tc__head {
+  align-items: center;
+}
+
+.tc__play {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  display: inline-grid;
+  place-items: center;
+  background: var(--ink);
+  color: var(--surface);
+  transition: background 160ms var(--ease);
+}
+
+.tc__play:hover,
+.tc__play.is-on {
+  background: var(--signal);
+  color: #fff;
+}
+
+/* ---------- the strip, for previews too ---------- */
+
+.nowbar__tag {
+  margin-left: 8px;
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--signal);
+}
+
+.nowbar__meter {
+  cursor: pointer;
+  padding: 6px 0;
+  margin: 0 0 -6px;
+  height: auto;
+  box-sizing: content-box;
+  touch-action: none;
+}
+
+.nowbar__meter i {
+  height: 4px;
+  display: block;
+}
+
+.nowbar__meter:focus-visible {
+  outline: 1px solid var(--signal);
+  outline-offset: 4px;
+}
+
+.nowbar.is-preview .nowbar__meter i.is-lit {
+  background: var(--ink-2);
 }
