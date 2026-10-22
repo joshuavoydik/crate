@@ -312,10 +312,10 @@ export function Reel({ embedded = false, onCaughtUp }: { embedded?: boolean; onC
           </div>
           {lately && lately.length > 0 && (
             <div className="lately">
-              <div className="caps">Lately, from your log</div>
+              <div className="caps">Lately, from your history</div>
               <div className="strip">
                 {lately.map((i) => (
-                  <Link key={i.id} className="strip__item" href="/log" title={`${i.track.artist} · ${i.track.title}`} style={{ textAlign: "left" }}>
+                  <Link key={i.id} className="strip__item" href="/history" title={`${i.track.artist} · ${i.track.title}`} style={{ textAlign: "left" }}>
                     <div className="log__artwrap">
                       {i.track.artworkUrl ? (
                         // eslint-disable-next-line @next/next/no-img-element
@@ -344,8 +344,8 @@ export function Reel({ embedded = false, onCaughtUp }: { embedded?: boolean; onC
                   </Link>
                 ))}
               </div>
-              <Link href="/log" className="caps" style={{ display: "inline-block", marginTop: 6 }}>
-                Open the log
+              <Link href="/history" className="caps" style={{ display: "inline-block", marginTop: 6 }}>
+                Open your history
               </Link>
             </div>
           )}

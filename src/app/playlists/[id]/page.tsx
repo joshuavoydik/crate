@@ -12,7 +12,7 @@ export default async function CollectionPage({ params }: { params: Promise<{ id:
   if (!me) redirect("/");
   const { id } = await params;
   return (
-    <Shell initialMe={me} active="reel">
+    <Shell initialMe={me} active="playlists">
       <Suspense fallback={<div className="pl" aria-busy />}>
         <CollectionView id={id} />
       </Suspense>

@@ -301,7 +301,7 @@ export function SendFlow() {
                 </p>
               ) : (
                 <p className="muted" style={{ fontSize: 14.5, margin: "18px 0 0" }}>
-                  Just you in {target?.name ?? "this crew"} for now, so this goes into the playlist and your log. Bring someone in and the next one lands in
+                  Just you in {target?.name ?? "this crew"} for now, so this goes into the log and your history. Bring someone in and the next one lands in
                   front of them.{" "}
                   <button
                     className="linkbtn"

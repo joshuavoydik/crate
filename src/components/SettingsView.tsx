@@ -191,6 +191,18 @@ export function SettingsView({ appUrl }: { appUrl: string }) {
         </div>
       </div>
 
+      <div className="switch">
+        <div>
+          <div>Your history</div>
+          <div className="faint" style={{ fontSize: 13 }}>
+            Everything you played, liked, kept or sent, across every crew. Only you see it.
+          </div>
+        </div>
+        <Link href="/history" className="btn btn--sm">
+          Open
+        </Link>
+      </div>
+
       <div className="section" style={{ borderTop: 0, marginTop: 28, paddingTop: 0 }}>
         <div className="caps" style={{ marginBottom: 6 }}>
           Where you listen
@@ -214,7 +226,7 @@ export function SettingsView({ appUrl }: { appUrl: string }) {
           <MacStatus />
           <p className="muted" style={{ fontSize: 14.5, marginTop: 0 }}>
             Apple Music never tells other apps what you are playing. A Mac knows, though: one download sets up a tiny helper that asks the Music, Spotify and
-            SoundCloud apps what is on, and tells Crate. Live lights up at once, and each play lands in your log and your crews&apos; playlists. It uses only
+            SoundCloud apps what is on, and tells Crate. Live lights up at once, and each play lands in your history and your crews&apos; logs. It uses only
             what ships with macOS.
           </p>
           {token ? (

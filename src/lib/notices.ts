@@ -86,7 +86,7 @@ export async function backNotices(userId: string, dismissed: Set<string>): Promi
         kind: "back" as const,
         title: `${first} ${did} ${r.title}`,
         body: r.reply ? `“${r.reply}”` : `${r.title} · ${r.artist}`,
-        action: { label: "Open your log", href: "/log?filter=back" },
+        action: { label: "Open your history", href: "/history?filter=back" },
         at: r.updated_at,
       };
     })

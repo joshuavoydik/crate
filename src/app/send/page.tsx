@@ -14,7 +14,7 @@ export default async function SendPage({ searchParams }: { searchParams: Promise
   const me = await loadMe();
   if (!me) return <Welcome />;
   return (
-    <Shell initialMe={me} active="reel" incomingUrl={incoming}>
+    <Shell initialMe={me} active="log" incomingUrl={incoming}>
       <Reel />
     </Shell>
   );

@@ -194,7 +194,7 @@ export function LogView({ initialFilter }: { initialFilter: string }) {
   return (
     <div className="page log">
       <div className="page__head">
-        <h1 className="display page__title">Log</h1>
+        <h1 className="display page__title">History</h1>
         <span className="caps num">{items ? `${items.length} entries` : ""}</span>
       </div>
       <p className="muted" style={{ marginTop: -10, marginBottom: 14, fontSize: 15 }}>

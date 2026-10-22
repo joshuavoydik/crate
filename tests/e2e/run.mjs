@@ -129,10 +129,10 @@ async function main() {
     await b.getByText("Nothing new.").waitFor({ timeout: 20000 });
     // Mobile navigation lives in a bottom tab bar.
     await b.locator(".tabbar").waitFor();
+    await b.locator(".tabbar").getByRole("link", { name: "Playlists" }).click();
+    await b.waitForURL(/\/playlists/);
+    await b.getByRole("heading", { name: "Playlists" }).waitFor();
     await b.locator(".tabbar").getByRole("link", { name: "Log" }).click();
-    await b.waitForURL(/\/log/);
-    await b.getByRole("heading", { name: "Log" }).waitFor();
-    await b.locator(".tabbar").getByRole("link", { name: "Playlist" }).click();
     await b.waitForURL(`${BASE}/`);
     log("Ariel joined from the invite link; the phone tab bar navigates");
 
@@ -243,7 +243,7 @@ async function main() {
     assert.equal(crateA.sends[0].reaction.status, "saved");
 
     await a.goto(`${BASE}/crate`);
-    await a.waitForURL(/\/log\?filter=kept/);
+    await a.waitForURL(/\/history\?filter=kept/);
     await a.getByText("Never Gonna Give You Up").first().waitFor();
     await a.getByText(/kept · from Ariel/).first().waitFor();
     await settled(a);
@@ -277,7 +277,7 @@ async function main() {
     await b.locator(".pl__list").waitFor({ timeout: 10000 });
     log("Ariel kept Joshua's send with a swipe");
 
-    await b.goto(`${BASE}/log?filter=kept`);
+    await b.goto(`${BASE}/history?filter=kept`);
     await b.getByText("Flickermood").first().waitFor();
     await b.getByText(/kept · from Joshua/).first().waitFor();
     await b.locator(".log__row").first().click();
@@ -535,7 +535,7 @@ async function main() {
     await settled(a);
     await a.screenshot({ path: `${OUT}/16-reel-autoshare-desktop.png` });
     log("Ariel's Spotify like arrived in Joshua's reel as a send");
-    await b.goto(`${BASE}/log`);
+    await b.goto(`${BASE}/history`);
     // One listen, one row: the like, with the crew it was carried into as its detail.
     await b.getByText(/liked · Spotify → Joshua & Ariel/).first().waitFor();
     assert.equal(await b.getByText(/liked on Spotify → Joshua & Ariel/).count(), 0, "the carried send is not a second row");
@@ -561,7 +561,7 @@ async function main() {
     assert.equal(playsJson.shared, 1, "a played track lands in the playlist once, not once per play");
     const playSend = (await (await desk.request.get(`${BASE}/api/sends?crew=${crew.id}&view=all`)).json()).sends.find((x) => x.track.title === "Near Dark");
     assert.equal(playSend?.via, "played:apple");
-    await a.goto(`${BASE}/log`);
+    await a.goto(`${BASE}/history`);
     await a.getByText(/played · Apple Music → Joshua & Ariel/).first().waitFor();
     assert.equal(await a.getByText(/played on Apple Music → Joshua & Ariel/).count(), 0, "one row per listen");
     log("Joshua's Apple Music play streamed into the crew playlist on its own");
@@ -583,7 +583,7 @@ async function main() {
     assert.equal(afterEcho[0].echoes[0].person.name, "Ariel");
     assert.equal(afterEcho[0].echoes[0].via, "spotify");
     await a.goto(BASE);
-    await a.getByRole("button", { name: "Show the playlist" }).click();
+    await a.getByRole("button", { name: "Show the log" }).click();
     await a.getByRole("tab", { name: /Ariel/ }).click();
     await a.locator(".pl__row", { hasText: "Near Dark" }).locator(".faces.is-many").waitFor();
     await settled(a);
@@ -658,9 +658,9 @@ async function main() {
     await a.goto(BASE);
     await a.getByRole("button", { name: "Pocket mode" }).click();
     await a.getByRole("dialog", { name: "Pocket player" }).waitFor();
-    await a.getByRole("option", { name: /^Playlist/ }).waitFor();
+    await a.getByRole("option", { name: /^Log/ }).waitFor();
     await a.keyboard.press("Enter");
-    await a.locator(".lcd__title", { hasText: "Playlist" }).waitFor();
+    await a.locator(".lcd__title", { hasText: "Log" }).waitFor();
     await a.locator(".lcd__row:not(.is-dim)").first().waitFor();
     await a.keyboard.press("ArrowDown");
     await a.keyboard.press("Enter");
@@ -669,7 +669,7 @@ async function main() {
     await settled(a);
     await a.screenshot({ path: `${OUT}/21-pocket-desktop.png` });
     await a.keyboard.press("Backspace");
-    await a.locator(".lcd__title", { hasText: "Playlist" }).waitFor();
+    await a.locator(".lcd__title", { hasText: "Log" }).waitFor();
     await a.getByRole("button", { name: "Back", exact: true }).click();
     await a.getByRole("option", { name: /^Live/ }).waitFor();
     await a.keyboard.press("Escape");
@@ -710,7 +710,7 @@ async function main() {
     // Keep it with the keyboard; it must show in the Log as kept.
     await a.keyboard.press("s");
     await a.getByText("Kept").first().waitFor();
-    await a.goto(`${BASE}/log?filter=kept`);
+    await a.goto(`${BASE}/history?filter=kept`);
     await a.getByText(/kept · from \+14155550100/).first().waitFor();
     log("iMessage link from an unknown number landed in the reel and could be kept");
 
@@ -783,7 +783,7 @@ async function main() {
     log("a texted link from Ariel's number became her send in the crew; the Mac helper lights up Live and logs the play once");
 
     // Wrong version or artwork: pick another catalog version from the Log sheet.
-    await a.goto(`${BASE}/log?filter=kept`);
+    await a.goto(`${BASE}/history?filter=kept`);
     await a.locator(".log__row").filter({ hasText: "Never Gonna Give You Up" }).first().click();
     await a.getByRole("dialog").waitFor();
     await a.getByRole("button", { name: "Wrong version or artwork?" }).click();
@@ -798,7 +798,7 @@ async function main() {
     assert.equal(artRes.status(), 200);
 
     // Remove with confirmation: Ariel removes one of her own sends from her Log.
-    await b.goto(`${BASE}/log?filter=sent`);
+    await b.goto(`${BASE}/history?filter=sent`);
     await b.locator(".log__row").first().waitFor();
     const sentRows = await b.locator(".log__row").count();
     assert.ok(sentRows >= 3, `expected sent rows, got ${sentRows}`);
@@ -828,7 +828,7 @@ async function main() {
     // Ariel kept and replied to Joshua's sends above, and that came back to him as notices.
     const backNotices = (await (await desk.request.get(`${BASE}/api/notices`)).json()).notices;
     assert.ok(backNotices.some((n) => n.kind === "back" && /kept|wrote back|played out/.test(n.title)), "what came back on a send shows under the bell");
-    assert.ok(backNotices.every((n) => n.kind !== "back" || n.action?.href === "/log?filter=back"), "and points at the Log's Back to you");
+    assert.ok(backNotices.every((n) => n.kind !== "back" || n.action?.href === "/history?filter=back"), "and points at History's Back to you");
     for (const n of backNotices) await desk.request.post(`${BASE}/api/notices/dismiss`, { data: { id: n.id } });
     await a.goto(`${BASE}/live`);
     await a.getByRole("button", { name: "Notices" }).click();
@@ -875,7 +875,7 @@ async function main() {
     await a.goto(BASE);
     await a.locator(".pl__by").waitFor({ timeout: 20000 });
     await a.locator(".pl__by", { hasText: "all time" }).waitFor({ timeout: 20000 });
-    const catchUp = a.getByRole("button", { name: /Show the playlist/ });
+    const catchUp = a.getByRole("button", { name: /Show the log/ });
     if (await catchUp.count()) await catchUp.click();
     await a.getByText("Earlier", { exact: true }).waitFor({ timeout: 20000 });
     assert.equal(await a.locator(".day").count(), 2);
@@ -921,8 +921,8 @@ async function main() {
     // Light mode + desktop log for the record.
     const light = await browser.newContext({ viewport: { width: 1440, height: 900 }, colorScheme: "light", storageState: await desk.storageState() });
     const l = await light.newPage();
-    await l.goto(`${BASE}/log`);
-    await l.getByText("Log", { exact: true }).first().waitFor();
+    await l.goto(`${BASE}/history`);
+    await l.getByText("History", { exact: true }).first().waitFor();
     await l.screenshot({ path: `${OUT}/14-log-light-desktop.png` });
     await light.close();
 

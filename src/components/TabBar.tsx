@@ -24,7 +24,7 @@ const IconLog = () => (
 );
 
 /** Mobile navigation: thumbs reach the bottom, not the top. */
-export function TabBar({ active }: { active: "reel" | "live" | "log" | "settings" | "crew" }) {
+export function TabBar({ active }: { active: "log" | "live" | "playlists" | "history" | "settings" | "crew" }) {
   const { openSend, liveCount } = useStore();
   return (
     <nav className="tabbar" aria-label="Sections">
@@ -33,13 +33,13 @@ export function TabBar({ active }: { active: "reel" | "live" | "log" | "settings
         {liveCount > 0 && <i className="beacon beacon--tab" aria-label={`${liveCount} playing`} />}
         Live
       </Link>
-      <Link href="/" className={`tab${active === "reel" ? " is-active" : ""}`}>
-        <IconReel />
-        Playlist
-      </Link>
-      <Link href="/log" className={`tab${active === "log" ? " is-active" : ""}`} title="Your log, private to you" aria-label="Log, private to you">
+      <Link href="/" className={`tab${active === "log" ? " is-active" : ""}`}>
         <IconLog />
         Log
+      </Link>
+      <Link href="/playlists" className={`tab${active === "playlists" ? " is-active" : ""}`}>
+        <IconReel />
+        Playlists
       </Link>
       <button className="tab tab--send" onClick={() => openSend()} aria-label="Send a track">
         <span className="tab__icon">

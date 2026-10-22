@@ -9,7 +9,6 @@ import { LiveBand } from "./LiveView";
 import { Avatar } from "./Avatar";
 import { IconPlay, IconPause } from "./Icons";
 import { SendRows, DayCards, useTrackSheet, facesOf, tz } from "./Days";
-import { PlaylistShelf } from "./Collections";
 import { api } from "@/lib/client";
 import type { Playlist, Send } from "@/lib/types";
 
@@ -136,7 +135,7 @@ export function PlaylistView() {
         <div className="pl__actions">
           {unseen > 0 && (
             <button className={`btn btn--sm${showStage ? "" : " btn--accent"}`} onClick={() => setMode(showStage ? "list" : "stage")}>
-              {showStage ? "Show the playlist" : `Catch up · ${unseen} new`}
+              {showStage ? "Show the log" : `Catch up · ${unseen} new`}
             </button>
           )}
           {todayCount > 0 && !showStage && (
@@ -170,7 +169,6 @@ export function PlaylistView() {
         />
       ) : (
         <>
-          <PlaylistShelf crewId={crew.id} />
           {together && todayCount > 0 && (
             <div className="people" role="tablist" aria-label="Whose tracks">
               <button role="tab" aria-selected={who === null} className={`people__chip${who === null ? " is-on" : ""}`} onClick={() => setWho(null)}>

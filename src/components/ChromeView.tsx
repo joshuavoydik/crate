@@ -72,8 +72,8 @@ export function ChromeView({ appUrl }: { appUrl: string }) {
         <span className="caps">Crate in Chrome</span>
         <h1 className="display page__title">What plays in your browser, on Live.</h1>
         <p className="muted" style={{ margin: "10px 0 0", fontSize: 16, maxWidth: 620 }}>
-          A small extension tells your Crate what is playing in Chrome, as it plays. Live lights up, and each play lands in your log and your crews&rsquo;
-          playlists. Nothing to switch on, nothing to post. YouTube counts only what YouTube files under music, so a podcast never becomes a play.
+          A small extension tells your Crate what is playing in Chrome, as it plays. Live lights up, and each play lands in your history and your crews&rsquo;
+          logs. Nothing to switch on, nothing to post. YouTube counts only what YouTube files under music, so a podcast never becomes a play.
         </p>
         <p className="muted" style={{ margin: "10px 0 0", fontSize: 14.5, maxWidth: 620 }}>
           It needs Chrome on a computer; phones do not take extensions. From a phone,{" "}
@@ -206,7 +206,7 @@ export function ChromeCard() {
         <h2 className="display chromecard__title">{alive ? "Chrome is on Live." : "Put your browser on Live."}</h2>
         <p className="muted chromecard__lede">
           {alive
-            ? "Whatever plays in Chrome shows up on Live as it plays and lands in your Log. Nothing more to do."
+            ? "Whatever plays in Chrome shows up on Live as it plays and lands in the log. Nothing more to do."
             : "A small extension tells Crate what plays in Chrome: SoundCloud, YouTube, YouTube Music and most music sites. Two minutes, once, and Live follows you."}
         </p>
       </div>

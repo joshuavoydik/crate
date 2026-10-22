@@ -299,7 +299,7 @@ export function CrewView({ appUrl }: { appUrl: string }) {
             setConfirm({
               title: `Leave ${crew.name}?`,
               body: others.length
-                ? "The others keep the crew and everything in it. Your kept tracks stay in your log."
+                ? "The others keep the crew and everything in it. Your kept tracks stay in your history."
                 : "You are the only member, so the crew and its playlist are removed.",
               label: "Leave",
               run: leave,

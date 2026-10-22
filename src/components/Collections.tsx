@@ -52,7 +52,7 @@ function NewPlaylistForm({ busy, onSubmit, onCancel, autoFocus }: { busy: boolea
  * The crew's hand-made playlists on the main page: a card each, and a way to start one. The
  * playlist (today's, which fills itself) is the page; these are the lists people put together.
  */
-export function PlaylistShelf({ crewId }: { crewId: string }) {
+export function PlaylistShelf({ crewId, page }: { crewId: string; page?: boolean }) {
   const { collectionsVersion, bumpCollections, toast } = useStore();
   const [list, setList] = useState<Collection[] | null>(null);
   /** Playlists other crews let this person into by their link. */
@@ -92,7 +92,7 @@ export function PlaylistShelf({ crewId }: { crewId: string }) {
   return (
     <section className="shelf" aria-label="Playlists">
       <div className="earlier__head">
-        <span className="caps">Playlists</span>
+        <span className="caps">{page ? (list.length === 1 ? "1 playlist" : `${list.length} playlists`) : "Playlists"}</span>
         {!creating && (
           <button className="linkbtn earlier__all" onClick={() => setCreating(true)} type="button">
             New playlist
@@ -100,7 +100,7 @@ export function PlaylistShelf({ crewId }: { crewId: string }) {
         )}
       </div>
       <p className="faint shelf__empty" style={{ margin: "0 0 10px" }}>
-        This playlist fills itself from what everyone plays. These are the ones you put together by hand
+        The log fills itself from what everyone plays. These are the ones you put together by hand
         {list.length === 0 ? ": open any track and tap “Add to a playlist”." : "."}
       </p>
       {creating && <NewPlaylistForm busy={busy} onSubmit={create} onCancel={() => setCreating(false)} autoFocus />}
@@ -138,6 +138,27 @@ export function PlaylistShelf({ crewId }: { crewId: string }) {
 }
 
 /** The sheet behind "Add to a playlist": the crew's playlists with a check on the ones that have the track, and a way to start a new one with it. */
+/** The Playlists page: the crew's hand-made lists and the ones shared with this person. */
+export function PlaylistsView() {
+  const { crew } = useStore();
+  if (!crew) {
+    return (
+      <div className="empty">
+        <h2 className="display empty__title">No crew yet.</h2>
+        <p className="muted">Start one from the top left and share the invite link.</p>
+      </div>
+    );
+  }
+  return (
+    <div className="page">
+      <div className="page__head">
+        <h1 className="display page__title">Playlists</h1>
+      </div>
+      <PlaylistShelf crewId={crew.id} page />
+    </div>
+  );
+}
+
 export function AddToPlaylistSheet() {
   const { crew, addToTrack, closeAddTo, bumpCollections, toast } = useStore();
   const [list, setList] = useState<Collection[] | null>(null);

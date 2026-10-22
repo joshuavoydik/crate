@@ -9,7 +9,7 @@ export default async function Home() {
   const me = await loadMe();
   if (!me) return <Welcome />;
   return (
-    <Shell initialMe={me} active="reel">
+    <Shell initialMe={me} active="log">
       <PlaylistView />
     </Shell>
   );

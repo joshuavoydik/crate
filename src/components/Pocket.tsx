@@ -37,9 +37,9 @@ type Row = {
 
 const SCREEN_TITLES: Record<Kind, string> = {
   menu: "Crate",
-  reel: "Playlist",
+  reel: "Log",
   live: "Live",
-  log: "Log",
+  log: "History",
   now: "Now Playing",
   settings: "Settings",
 };
@@ -192,7 +192,7 @@ export function Pocket() {
         return [
           {
             id: "reel",
-            label: "Playlist",
+            label: "Log",
             right: sends.length ? String(sends.length) : undefined,
             run: () => push("reel"),
           },
@@ -202,7 +202,7 @@ export function Pocket() {
             right: liveCount ? `${liveCount} on` : undefined,
             run: () => push("live"),
           },
-          { id: "log", label: "Log", run: () => push("log") },
+          { id: "log", label: "History", run: () => push("log") },
           ...(now
             ? [
                 {
@@ -266,7 +266,7 @@ export function Pocket() {
                 from: null,
               },
             }))
-          : [{ id: "none", label: "Empty log", dim: true }];
+          : [{ id: "none", label: "Nothing yet", dim: true }];
       case "settings":
         return [
           {

@@ -210,7 +210,7 @@ export function Connections({ showUnavailable = true, onMac }: { showUnavailable
       <Confirm
         open={!!confirm}
         title={confirm ? `Disconnect ${sourceName(confirm)}?` : ""}
-        body="What it already added to your log stays. New likes and plays stop coming in until you connect again."
+        body="What it already added to your history stays. New likes and plays stop coming in until you connect again."
         confirmLabel="Disconnect"
         busy={!!confirm && busy === confirm}
         onClose={() => setConfirm(null)}

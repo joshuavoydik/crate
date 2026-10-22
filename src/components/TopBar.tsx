@@ -9,7 +9,7 @@ import { api } from "@/lib/client";
 import { Avatar } from "./Avatar";
 import type { Crew, Me } from "@/lib/types";
 
-export function TopBar({ active }: { active: "reel" | "live" | "log" | "settings" | "crew" }) {
+export function TopBar({ active }: { active: "log" | "live" | "playlists" | "history" | "settings" | "crew" }) {
   const { me, crew, setCrewId, openSend, openInvite, refreshMe, toast, setPocket, rail, setRail, liveCount } = useStore();
   const [open, setOpen] = useState(false);
   const [bell, setBell] = useState(false);
@@ -184,11 +184,11 @@ export function TopBar({ active }: { active: "reel" | "live" | "log" | "settings
           Live
           {liveCount > 0 && <i className="beacon beacon--nav" aria-label={`${liveCount} playing`} />}
         </Link>
-        <Link href="/" className={`wordmark${active === "reel" ? " is-active" : ""}`}>
-          Playlist
-        </Link>
-        <Link href="/log" className={`wordmark${active === "log" ? " is-active" : ""}`}>
+        <Link href="/" className={`wordmark${active === "log" ? " is-active" : ""}`}>
           Log
+        </Link>
+        <Link href="/playlists" className={`wordmark${active === "playlists" ? " is-active" : ""}`}>
+          Playlists
         </Link>
       </nav>
 

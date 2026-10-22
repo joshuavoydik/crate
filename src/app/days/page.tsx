@@ -9,7 +9,7 @@ export default async function DaysPage() {
   const me = await loadMe();
   if (!me) redirect("/");
   return (
-    <Shell initialMe={me} active="reel">
+    <Shell initialMe={me} active="log">
       <DaysView />
     </Shell>
   );

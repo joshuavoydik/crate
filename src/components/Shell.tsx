@@ -16,7 +16,7 @@ import { useLive } from "./LiveView";
 import { extractUrl } from "@/lib/resolve/parse";
 import type { Me } from "@/lib/types";
 
-type Active = "reel" | "live" | "log" | "settings" | "crew";
+type Active = "log" | "live" | "playlists" | "history" | "settings" | "crew";
 
 export function Shell({ initialMe, active, incomingUrl, children }: { initialMe: Me; active: Active; incomingUrl?: string | null; children: React.ReactNode }) {
   return (

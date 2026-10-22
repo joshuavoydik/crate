@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 
-/** Crate folded into Log; old links keep working. */
+/** Crate folded into your history; old links keep working. */
 export default function CratePage() {
-  redirect("/log?filter=kept");
+  redirect("/history?filter=kept");
 }

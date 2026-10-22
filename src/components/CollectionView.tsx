@@ -269,7 +269,7 @@ export function CollectionView({ id }: { id: string }) {
       </header>
 
       {tracks.length === 0 ? (
-        <p className="muted pl__quiet">Nothing in here yet. Open any track in the playlist, the days or your log and tap &ldquo;Add to a playlist&rdquo;.</p>
+        <p className="muted pl__quiet">Nothing in here yet. Open any track in the log, the days or your history and tap &ldquo;Add to a playlist&rdquo;.</p>
       ) : (
         <ul className="pl__list">
           {tracks.map((x) => {
@@ -341,7 +341,7 @@ export function CollectionView({ id }: { id: string }) {
       <Confirm
         open={confirm}
         title={`Delete "${collection.name}"?`}
-        body="The tracks stay in the playlist, its days and everyone's log; only this list goes."
+        body="The tracks stay in the log, its days and everyone's history; only this list goes."
         confirmLabel="Delete"
         onClose={() => setConfirm(false)}
         onConfirm={destroy}
