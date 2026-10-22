@@ -19,7 +19,6 @@
   --live: var(--signal);
   --glass: rgba(255, 255, 255, 0.03);
   --glass-2: rgba(255, 255, 255, 0.06);
-  --sleeve: #121214;
   --r-card: 0;
   --r-sheet: 0;
   --mono: var(--font-mono), "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
@@ -43,7 +42,6 @@
   --line-2: #c4c2bb;
   --glass: rgba(0, 0, 0, 0.03);
   --glass-2: rgba(0, 0, 0, 0.06);
-  --sleeve: #e9e7e1;
   color-scheme: light;
 }
 
@@ -1031,7 +1029,7 @@ textarea:focus-visible,
   font-size: 34px;
 }
 
-/* ---------- live: a sleeve around each record ---------- */
+/* ---------- live: the record on its own ---------- */
 
 .live__status {
   color: var(--ink-3);
@@ -1076,17 +1074,12 @@ textarea:focus-visible,
   background: transparent;
 }
 
-/* The sleeve is a shade off the ground on both themes: card stock, never a white box. */
+/* No sleeve behind the record: nothing but the disc, and four corner marks when it is playing. */
 .orb__stage {
   border-radius: 0;
-  border: 1px solid var(--line);
+  border: 0;
   padding: 10%;
-  background: var(--sleeve);
-  transition: border-color 300ms var(--ease);
-}
-
-.orb.is-live .orb__stage {
-  border-color: var(--line-2);
+  background: transparent;
 }
 
 .orb__stage:active {
