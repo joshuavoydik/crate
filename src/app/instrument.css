@@ -1831,3 +1831,9 @@ html:has(.nowbar) .shell {
   width: 44px;
   height: 44px;
 }
+
+/* Live with nothing yet today: one quiet line, and a pointer at where the days live. */
+.live__quiet {
+  margin: 28px 0 0;
+  font-size: 14px;
+}

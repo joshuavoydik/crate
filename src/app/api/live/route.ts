@@ -13,7 +13,8 @@ export async function GET(req: Request) {
   const q = new URL(req.url).searchParams;
   if (q.get("tune") === "1") await tuneIn(crewId, auth.user.id);
   const people = await liveFor(crewId);
-  const history = q.get("history") === "1" ? await liveHistoryFor(crewId) : [];
+  // Live carries only the viewer's today; earlier days belong to the log.
+  const history = q.get("history") === "1" ? await liveHistoryFor(crewId, 80, { tz: q.get("tz") || "UTC" }) : [];
   const tuned = await tunedInDetail(crewId);
   return json({ people, history, tunedIn: tuned.count, tuned, now: Date.now() });
 }

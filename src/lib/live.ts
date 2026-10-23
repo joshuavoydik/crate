@@ -5,6 +5,7 @@ import { lastfmNowPlaying } from "./sources/lastfm";
 import { trackForMeta, ingestItems, type SourceRow } from "./sync";
 import type { TrackMeta } from "./resolve";
 import { getTrack, membersOf, avatarUrlFor } from "./queries";
+import { localDate } from "./days";
 import type { Person, Track } from "./types";
 
 /**
@@ -418,11 +419,16 @@ export type LiveSession = {
   endedAt: number;
 };
 
-/** Past sessions for everyone in the crew, newest first. */
-export async function liveHistoryFor(crewId: string, limit = 80): Promise<LiveSession[]> {
+/**
+ * Past sessions for everyone in the crew, newest first. With a zone, only the viewer's today: Live is
+ * the day as it happens, and the log is where the days pile up.
+ */
+export async function liveHistoryFor(crewId: string, limit = 80, opts: { tz?: string } = {}): Promise<LiveSession[]> {
   const members = await membersOf(crewId);
   if (!members.length) return [];
   const ids = members.map((m) => m.id);
+  // A local day is at most 36 hours away from now in any zone; the rest is filtered on the viewer's clock.
+  const since = opts.tz ? Date.now() - 36 * 3600 * 1000 : 0;
   const rows = await all<{
     id: string;
     user_id: string;
@@ -434,10 +440,12 @@ export async function liveHistoryFor(crewId: string, limit = 80): Promise<LiveSe
     url: string | null;
     started_at: number;
     ended_at: number;
-  }>(`SELECT * FROM live_history WHERE user_id IN (${ids.map(() => "?").join(",")}) ORDER BY started_at DESC LIMIT ?`, [...ids, limit]);
+  }>(`SELECT * FROM live_history WHERE user_id IN (${ids.map(() => "?").join(",")}) AND started_at >= ? ORDER BY started_at DESC LIMIT ?`, [...ids, since, limit]);
+  const today = opts.tz ? localDate(Date.now(), opts.tz) : null;
   const out: LiveSession[] = [];
   const cache = new Map<string, Track | null>();
   for (const r of rows) {
+    if (today && localDate(r.started_at, opts.tz!) !== today) continue;
     const person = members.find((m) => m.id === r.user_id)!;
     let track: Track | null = null;
     if (r.track_id) {

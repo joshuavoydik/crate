@@ -168,7 +168,8 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     let stop = false;
     setFull("loading");
     (async () => {
-      const t = await api<{ ok: boolean; reason?: string; token?: string }>("/api/spotify/token").catch(() => ({ ok: false, reason: "none" }));
+      type Minted = { ok: boolean; reason?: string; token?: string };
+      const t: Minted = await api<Minted>("/api/spotify/token").catch(() => ({ ok: false, reason: "none" }));
       if (stop) return;
       if (!t.ok) {
         setFull(t.reason === "scope" ? "reconnect" : "off");
@@ -183,12 +184,19 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
         setFull("app");
         return;
       }
+      // The token just checked is the one the SDK asks for first; it is good for an hour, so one trip covers both.
+      let minted: { token: string; at: number } | null = t.token ? { token: t.token, at: Date.now() } : null;
       const p = new window.Spotify.Player({
         name: "Crate",
         volume: 1,
         getOAuthToken: (cb) => {
+          if (minted && Date.now() - minted.at < 40 * 60 * 1000) return cb(minted.token);
           api<{ ok: boolean; token?: string }>("/api/spotify/token")
-            .then((r) => r.ok && r.token && cb(r.token))
+            .then((r) => {
+              if (!r.ok || !r.token) return;
+              minted = { token: r.token, at: Date.now() };
+              cb(r.token);
+            })
             .catch(() => undefined);
         },
       });

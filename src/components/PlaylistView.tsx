@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useStore } from "./Store";
 import { usePlayer } from "./Player";
@@ -81,7 +81,11 @@ export function PlaylistView({ welcome = false }: { welcome?: boolean }) {
     setWho(null);
     load();
   }, [crewId, load]);
+  // A send from this page refreshes the list; the mount is already covered above, so the first value is skipped.
+  const seenVersion = useRef(sendsVersion);
   useEffect(() => {
+    if (seenVersion.current === sendsVersion) return;
+    seenVersion.current = sendsVersion;
     load();
   }, [sendsVersion, load]);
   useEffect(() => {

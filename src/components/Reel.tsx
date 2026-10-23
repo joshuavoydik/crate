@@ -98,7 +98,11 @@ export function Reel({ embedded = false, onCaughtUp }: { embedded?: boolean; onC
     load();
   }, [crewId, load]);
 
+  // A send from this tab refreshes the reel; the mount is covered above, so the first value is skipped.
+  const seenVersion = useRef(sendsVersion);
   useEffect(() => {
+    if (seenVersion.current === sendsVersion) return;
+    seenVersion.current = sendsVersion;
     load();
   }, [sendsVersion, load]);
 

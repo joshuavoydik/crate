@@ -12,6 +12,7 @@ import { openable, PLATFORM_LABELS } from "@/lib/resolve/links";
 import type { LivePerson, LiveSession } from "@/lib/live";
 import type { Person } from "@/lib/types";
 import { Avatar, artFallback } from "./Avatar";
+import { tz } from "./Days";
 
 type Tuned = { count: number; people: Person[]; anonymous: number };
 type LiveResponse = { people: LivePerson[]; history: LiveSession[]; tunedIn: number; tuned?: Tuned; now: number };
@@ -39,7 +40,7 @@ export function useLive(crewId: string | null, everyMs: number, opts: { tune?: b
   const load = useCallback(async () => {
     if (!crewId) return;
     try {
-      const r = await api<LiveResponse>(`/api/live?crew=${encodeURIComponent(crewId)}&tune=${tune ? 1 : 0}&history=${history ? 1 : 0}`);
+      const r = await api<LiveResponse>(`/api/live?crew=${encodeURIComponent(crewId)}&tune=${tune ? 1 : 0}&history=${history ? 1 : 0}&tz=${encodeURIComponent(tz())}`);
       setSkew(Date.now() - r.now);
       setData(r);
       setStale(false);
@@ -263,7 +264,11 @@ export function LiveView() {
           meId={me.id}
           onPlay={(t) => player.canPlay(t) && player.play(t.id, t.previewUrl, metaOf(t))}
           playingId={player.playing ? player.currentId : null}
+          title="Today"
         />
+      )}
+      {data && data.history.length === 0 && !data.people.some((p) => p.live) && (
+        <p className="muted live__quiet">Nothing played yet today. Earlier days are in the log.</p>
       )}
 
       <Sheet open={!!open} onClose={() => setOpen(null)} label="Now playing">
@@ -491,17 +496,19 @@ function dayLabel(ts: number, now = Date.now()): string {
   return d.toLocaleDateString([], { weekday: "short", month: "short", day: "numeric" });
 }
 
-/** Earlier sessions, newest first, grouped by day: little records with when and who. */
+/** Sessions, newest first, grouped by day: little records with when and who. One day needs no labels. */
 export function History({
   sessions,
   meId,
   onPlay,
   playingId,
+  title = "Earlier",
 }: {
   sessions: LiveSession[];
   meId: string | null;
   onPlay: (t: NonNullable<LiveSession["track"]>) => void;
   playingId: string | null;
+  title?: string;
 }) {
   const { openAddTo } = useStore();
   const player = usePlayer();
@@ -513,11 +520,11 @@ export function History({
     else groups.push({ label, items: [s] });
   }
   return (
-    <section className="lh" aria-label="Earlier">
-      <div className="caps lh__head">Earlier</div>
+    <section className="lh" aria-label={title}>
+      <div className="caps lh__head">{title}</div>
       {groups.map((g) => (
         <div key={g.label} className="lh__day">
-          <div className="caps lh__daylabel">{g.label}</div>
+          {groups.length > 1 && <div className="caps lh__daylabel">{g.label}</div>}
           <ul className="lh__list">
             {g.items.map((s) => {
               const first = s.person.id === meId ? "You" : s.person.name.split(" ")[0];
