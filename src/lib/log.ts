@@ -57,6 +57,7 @@ function receivedAsSend(r: LogRow): Send {
     activeAt: r.at,
     replies: [],
     commentCount: 0,
+    comments: [],
   };
 }
 

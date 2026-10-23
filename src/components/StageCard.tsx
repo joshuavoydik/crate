@@ -5,6 +5,7 @@ import { usePlayer } from "./Player";
 import { IconPlay } from "./Icons";
 import { artFallback } from "./Avatar";
 import { timeAgo, viaLabel, metaOf } from "@/lib/client";
+import { RowThread } from "./RowThread";
 import type { Send } from "@/lib/types";
 
 export type Exit = "up" | "right" | "down" | null;
@@ -20,12 +21,15 @@ export function StageCard({
   exit,
   onSave,
   onOpen,
+  onThread,
   showMeta,
 }: {
   send: Send;
   exit: Exit;
   onSave: () => void;
   onOpen: () => void;
+  /** Where "N more" on the thread goes; the card, unless the caller has somewhere closer. */
+  onThread?: () => void;
   showMeta: boolean;
 }) {
   const player = usePlayer();
@@ -174,6 +178,11 @@ export function StageCard({
             {t.bpm && <span>{Math.round(t.bpm)} BPM</span>}
             {t.camelot && <span>{t.camelot}</span>}
             {t.energy && <span>Energy {t.energy}</span>}
+          </div>
+        )}
+        {send.crewId && !send.id.startsWith("log:") && (
+          <div className="stagecard__thread">
+            <RowThread key={send.id} send={send} onOpen={onThread ?? onOpen} />
           </div>
         )}
       </div>

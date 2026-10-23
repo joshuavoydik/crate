@@ -6,6 +6,7 @@ import { useStore } from "./Store";
 import { usePlayer } from "./Player";
 import { Sheet } from "./Sheet";
 import { TrackCard } from "./TrackCard";
+import { RowThread } from "./RowThread";
 import { Avatar, artFallback } from "./Avatar";
 import { SourceMark, platformOfVia } from "./SourceMark";
 import { IconPlay, IconPause, IconKeep, IconDeck, IconChevron, IconPlus } from "./Icons";
@@ -169,6 +170,9 @@ export function SendRows({
               <button type="button" className="rowadd" aria-label="Add to a playlist" title="Add to a playlist" onClick={() => openAddTo(s.track)}>
                 <IconPlus size={14} />
               </button>
+            </div>
+            <div className="pl__thread">
+              <RowThread key={s.id} send={s} onOpen={() => onOpen(s)} compact />
             </div>
           </li>
         );

@@ -5,6 +5,7 @@ import { useStore } from "./Store";
 import { Avatar } from "./Avatar";
 import { api, timeAgo } from "@/lib/client";
 import type { Comment } from "@/lib/types";
+import { THREAD_EVENT, type ThreadEvent } from "./RowThread";
 
 /** The thread under a song: everyone in the crew reads it, anyone can add to it, you can take back your own. */
 export function Comments({ sendId, initialCount = 0, onCount }: { sendId: string; initialCount?: number; onCount?: (n: number) => void }) {
@@ -22,6 +23,17 @@ export function Comments({ sendId, initialCount = 0, onCount }: { sendId: string
     return () => {
       stop = true;
     };
+  }, [sendId]);
+
+  // A comment posted on the row or the stage lands here too, without a refetch.
+  useEffect(() => {
+    function onPosted(e: Event) {
+      const { sendId: id, comment } = (e as CustomEvent<ThreadEvent>).detail;
+      if (id !== sendId) return;
+      setList((l) => (l && !l.some((c) => c.id === comment.id) ? [...l, comment] : l));
+    }
+    window.addEventListener(THREAD_EVENT, onPosted);
+    return () => window.removeEventListener(THREAD_EVENT, onPosted);
   }, [sendId]);
 
   async function post() {

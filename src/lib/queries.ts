@@ -2,7 +2,7 @@ import { all, one, run, now, id, inviteCode } from "./db";
 import { fingerprint } from "./resolve/parse";
 import type { ResolvedTrack } from "./resolve";
 import type { Links } from "./resolve/links";
-import type { Track, Send, Crew, Person, ReactionStatus, LogItem, AutoShare } from "./types";
+import type { Track, Send, Crew, Person, ReactionStatus, LogItem, AutoShare, Comment } from "./types";
 
 export type TrackRow = {
   id: string;
@@ -291,6 +291,7 @@ export async function repliesOf(sendId: string, viewerId: string): Promise<Send[
 
 async function withHistory(rows: SendRow[], crewId: string, viewerId: string): Promise<Send[]> {
   const out: Send[] = [];
+  const threads = await latestCommentsOn(rows.map((r) => r.send_id));
   for (const r of rows) {
     const hist = await all<{ id: string; name: string; created_at: number }>(
       `SELECT s.id, u.name, s.created_at FROM sends s JOIN users u ON u.id = s.from_user_id
@@ -303,6 +304,7 @@ async function withHistory(rows: SendRow[], crewId: string, viewerId: string): P
         hist.map((h) => ({ sendId: h.id, fromName: h.name, createdAt: h.created_at })),
         await echoesOf(r.send_id),
         await repliesOf(r.send_id, viewerId),
+        threads.get(r.send_id) ?? [],
       ),
     );
   }
@@ -321,7 +323,7 @@ export async function echo(sendId: string, userId: string, via: string): Promise
   );
 }
 
-export function sendFromRow(r: SendRow, history: Send["history"] = [], echoes: Send["echoes"] = [], replies: Send["replies"] = []): Send {
+export function sendFromRow(r: SendRow, history: Send["history"] = [], echoes: Send["echoes"] = [], replies: Send["replies"] = [], comments: Comment[] = []): Send {
   return {
     id: r.send_id,
     crewId: r.crew_id,
@@ -338,7 +340,27 @@ export function sendFromRow(r: SendRow, history: Send["history"] = [], echoes: S
     activeAt: Math.max(r.send_created_at, ...echoes.map((e) => e.at)),
     replies,
     commentCount: Number(r.comment_count ?? 0),
+    comments,
   };
+}
+
+/** The newest three comments on each of these sends, oldest first within a send. One query. */
+async function latestCommentsOn(sendIds: string[]): Promise<Map<string, Comment[]>> {
+  const out = new Map<string, Comment[]>();
+  if (!sendIds.length) return out;
+  const rows = await all<{ id: string; send_id: string; user_id: string; name: string; is_dj: number; avatar_v: number; has_avatar: number; body: string; created_at: number }>(
+    `SELECT c.id, c.send_id, c.user_id, u.name, u.is_dj, u.avatar_v, (u.avatar IS NOT NULL) AS has_avatar, c.body, c.created_at
+     FROM comments c JOIN users u ON u.id = c.user_id WHERE c.send_id IN (${sendIds.map(() => "?").join(",")}) ORDER BY c.created_at DESC`,
+    sendIds,
+  );
+  for (const r of rows) {
+    const list = out.get(r.send_id) ?? [];
+    if (list.length >= 3) continue;
+    list.push({ id: r.id, sendId: r.send_id, person: { id: r.user_id, name: r.name, isDj: !!r.is_dj, avatarUrl: avatarUrlFor(r.user_id, r.avatar_v ?? 0, !!r.has_avatar) }, body: r.body, at: r.created_at });
+    out.set(r.send_id, list);
+  }
+  for (const list of out.values()) list.reverse();
+  return out;
 }
 
 export async function createSend(input: {

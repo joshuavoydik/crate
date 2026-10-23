@@ -418,7 +418,19 @@ export function Reel({ embedded = false, onCaughtUp }: { embedded?: boolean; onC
         )}
 
         <section className="stage" aria-label="Now playing">
-          <StageCard key={current.id} send={current} exit={exit} onSave={save} onOpen={() => setCardOpen(true)} showMeta={me.isDj} />
+          <StageCard
+            key={current.id}
+            send={current}
+            exit={exit}
+            onSave={save}
+            onOpen={() => setCardOpen(true)}
+            onThread={() => {
+              // Beside the stage the card is already open: go to its thread. On a phone, open the sheet.
+              if (desktop) document.querySelector('.panel section[aria-label="Comments"]')?.scrollIntoView({ behavior: "smooth", block: "start" });
+              else setCardOpen(true);
+            }}
+            showMeta={me.isDj}
+          />
           <div className="stage__actions">
             <button className="btn btn--sm btn--ghost" onClick={next} title="Next (J)">
               <IconNext size={14} /> Next

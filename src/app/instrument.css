@@ -1682,3 +1682,135 @@ html:has(.nowbar) .shell {
   padding: 0 6px;
   font-size: 12px;
 }
+
+/* ---------- the thread on the row and on the stage: comments where the song is ---------- */
+
+.pl__thread {
+  grid-column: 1 / -1;
+  padding-left: 56px;
+  margin-top: -2px;
+  position: relative;
+  z-index: 1;
+}
+
+@media (max-width: 719px) {
+  .pl__thread {
+    padding-left: 0;
+    margin-top: 4px;
+  }
+}
+
+.stagecard__thread {
+  width: 100%;
+  max-width: 420px;
+  margin-top: 18px;
+  text-align: left;
+}
+
+.rt {
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+.rt__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.rt__item {
+  display: grid;
+  grid-template-columns: 18px auto minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: baseline;
+  padding: 5px 0;
+  font-size: 13.5px;
+  line-height: 1.4;
+}
+
+.rt__item .avatar {
+  margin: 0;
+  align-self: center;
+  font-size: 8px;
+}
+
+.rt__who {
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.rt__text {
+  color: var(--ink-2);
+  overflow-wrap: anywhere;
+}
+
+.rt__when {
+  font-size: 11px;
+  color: var(--ink-3);
+  white-space: nowrap;
+}
+
+.rt__more {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  padding: 2px 0 4px;
+}
+
+.rt__more:hover {
+  color: var(--signal);
+}
+
+.rt__say {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.rt__field {
+  flex: 1;
+  min-width: 0;
+  height: 32px;
+  font-size: 13.5px;
+  color: var(--ink);
+  border-bottom: 1px solid var(--line);
+  transition: border-color 160ms var(--ease);
+}
+
+.rt__field::placeholder {
+  color: var(--ink-3);
+}
+
+.rt__say.is-open .rt__field,
+.rt__field:focus {
+  border-bottom-color: var(--signal);
+  outline: none;
+}
+
+.rt__post {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--surface);
+  background: var(--ink);
+  height: 28px;
+  padding: 0 12px;
+}
+
+.rt__post:disabled {
+  opacity: 0.4;
+}
+
+.rt__post:not(:disabled):hover {
+  background: var(--signal);
+  color: #fff;
+}
+
+/* A row with a thread sits a little looser. */
+.pl__row:has(.rt__list) {
+  padding-bottom: 12px;
+}

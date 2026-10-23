@@ -45,6 +45,8 @@ export type Send = {
   replies: Array<{ person: Person; status: ReactionStatus; reply: string | null; at: number }>;
   /** How many comments the crew has left on this send. */
   commentCount: number;
+  /** The newest few, oldest first, so a row can show the thread without opening the card. */
+  comments: Comment[];
 };
 
 export type Comment = {
