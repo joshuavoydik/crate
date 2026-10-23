@@ -33,8 +33,8 @@ const SETUP: Record<string, Setup> = {
     steps: [
       "Open console.cloud.google.com and create a project (any name).",
       "APIs & Services → Library → enable YouTube Data API v3.",
-      "APIs & Services → OAuth consent screen → External → add yourself and your crew as test users.",
-      "Credentials → Create credentials → OAuth client ID → Web application → add the redirect URI shown here.",
+      "APIs & Services → OAuth consent screen → External → add yourself and your crew as test users, or publish it.",
+      "Credentials → Create credentials → OAuth client ID → Web application → add both redirect URIs shown here (one connects YouTube, the other is Sign in with Google).",
       "Copy the Client ID and Client secret into the fields here.",
     ],
     fields: [
@@ -42,6 +42,21 @@ const SETUP: Record<string, Setup> = {
       { key: "GOOGLE_CLIENT_SECRET", label: "Client secret", secret: true },
     ],
     redirect: "youtube",
+  },
+  email: {
+    title: "Email sign-in",
+    minutes: "about 3 minutes",
+    steps: [
+      "Easiest: a Gmail address. In that Google account, Security → 2-Step Verification → App passwords → make one for Crate.",
+      "Paste it as an SMTP address below, in the form smtps://you%40gmail.com:the-app-password@smtp.gmail.com:465 (the @ in the address written as %40).",
+      "Or, with a domain of your own: resend.com → verify the domain → API key here, and set the From address to one on that domain.",
+      "Either one is enough. With neither, the sign-in page offers Google and device links only.",
+    ],
+    fields: [
+      { key: "SMTP_URL", label: "SMTP address (smtps://user:pass@host:465)", secret: true },
+      { key: "RESEND_API_KEY", label: "Resend API key (instead of SMTP)", secret: true },
+      { key: "EMAIL_FROM", label: "From (optional, e.g. Crate <you@gmail.com>)" },
+    ],
   },
   apple: {
     title: "Apple Music",
@@ -100,7 +115,7 @@ const SETUP: Record<string, Setup> = {
   },
 };
 
-const ORDER = ["spotify", "apple", "youtube", "soundcloud", "tidal", "lastfm", "agent"] as const;
+const ORDER = ["spotify", "apple", "youtube", "email", "soundcloud", "tidal", "lastfm", "agent"] as const;
 
 export function SetupView() {
   const { me, refreshMe, toast, setAccentTrack } = useStore();
@@ -116,7 +131,8 @@ export function SetupView() {
       .catch(() => {});
   }, [setAccentTrack]);
 
-  const isDone = (kind: string) => (kind === "agent" ? !!info?.present.ANTHROPIC_API_KEY : !!me.connectors[kind]);
+  const isDone = (kind: string) =>
+    kind === "agent" ? !!info?.present.ANTHROPIC_API_KEY : kind === "email" ? !!info?.present.SMTP_URL || !!info?.present.RESEND_API_KEY : !!me.connectors[kind];
 
   async function copy(text: string) {
     try {
@@ -233,6 +249,17 @@ export function SetupView() {
                     Copy
                   </button>
                 </div>
+                {open === "youtube" && info.redirectUris.googleSignin && (
+                  <>
+                    <span className="label caps">And, for Sign in with Google</span>
+                    <div className="code" style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "center" }}>
+                      <span style={{ minWidth: 0, overflowWrap: "anywhere" }}>{info.redirectUris.googleSignin}</span>
+                      <button type="button" className="btn btn--sm btn--ghost" onClick={() => copy(info.redirectUris.googleSignin)}>
+                        Copy
+                      </button>
+                    </div>
+                  </>
+                )}
                 {open === "spotify" && (
                   <p className="faint" style={{ fontSize: 12.5, marginTop: 6 }}>
                     Spotify does not accept &quot;localhost&quot;, so the local address uses 127.0.0.1. Either address works in the browser.

@@ -115,6 +115,11 @@ export type Me = {
   notices: Notice[];
   /** Whoever runs this Crate: sees the setup page and its keys. */
   isMaker: boolean;
+  /** How this account signs in elsewhere: the address on it, and whether a Google account is attached. */
+  email: string | null;
+  hasGoogle: boolean;
+  /** Which sign-in doors this Crate has switched on. */
+  signIn: { google: boolean; email: boolean };
 };
 
 export type Notice = {

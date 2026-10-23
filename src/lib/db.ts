@@ -221,7 +221,12 @@ const COLUMNS: Array<[table: string, column: string, ddl: string]> = [
   ["playlists", "public_code", "TEXT"],
   ["users", "chrome_seen_at", "INTEGER"],
   ["users", "chrome_last", "TEXT"],
+  ["users", "email", "TEXT"],
+  ["users", "google_sub", "TEXT"],
 ];
+
+/** Indexes on columns that arrive by ALTER, so they run after the columns exist. */
+const LATE_INDEXES = ["CREATE UNIQUE INDEX IF NOT EXISTS users_email ON users(email)", "CREATE UNIQUE INDEX IF NOT EXISTS users_google_sub ON users(google_sub)"];
 
 let client: Client | null = null;
 let ready: Promise<void> | null = null;
@@ -263,6 +268,7 @@ export async function db(): Promise<Client> {
         const has = info.rows.some((r) => String((r as unknown as { name: string }).name) === column);
         if (!has) await c.execute(`ALTER TABLE ${table} ADD COLUMN ${column} ${ddl}`);
       }
+      for (const s of LATE_INDEXES) await c.execute(s);
       // One-time changes of mind, each recorded in app_settings so it runs once per install.
       const once = async (key: string, fn: () => Promise<void>) => {
         const done = await c.execute({ sql: "SELECT 1 AS x FROM app_settings WHERE key = ?", args: [key] });

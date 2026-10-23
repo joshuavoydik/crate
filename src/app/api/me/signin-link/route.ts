@@ -10,5 +10,5 @@ export async function POST() {
   const slow = throttled(`signin-link:${auth.user.id}`, 20);
   if (slow) return slow;
   const token = await signSignInLink(auth.user.id);
-  return json({ url: `${appUrl()}/api/admin/signin?token=${encodeURIComponent(token)}` });
+  return json({ url: `${appUrl()}/signin/link?token=${encodeURIComponent(token)}` });
 }

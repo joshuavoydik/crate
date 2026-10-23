@@ -2,10 +2,11 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { api } from "@/lib/client";
 
 /** A signed-in person landing on an invite link. */
-export function JoinExisting({ code, crewName, members, already }: { code: string; crewName: string; members: string[]; already: boolean }) {
+export function JoinExisting({ code, crewName, members, already, meName }: { code: string; crewName: string; members: string[]; already: boolean; meName: string }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -51,10 +52,16 @@ export function JoinExisting({ code, crewName, members, already }: { code: strin
           </button>
         ) : (
           <button className="btn btn--primary" onClick={join} disabled={busy}>
-            Join {crewName}
+            Join {crewName} as {meName.split(" ")[0]}
           </button>
         )}
       </div>
+      <p className="faint signin__foot">
+        Not {meName.split(" ")[0]}?{" "}
+        <Link href={`/signin?switch=1&next=${encodeURIComponent(`/join/${code}`)}`} style={{ textDecoration: "underline", textUnderlineOffset: 3 }}>
+          Sign in as someone else
+        </Link>
+      </p>
     </div>
   );
 }

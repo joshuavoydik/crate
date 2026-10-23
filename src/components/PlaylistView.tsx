@@ -14,6 +14,8 @@ import type { Playlist, Send } from "@/lib/types";
 
 /** How many earlier days the main page shows before pointing at the Days page. */
 const RECENT_DAYS = 7;
+/** Today's list folds past this many; the rest is a tap away, like the earlier days beneath it. */
+const TODAY_FOLD = 10;
 
 /**
  * The last playlist seen for each crew, for the life of the page. Coming back to the log paints what
@@ -53,6 +55,7 @@ export function PlaylistView({ welcome = false }: { welcome?: boolean }) {
   const [mode, setMode] = useState<"stage" | "list">(known && known.unseen === 0 ? "list" : "stage");
   const [playingAll, setPlayingAll] = useState(false);
   const [who, setWho] = useState<string | null>(null);
+  const [allToday, setAllToday] = useState(false);
   const [decidedFor, setDecidedFor] = useState<string | null>(known ? crewId : null);
 
   const patchSend = useCallback((updated: Send) => {
@@ -79,6 +82,7 @@ export function PlaylistView({ welcome = false }: { welcome?: boolean }) {
   useEffect(() => {
     setPlaylist(crewId ? (remembered.get(crewId) ?? null) : null);
     setWho(null);
+    setAllToday(false);
     load();
   }, [crewId, load]);
   // A send from this page refreshes the list; the mount is already covered above, so the first value is skipped.
@@ -242,8 +246,15 @@ export function PlaylistView({ welcome = false }: { welcome?: boolean }) {
 
           {todayCount > 0 ? (
             <>
-              <SendRows sends={rows} together={together} onOpen={openTrack} onPreview={() => setPlayingAll(false)} />
+              <SendRows sends={allToday ? rows : rows.slice(0, TODAY_FOLD)} together={together} onOpen={openTrack} onPreview={() => setPlayingAll(false)} />
               {rows.length === 0 && who && <p className="muted pl__none">Nothing from them today.</p>}
+              {rows.length > TODAY_FOLD && (
+                <div className="pl__fold">
+                  <button type="button" className="linkbtn pl__foldbtn" onClick={() => setAllToday((v) => !v)}>
+                    {allToday ? `Fewer` : `All ${rows.length} today`}
+                  </button>
+                </div>
+              )}
             </>
           ) : (
             playlist && <p className="muted pl__quiet">Nothing yet today. Play something on Spotify, in Chrome or on your Mac and it lands here.</p>

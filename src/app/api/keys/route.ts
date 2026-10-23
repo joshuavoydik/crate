@@ -1,3 +1,4 @@
+import { googleSignInRedirectUri } from "@/lib/google-signin";
 import { json, error, readJson, requireUser } from "@/lib/api";
 import { isMaker } from "@/lib/maker";
 import { keyPresence, setKeys, KEY_NAMES, type KeyName } from "@/lib/keys";
@@ -12,7 +13,7 @@ export async function GET() {
   return json({
     present: await keyPresence(),
     connectors: await configured(),
-    redirectUris: { spotify: await spotifyRedirectUri(), youtube: youtubeRedirectUri(), soundcloud: soundcloudRedirectUri(), tidal: tidalRedirectUri() },
+    redirectUris: { spotify: await spotifyRedirectUri(), youtube: youtubeRedirectUri(), googleSignin: googleSignInRedirectUri(), soundcloud: soundcloudRedirectUri(), tidal: tidalRedirectUri() },
   });
 }
 

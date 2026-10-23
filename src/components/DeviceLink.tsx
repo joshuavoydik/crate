@@ -27,7 +27,7 @@ export function DeviceLink() {
         <div>
           <div>Crate on another device</div>
           <div className="faint" style={{ fontSize: 13 }}>
-            There are no passwords. Make a link, send it to yourself, open it on the other device, and you are you there too. It works for a day.
+            Make a link, send it to yourself, open it on the other device and press the button there: you are you there too. It works for a day, once.
           </div>
         </div>
         {!url && (
@@ -40,7 +40,7 @@ export function DeviceLink() {
         <div style={{ margin: "12px 0 4px" }}>
           <ShareActions url={url} text="Open this on your other device to sign in to Crate" onDone={() => setUrl(null)} />
           <p className="faint" style={{ fontSize: 12.5, margin: "10px 0 0" }}>
-            Anyone who opens this link is signed in as you, so send it only to yourself. It stops working after a day or once the device is in.
+            Anyone who presses the button on this link is signed in as you, so send it only to yourself. It stops working after a day or once it has been used.
           </p>
         </div>
       )}

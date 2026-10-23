@@ -69,6 +69,6 @@ export async function POST(req: Request) {
   }
   const people = (await live.execute("SELECT id, name FROM users")).rows as unknown as Array<{ id: string; name: string }>;
   const links = [];
-  for (const p of people) links.push({ id: p.id, name: p.name, signin: `${appUrl()}/api/admin/signin?token=${await signSignInLink(p.id)}` });
+  for (const p of people) links.push({ id: p.id, name: p.name, signin: `${appUrl()}/signin/link?token=${await signSignInLink(p.id)}` });
   return json({ imported: counts, people: links });
 }

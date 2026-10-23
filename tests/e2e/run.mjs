@@ -911,15 +911,107 @@ async function main() {
     const impJson = await imp.json();
     assert.ok(impJson.imported.users >= 2 && impJson.imported.sends > 0 && impJson.imported.tracks > 0, "tables came across");
     const joshLink = impJson.people.find((p) => p.name === "Joshua")?.signin;
-    assert.ok(joshLink && joshLink.includes("/api/admin/signin?token="));
+    assert.ok(joshLink && joshLink.includes("/signin/link?token="));
     const cold = await browser.newContext({ viewport: { width: 1200, height: 800 } });
     const c = await cold.newPage();
     await c.goto(joshLink);
+    await c.getByRole("button", { name: /Sign in as Joshua/ }).click();
     await c.waitForURL(`${BASE}/`);
     await c.locator(".pl__name").waitFor({ timeout: 20000 });
     assert.equal((await (await c.request.get(`${BASE}/api/me`)).json()).me?.name, "Joshua");
     await cold.close();
     log("the import endpoint copies a Crate across and its sign-in link opens the door");
+
+    // ---- Signing in elsewhere: a device link that survives a preview, email links, Google's door ----
+    // Ariel makes a device link on her phone. A messaging app fetches it for a preview first: that must not spend it.
+    const mk = await (await phone.request.post(`${BASE}/api/me/signin-link`)).json();
+    assert.ok(mk.url.includes("/signin/link?token="));
+    const preview = await browser.newContext();
+    const pv = await preview.newPage();
+    await pv.goto(mk.url);
+    await pv.getByRole("button", { name: /Sign in as Ariel/ }).waitFor();
+    await pv.screenshot({ path: `${OUT}/30-device-link-landing.png` });
+    await preview.close();
+    // Then she opens it on a laptop and presses the button; the second time it says it is used.
+    const laptop = await browser.newContext({ viewport: { width: 1200, height: 800 } });
+    const lp = await laptop.newPage();
+    await lp.goto(mk.url);
+    await lp.getByRole("button", { name: /Sign in as Ariel/ }).click();
+    await lp.waitForURL(`${BASE}/`);
+    assert.equal((await (await lp.request.get(`${BASE}/api/me`)).json()).me?.name, "Ariel");
+    await lp.goto(mk.url);
+    await lp.getByText("That link was already used").waitFor();
+    // Settings says nothing is attached yet; she attaches an email by link.
+    await lp.goto(`${BASE}/settings`);
+    await lp.getByText("Nothing is attached to this account yet").waitFor();
+    await lp.getByRole("button", { name: "Attach an email" }).click();
+    await lp.getByLabel("Email address").fill("ariel@example.com");
+    await lp.getByRole("button", { name: "Send the link" }).click();
+    await lp.getByText("Sent. Open the email").waitFor();
+    const mail1 = (await (await lp.request.get(`${BASE}/api/test/mail?to=ariel@example.com`)).json()).mail;
+    assert.equal(mail1.length, 1);
+    assert.ok(mail1[0].text.includes("attach ariel@example.com to Ariel's"));
+    const attachLink = mail1[0].text.match(/https?:\/\/\S+/)[0];
+    await lp.goto(attachLink);
+    await lp.getByRole("button", { name: "Attach this address" }).click();
+    await lp.waitForURL(/\/settings/);
+    await lp.getByText("ariel@example.com signs in as you").waitFor({ timeout: 15000 });
+    await lp.screenshot({ path: `${OUT}/31-settings-signin.png` });
+    await laptop.close();
+    // A new device: the front page's "Sign in", her email, the welcome-back link, and she is Ariel there too.
+    const tablet = await browser.newContext({ ...devices["iPad Mini"], colorScheme: "dark" });
+    const tp = await tablet.newPage();
+    await tp.goto(BASE);
+    await tp.getByRole("link", { name: "Sign in" }).click();
+    await tp.waitForURL(/\/signin/);
+    await tp.screenshot({ path: `${OUT}/32-signin.png` });
+    await tp.locator("#signin-email").fill("Ariel@Example.com");
+    await tp.getByRole("button", { name: "Email me a sign-in link" }).click();
+    await tp.getByText("Sent.").waitFor();
+    const mail2 = (await (await tp.request.get(`${BASE}/api/test/mail?to=ariel@example.com`)).json()).mail;
+    assert.equal(mail2.length, 2);
+    assert.ok(mail2[1].text.includes("Welcome back, Ariel"));
+    const backLink = mail2[1].text.match(/https?:\/\/\S+/)[0];
+    await tp.goto(backLink);
+    await tp.getByRole("button", { name: "Sign in", exact: true }).click();
+    await tp.waitForURL(`${BASE}/`);
+    assert.equal((await (await tp.request.get(`${BASE}/api/me`)).json()).me?.name, "Ariel");
+    await tablet.close();
+    // Someone new, from an invite, by email: a name on the landing page, then the invite is one tap.
+    const fresh = await browser.newContext({ ...devices["Pixel 7"], colorScheme: "dark" });
+    const fp = await fresh.newPage();
+    await fp.goto(`${BASE}/join/${crew.inviteCode}`);
+    await fp.getByRole("link", { name: "Sign in" }).click();
+    await fp.waitForURL(/\/signin\?next=/);
+    await fp.locator("#signin-email").fill("dana@example.com");
+    await fp.getByRole("button", { name: "Email me a sign-in link" }).click();
+    await fp.getByText("Sent.").waitFor();
+    const mail3 = (await (await fp.request.get(`${BASE}/api/test/mail?to=dana@example.com`)).json()).mail;
+    const newLink = mail3[0].text.match(/https?:\/\/\S+/)[0];
+    await fp.goto(newLink);
+    await fp.getByText("dana@example.com is new here").waitFor();
+    await fp.locator("#landing-name").fill("Dana");
+    await fp.getByRole("button", { name: "Join", exact: true }).click();
+    await fp.waitForURL(/\/join\//);
+    await fp.getByRole("button", { name: /Join Joshua & Ariel as Dana/ }).click();
+    await fp.getByText("You’re in").waitFor({ timeout: 20000 });
+    assert.equal((await (await fp.request.get(`${BASE}/api/me`)).json()).me?.email, "dana@example.com");
+    await fresh.close();
+    // Google: the button goes to Google with this Crate's client and callback; a stale state comes back politely.
+    const g = await browser.newContext();
+    const gr = await g.request.get(`${BASE}/api/auth/google?next=%2Fsettings`, { maxRedirects: 0 });
+    assert.equal(gr.status(), 307);
+    const gloc = new URL(gr.headers()["location"]);
+    assert.equal(gloc.hostname, "accounts.google.com");
+    assert.equal(gloc.searchParams.get("client_id"), "test-google-client");
+    assert.equal(gloc.searchParams.get("redirect_uri"), `${BASE}/api/auth/google/callback`);
+    assert.equal(gloc.searchParams.get("scope"), "openid email profile");
+    const gp = await g.newPage();
+    await gp.goto(`${BASE}/api/auth/google/callback?state=bad&code=x`);
+    await gp.waitForURL(/\/signin\?error=google-state/);
+    await gp.getByText("That took too long").waitFor();
+    await g.close();
+    log("sign-in: device links survive previews and work once, email links sign in and attach, invites and Google hang together");
 
     // Light mode + desktop log for the record.
     const light = await browser.newContext({ viewport: { width: 1440, height: 900 }, colorScheme: "light", storageState: await desk.storageState() });

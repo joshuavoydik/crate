@@ -1837,3 +1837,69 @@ html:has(.nowbar) .shell {
   margin: 28px 0 0;
   font-size: 14px;
 }
+
+/* ---------- sign-in: the doors, one under the other ---------- */
+
+.signin {
+  display: grid;
+  gap: 22px;
+}
+.signin__google {
+  justify-content: center;
+  width: 100%;
+}
+.signin__mail .btn {
+  width: 100%;
+  justify-content: center;
+}
+.signin__sent {
+  margin: 0;
+  font-size: 14px;
+  color: var(--ink-2);
+}
+.signin__foot {
+  margin: 14px 0 0;
+  font-size: 12.5px;
+  max-width: 40ch;
+}
+.welcome__have {
+  font-size: 14px;
+  color: var(--ink-2);
+}
+.welcome__signin {
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.signincard__row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+}
+.signincard__mail {
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+  margin-top: 10px;
+}
+.signincard__mail .field {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Today's list folds at ten: the rest opens in place, the way the earlier days do. */
+.pl__fold {
+  display: flex;
+  justify-content: flex-end;
+  padding: 12px 0 2px;
+}
+.pl__foldbtn {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}

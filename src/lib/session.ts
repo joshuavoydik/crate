@@ -4,12 +4,14 @@ import { currentUser } from "./auth";
 import { crewsFor, avatarUrlFor } from "./queries";
 import { sourcesFor } from "./sync";
 import { configured } from "./sources";
+import { googleSignInConfigured } from "./google-signin";
+import { mailConfigured } from "./mail";
 import { one, all } from "./db";
 import type { Me } from "./types";
 
 export async function buildMe(user: { id: string; name: string; isDj: boolean; preferredPlatform: string; lastfmUser: string | null }): Promise<Me> {
-  const extra = await one<{ imessage_handle: string | null; avatar_v: number; has_avatar: number }>(
-    "SELECT imessage_handle, avatar_v, (avatar IS NOT NULL) AS has_avatar FROM users WHERE id = ?",
+  const extra = await one<{ imessage_handle: string | null; avatar_v: number; has_avatar: number; email: string | null; google_sub: string | null }>(
+    "SELECT imessage_handle, avatar_v, (avatar IS NOT NULL) AS has_avatar, email, google_sub FROM users WHERE id = ?",
     [user.id],
   );
   const sources = (await sourcesFor(user.id)).map((s) => ({ kind: s.kind, label: s.label, status: s.status, error: s.error, lastSyncAt: s.last_sync_at }));
@@ -26,6 +28,9 @@ export async function buildMe(user: { id: string; name: string; isDj: boolean; p
     connectors: await configured(),
     notices: await noticesFor(user.id),
     isMaker: await isMaker(user.id),
+    email: extra?.email ?? null,
+    hasGoogle: !!extra?.google_sub,
+    signIn: { google: await googleSignInConfigured(), email: await mailConfigured() },
   };
 }
 

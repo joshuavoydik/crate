@@ -2,12 +2,14 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { api } from "@/lib/client";
 
-export function Welcome({ invite }: { invite?: { code: string; crewName: string; members: string[] } | null }) {
+/** The front door. With `me`, a signed-in person who is in no crew yet: same two choices, no name to ask for. */
+export function Welcome({ invite, me }: { invite?: { code: string; crewName: string; members: string[] } | null; me?: { name: string } | null }) {
   const router = useRouter();
   const [mode, setMode] = useState<"start" | "join">(invite ? "join" : "start");
-  const [yourName, setYourName] = useState("");
+  const [yourName, setYourName] = useState(me?.name ?? "");
   const [crewName, setCrewName] = useState("");
   const [code, setCode] = useState(invite?.code ?? "");
   const [busy, setBusy] = useState(false);
@@ -52,6 +54,10 @@ export function Welcome({ invite }: { invite?: { code: string; crewName: string;
             {invite.members.length ? invite.members.map((m) => m.split(" ")[0]).join(" and ") : "Someone"} invited you to{" "}
             <strong style={{ color: "var(--ink)" }}>{invite.crewName}</strong>.
           </>
+        ) : me ? (
+          <>
+            You are in, {me.name.split(" ")[0]}. A crew is a few friends and the music between them: start one and invite them, or use an invite someone sent you.
+          </>
         ) : (
           "Music between friends, with memory. What you play shows up for your crew as you play it, and is kept. Only the crew ever sees it."
         )}
@@ -59,21 +65,25 @@ export function Welcome({ invite }: { invite?: { code: string; crewName: string;
 
       {mode === "start" ? (
         <form className="welcome__form" onSubmit={start}>
-          <label className="label caps" htmlFor="start-name">
-            Your name
-          </label>
-          <input
-            id="start-name"
-            className="field"
-            value={yourName}
-            onChange={(e) => setYourName(e.target.value)}
-            placeholder="First name is fine"
-            autoFocus
-            required
-            maxLength={60}
-            autoComplete="name"
-            autoCapitalize="words"
-          />
+          {!me && (
+            <>
+              <label className="label caps" htmlFor="start-name">
+                Your name
+              </label>
+              <input
+                id="start-name"
+                className="field"
+                value={yourName}
+                onChange={(e) => setYourName(e.target.value)}
+                placeholder="First name is fine"
+                autoFocus
+                required
+                maxLength={60}
+                autoComplete="name"
+                autoCapitalize="words"
+              />
+            </>
+          )}
           <label className="label caps" htmlFor="start-crew">
             Name the crew
           </label>
@@ -94,21 +104,25 @@ export function Welcome({ invite }: { invite?: { code: string; crewName: string;
         </form>
       ) : (
         <form className="welcome__form" onSubmit={join}>
-          <label className="label caps" htmlFor="join-name">
-            Your name
-          </label>
-          <input
-            id="join-name"
-            className="field"
-            value={yourName}
-            onChange={(e) => setYourName(e.target.value)}
-            placeholder="First name is fine"
-            autoFocus
-            required
-            maxLength={60}
-            autoComplete="name"
-            autoCapitalize="words"
-          />
+          {!me && (
+            <>
+              <label className="label caps" htmlFor="join-name">
+                Your name
+              </label>
+              <input
+                id="join-name"
+                className="field"
+                value={yourName}
+                onChange={(e) => setYourName(e.target.value)}
+                placeholder="First name is fine"
+                autoFocus
+                required
+                maxLength={60}
+                autoComplete="name"
+                autoCapitalize="words"
+              />
+            </>
+          )}
           {!invite && (
             <>
               <label className="label caps" htmlFor="join-code">
@@ -146,11 +160,25 @@ export function Welcome({ invite }: { invite?: { code: string; crewName: string;
           </div>
         </form>
       )}
-      <p className="faint" style={{ marginTop: 40, fontSize: 12.5, maxWidth: "40ch" }}>
-        No passwords: the invite link is the key. Add Crate to your home screen for the full-screen version.
+      <p className="welcome__have" style={{ marginTop: 32 }}>
+        {me ? (
+          <>
+            Not {me.name.split(" ")[0]}?{" "}
+            <Link href="/signin?switch=1" className="welcome__signin">
+              Sign in as someone else
+            </Link>
+          </>
+        ) : (
+          <>
+            Already have an account?{" "}
+            <Link href={invite ? `/signin?next=${encodeURIComponent(`/join/${invite.code}`)}` : "/signin"} className="welcome__signin">
+              Sign in
+            </Link>
+          </>
+        )}
       </p>
-      <p className="faint" style={{ marginTop: 10, fontSize: 12.5, maxWidth: "40ch" }}>
-        Already in a crew on another device? Open Crate there, then Settings → Crate on another device, and send yourself the link.
+      <p className="faint" style={{ marginTop: 24, fontSize: 12.5, maxWidth: "40ch" }}>
+        No passwords: you sign in with Google, an emailed link, or a link from a device that is already in. Add Crate to your home screen for the full-screen version.
       </p>
       <p className="faint" style={{ marginTop: 10, fontSize: 12.5 }}>
         <a href="/privacy" style={{ textDecoration: "underline", textUnderlineOffset: 3 }}>

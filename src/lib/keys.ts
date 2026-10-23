@@ -20,6 +20,9 @@ export const KEY_NAMES = [
   "TIDAL_CLIENT_SECRET",
   "LASTFM_API_KEY",
   "ANTHROPIC_API_KEY",
+  "RESEND_API_KEY",
+  "SMTP_URL",
+  "EMAIL_FROM",
 ] as const;
 
 export type KeyName = (typeof KEY_NAMES)[number];

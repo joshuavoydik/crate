@@ -19,7 +19,7 @@ export default async function JoinPage({ params }: { params: Promise<{ code: str
   const me = await loadMe();
   const members = crew.members.map((m) => m.name);
   if (me) {
-    return <JoinExisting code={code} crewName={crew.name} members={members} already={crew.members.some((m) => m.id === me.id)} />;
+    return <JoinExisting code={code} crewName={crew.name} members={members} already={crew.members.some((m) => m.id === me.id)} meName={me.name} />;
   }
   return <Welcome invite={{ code, crewName: crew.name, members }} />;
 }
