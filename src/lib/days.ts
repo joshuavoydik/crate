@@ -70,11 +70,17 @@ type EchoLight = { send_id: string; user_id: string; at: number };
  * covers. One pass over light rows; no track resolution, so it stays cheap as the years go by.
  */
 export async function daySummaries(crewId: string, tz: string): Promise<DaySummary[]> {
-  const rows = await all<LightRow>(
-    "SELECT s.id, s.created_at, s.from_user_id, t.artwork_url FROM sends s JOIN tracks t ON t.id = s.track_id WHERE s.crew_id = ? ORDER BY s.created_at DESC",
-    [crewId],
-  );
-  const echoes = await all<EchoLight>("SELECT e.send_id, e.user_id, e.at FROM echoes e JOIN sends s ON s.id = e.send_id WHERE s.crew_id = ?", [crewId]);
+  const [rows, echoes, members] = await Promise.all([
+    all<LightRow>(
+      "SELECT s.id, s.created_at, s.from_user_id, t.artwork_url FROM sends s JOIN tracks t ON t.id = s.track_id WHERE s.crew_id = ? ORDER BY s.created_at DESC",
+      [crewId],
+    ),
+    all<EchoLight>("SELECT e.send_id, e.user_id, e.at FROM echoes e JOIN sends s ON s.id = e.send_id WHERE s.crew_id = ?", [crewId]),
+    all<{ id: string; name: string; is_dj: number; avatar_v: number; has_avatar: number }>(
+      "SELECT u.id, u.name, u.is_dj, u.avatar_v, (u.avatar IS NOT NULL) AS has_avatar FROM users u WHERE u.id IN (SELECT user_id FROM crew_members WHERE crew_id = ?)",
+      [crewId],
+    ),
+  ]);
   const echoesBySend = new Map<string, EchoLight[]>();
   for (const e of echoes) {
     const list = echoesBySend.get(e.send_id) ?? [];
@@ -82,10 +88,6 @@ export async function daySummaries(crewId: string, tz: string): Promise<DaySumma
     echoesBySend.set(e.send_id, list);
   }
   const people = new Map<string, Person>();
-  const members = await all<{ id: string; name: string; is_dj: number; avatar_v: number; has_avatar: number }>(
-    "SELECT u.id, u.name, u.is_dj, u.avatar_v, (u.avatar IS NOT NULL) AS has_avatar FROM users u WHERE u.id IN (SELECT user_id FROM crew_members WHERE crew_id = ?)",
-    [crewId],
-  );
   for (const m of members) people.set(m.id, { id: m.id, name: m.name, isDj: !!m.is_dj, avatarUrl: avatarUrlFor(m.id, m.avatar_v ?? 0, !!m.has_avatar) });
 
   const days = new Map<string, DaySummary & { seen: Set<string> }>();

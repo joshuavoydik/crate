@@ -1,5 +1,5 @@
 import { all, one, run, now, inviteCode } from "./db";
-import { membersOf, sendsIn, reelFor } from "./queries";
+import { membersOf, sendsIn, unseenCount } from "./queries";
 import { daySummaries, activeToday, localDate } from "./days";
 import { suggestPlaylistName, templatedPlaylistName } from "./agent";
 import type { Send, Playlist } from "./types";
@@ -64,20 +64,25 @@ export async function playlistFor(viewerId: string, crewId: string, opts: { rege
   const tz = opts.tz || "UTC";
   const today = localDate(now(), tz);
   // Recent activity, ordered by last touch; today's slice is the page, the rest is reached by day.
-  const recent = await sendsIn(viewerId, crewId, 400);
+  // The pieces do not depend on each other, so they go to the database together.
+  const [recent, unseen, c, total, allDays, members] = await Promise.all([
+    sendsIn(viewerId, crewId, 400),
+    unseenCount(viewerId, crewId),
+    one<{ public_code: string | null }>("SELECT public_code FROM crews WHERE id = ?", [crewId]),
+    one<{ n: number }>("SELECT COUNT(*) AS n FROM sends WHERE crew_id = ?", [crewId]),
+    daySummaries(crewId, tz),
+    membersOf(crewId),
+  ]);
   const sends = activeToday(recent, tz, today);
-  const unseen = (await reelFor(viewerId, crewId)).length;
   const named = await ensurePlaylistName(crewId, recent, !!opts.regenerate, tz);
-  const c = await one<{ public_code: string | null }>("SELECT public_code FROM crews WHERE id = ?", [crewId]);
-  const total = await one<{ n: number }>("SELECT COUNT(*) AS n FROM sends WHERE crew_id = ?", [crewId]);
-  const days = (await daySummaries(crewId, tz)).filter((d) => d.date !== today);
+  const days = allDays.filter((d) => d.date !== today);
   return {
     crewId,
     name: named.name,
     namedBy: named.by,
     count: Number(total?.n ?? 0),
     unseen,
-    members: await membersOf(crewId),
+    members,
     sends,
     today,
     days,

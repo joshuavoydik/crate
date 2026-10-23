@@ -1814,3 +1814,20 @@ html:has(.nowbar) .shell {
 .pl__row:has(.rt__list) {
   padding-bottom: 12px;
 }
+
+/* The log while its first copy loads: rows in the list's own shape, nothing that could be mistaken for an answer. */
+.pl__loading {
+  border-top: 1px solid var(--line);
+}
+.pl__loadrow {
+  display: grid;
+  grid-template-columns: 44px 1fr;
+  gap: 12px;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--line);
+}
+.pl__loadart {
+  width: 44px;
+  height: 44px;
+}

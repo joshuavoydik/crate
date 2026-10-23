@@ -255,60 +255,108 @@ const SEND_SELECT = `SELECT s.id AS send_id, s.crew_id, s.from_user_id, u.name A
   JOIN users u ON u.id = s.from_user_id
   LEFT JOIN reactions r ON r.send_id = s.id AND r.user_id = ?`;
 
-type EchoRow = { user_id: string; name: string; is_dj: number; avatar_v: number; has_avatar: number; at: number; via: string };
+type EchoRow = { send_id: string; user_id: string; name: string; is_dj: number; avatar_v: number; has_avatar: number; at: number; via: string };
+type ReplyRow = { send_id: string; user_id: string; name: string; is_dj: number; avatar_v: number; has_avatar: number; status: ReactionStatus; reply: string | null; updated_at: number };
+type HistRow = { id: string; track_id: string; name: string; created_at: number };
 
-async function echoesOf(sendId: string): Promise<Send["echoes"]> {
-  const rows = await all<EchoRow>(
-    `SELECT e.user_id, u.name, u.is_dj, u.avatar_v, (u.avatar IS NOT NULL) AS has_avatar, e.at, e.via
-     FROM echoes e JOIN users u ON u.id = e.user_id WHERE e.send_id = ? ORDER BY e.at ASC`,
-    [sendId],
-  );
-  return rows.map((e) => ({
-    person: { id: e.user_id, name: e.name, isDj: !!e.is_dj, avatarUrl: avatarUrlFor(e.user_id, e.avatar_v ?? 0, !!e.has_avatar) },
-    at: e.at,
-    via: e.via,
-  }));
+/** SQLite takes a bounded number of bound values per statement; a page's worth of ids goes in slices. */
+const IN_CHUNK = 400;
+
+async function inChunks<T>(ids: string[], fetch: (slice: string[]) => Promise<T[]>): Promise<T[]> {
+  const out: T[] = [];
+  for (let i = 0; i < ids.length; i += IN_CHUNK) out.push(...(await fetch(ids.slice(i, i + IN_CHUNK))));
+  return out;
 }
 
-type ReplyRow = { user_id: string; name: string; is_dj: number; avatar_v: number; has_avatar: number; status: ReactionStatus; reply: string | null; updated_at: number };
+const marks = (ids: string[]) => ids.map(() => "?").join(",");
 
-/** What other people did with a send: kept it, played it out, or wrote back. The viewer's own reaction is not in here. */
-export async function repliesOf(sendId: string, viewerId: string): Promise<Send["replies"]> {
-  const rows = await all<ReplyRow>(
-    `SELECT r.user_id, u.name, u.is_dj, u.avatar_v, (u.avatar IS NOT NULL) AS has_avatar, r.status, r.reply, r.updated_at
-     FROM reactions r JOIN users u ON u.id = r.user_id
-     WHERE r.send_id = ? AND r.user_id != ? AND (r.status IN ('saved', 'played') OR (r.reply IS NOT NULL AND r.reply != ''))
-     ORDER BY r.updated_at ASC`,
-    [sendId, viewerId],
+/** Everyone who played or liked each of these sends after the fact, oldest first. */
+async function echoesOn(sendIds: string[]): Promise<Map<string, Send["echoes"]>> {
+  const out = new Map<string, Send["echoes"]>();
+  if (!sendIds.length) return out;
+  const rows = await inChunks(sendIds, (slice) =>
+    all<EchoRow>(
+      `SELECT e.send_id, e.user_id, u.name, u.is_dj, u.avatar_v, (u.avatar IS NOT NULL) AS has_avatar, e.at, e.via
+       FROM echoes e JOIN users u ON u.id = e.user_id WHERE e.send_id IN (${marks(slice)}) ORDER BY e.at ASC`,
+      slice,
+    ),
   );
-  return rows.map((r) => ({
-    person: { id: r.user_id, name: r.name, isDj: !!r.is_dj, avatarUrl: avatarUrlFor(r.user_id, r.avatar_v ?? 0, !!r.has_avatar) },
-    status: r.status,
-    reply: r.reply,
-    at: r.updated_at,
-  }));
-}
-
-async function withHistory(rows: SendRow[], crewId: string, viewerId: string): Promise<Send[]> {
-  const out: Send[] = [];
-  const threads = await latestCommentsOn(rows.map((r) => r.send_id));
-  for (const r of rows) {
-    const hist = await all<{ id: string; name: string; created_at: number }>(
-      `SELECT s.id, u.name, s.created_at FROM sends s JOIN users u ON u.id = s.from_user_id
-       WHERE s.crew_id = ? AND s.track_id = ? AND s.id != ? AND s.created_at < ? ORDER BY s.created_at DESC LIMIT 5`,
-      [crewId, r.id, r.send_id, r.send_created_at],
-    );
-    out.push(
-      sendFromRow(
-        r,
-        hist.map((h) => ({ sendId: h.id, fromName: h.name, createdAt: h.created_at })),
-        await echoesOf(r.send_id),
-        await repliesOf(r.send_id, viewerId),
-        threads.get(r.send_id) ?? [],
-      ),
-    );
+  for (const e of rows) {
+    const list = out.get(e.send_id) ?? [];
+    list.push({ person: { id: e.user_id, name: e.name, isDj: !!e.is_dj, avatarUrl: avatarUrlFor(e.user_id, e.avatar_v ?? 0, !!e.has_avatar) }, at: e.at, via: e.via });
+    out.set(e.send_id, list);
   }
   return out;
+}
+
+/** What other people did with each send: kept it, played it out, or wrote back. */
+async function repliesOn(sendIds: string[], viewerId: string): Promise<Map<string, Send["replies"]>> {
+  const out = new Map<string, Send["replies"]>();
+  if (!sendIds.length) return out;
+  const rows = await inChunks(sendIds, (slice) =>
+    all<ReplyRow>(
+      `SELECT r.send_id, r.user_id, u.name, u.is_dj, u.avatar_v, (u.avatar IS NOT NULL) AS has_avatar, r.status, r.reply, r.updated_at
+       FROM reactions r JOIN users u ON u.id = r.user_id
+       WHERE r.send_id IN (${marks(slice)}) AND r.user_id != ? AND (r.status IN ('saved', 'played') OR (r.reply IS NOT NULL AND r.reply != ''))
+       ORDER BY r.updated_at ASC`,
+      [...slice, viewerId],
+    ),
+  );
+  for (const r of rows) {
+    const list = out.get(r.send_id) ?? [];
+    list.push({ person: { id: r.user_id, name: r.name, isDj: !!r.is_dj, avatarUrl: avatarUrlFor(r.user_id, r.avatar_v ?? 0, !!r.has_avatar) }, status: r.status, reply: r.reply, at: r.updated_at });
+    out.set(r.send_id, list);
+  }
+  return out;
+}
+
+export async function repliesOf(sendId: string, viewerId: string): Promise<Send["replies"]> {
+  return (await repliesOn([sendId], viewerId)).get(sendId) ?? [];
+}
+
+/** Earlier sends of the same tracks in this crew, newest first, keyed by track. */
+async function earlierSendsOf(crewId: string, trackIds: string[]): Promise<Map<string, HistRow[]>> {
+  const out = new Map<string, HistRow[]>();
+  const ids = [...new Set(trackIds)];
+  if (!ids.length) return out;
+  const rows = await inChunks(ids, (slice) =>
+    all<HistRow>(
+      `SELECT s.id, s.track_id, u.name, s.created_at FROM sends s JOIN users u ON u.id = s.from_user_id
+       WHERE s.crew_id = ? AND s.track_id IN (${marks(slice)}) ORDER BY s.created_at DESC`,
+      [crewId, ...slice],
+    ),
+  );
+  for (const r of rows) {
+    const list = out.get(r.track_id) ?? [];
+    list.push(r);
+    out.set(r.track_id, list);
+  }
+  return out;
+}
+
+/**
+ * Rows to sends, with everything that hangs off them: earlier sends of the track, echoes, replies and
+ * the latest comments. Four queries for the page, whatever its length; one per send made the log slow.
+ */
+async function withHistory(rows: SendRow[], crewId: string, viewerId: string): Promise<Send[]> {
+  if (!rows.length) return [];
+  const ids = rows.map((r) => r.send_id);
+  const [threads, echoes, replies, earlier] = await Promise.all([
+    latestCommentsOn(ids),
+    echoesOn(ids),
+    repliesOn(ids, viewerId),
+    earlierSendsOf(crewId, rows.map((r) => r.id)),
+  ]);
+  return rows.map((r) => {
+    const hist = (earlier.get(r.id) ?? []).filter((h) => h.id !== r.send_id && h.created_at < r.send_created_at).slice(0, 5);
+    return sendFromRow(
+      r,
+      hist.map((h) => ({ sendId: h.id, fromName: h.name, createdAt: h.created_at })),
+      echoes.get(r.send_id) ?? [],
+      replies.get(r.send_id) ?? [],
+      threads.get(r.send_id) ?? [],
+    );
+  });
 }
 
 /**
@@ -348,10 +396,12 @@ export function sendFromRow(r: SendRow, history: Send["history"] = [], echoes: S
 async function latestCommentsOn(sendIds: string[]): Promise<Map<string, Comment[]>> {
   const out = new Map<string, Comment[]>();
   if (!sendIds.length) return out;
-  const rows = await all<{ id: string; send_id: string; user_id: string; name: string; is_dj: number; avatar_v: number; has_avatar: number; body: string; created_at: number }>(
-    `SELECT c.id, c.send_id, c.user_id, u.name, u.is_dj, u.avatar_v, (u.avatar IS NOT NULL) AS has_avatar, c.body, c.created_at
-     FROM comments c JOIN users u ON u.id = c.user_id WHERE c.send_id IN (${sendIds.map(() => "?").join(",")}) ORDER BY c.created_at DESC`,
-    sendIds,
+  const rows = await inChunks(sendIds, (slice) =>
+    all<{ id: string; send_id: string; user_id: string; name: string; is_dj: number; avatar_v: number; has_avatar: number; body: string; created_at: number }>(
+      `SELECT c.id, c.send_id, c.user_id, u.name, u.is_dj, u.avatar_v, (u.avatar IS NOT NULL) AS has_avatar, c.body, c.created_at
+       FROM comments c JOIN users u ON u.id = c.user_id WHERE c.send_id IN (${marks(slice)}) ORDER BY c.created_at DESC`,
+      slice,
+    ),
   );
   for (const r of rows) {
     const list = out.get(r.send_id) ?? [];
@@ -415,11 +465,18 @@ export async function getSend(sendId: string, viewerId: string): Promise<Send | 
   return s;
 }
 
-/** Unheard sends from other people in this crew, oldest first. */
 /** What is new to this person and meant for them: sends and likes from others. Plays stream by quietly. */
+const REEL_WHERE = "s.crew_id = ? AND s.from_user_id != ? AND s.via NOT LIKE 'played:%' AND (r.status IS NULL OR r.status = 'seen')";
+
+/** How many are waiting on the stage, without building them. */
+export async function unseenCount(userId: string, crewId: string): Promise<number> {
+  const r = await one<{ n: number }>(`SELECT COUNT(*) AS n FROM sends s LEFT JOIN reactions r ON r.send_id = s.id AND r.user_id = ? WHERE ${REEL_WHERE}`, [userId, crewId, userId]);
+  return Number(r?.n ?? 0);
+}
+
 export async function reelFor(userId: string, crewId: string): Promise<Send[]> {
   const rows = await all<SendRow>(
-    `${SEND_SELECT} WHERE s.crew_id = ? AND s.from_user_id != ? AND s.via NOT LIKE 'played:%' AND (r.status IS NULL OR r.status = 'seen') ORDER BY s.created_at ASC LIMIT 200`,
+    `${SEND_SELECT} WHERE ${REEL_WHERE} ORDER BY s.created_at ASC LIMIT 200`,
     [userId, crewId, userId],
   );
   return withHistory(rows, crewId, userId);

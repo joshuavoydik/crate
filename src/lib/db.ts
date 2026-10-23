@@ -354,20 +354,26 @@ export async function dedupeDoubles(c: Client, budgetMs = Infinity): Promise<boo
 
 export type Row = Record<string, InValue>;
 
+/** How many statements have gone to the database since the process started; a page's cost is the difference. */
+export let queryCount = 0;
+
 export async function one<T = Row>(sql: string, args: InValue[] = []): Promise<T | null> {
   const c = await db();
+  queryCount++;
   const r = await c.execute({ sql, args });
   return (r.rows[0] as unknown as T) ?? null;
 }
 
 export async function all<T = Row>(sql: string, args: InValue[] = []): Promise<T[]> {
   const c = await db();
+  queryCount++;
   const r = await c.execute({ sql, args });
   return r.rows as unknown as T[];
 }
 
 export async function run(sql: string, args: InValue[] = []): Promise<number> {
   const c = await db();
+  queryCount++;
   const r = await c.execute({ sql, args });
   return r.rowsAffected;
 }

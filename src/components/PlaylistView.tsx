@@ -16,6 +16,30 @@ import type { Playlist, Send } from "@/lib/types";
 const RECENT_DAYS = 7;
 
 /**
+ * The last playlist seen for each crew, for the life of the page. Coming back to the log paints what
+ * was there a moment ago at once and the fresh copy replaces it when it lands; no blank, no wrong
+ * empty state in between.
+ */
+const remembered = new Map<string, Playlist>();
+
+/** A few quiet rows while the first copy loads, in the shape of the list, so nothing jumps. */
+function Loading() {
+  return (
+    <div className="pl__loading" aria-busy="true" aria-label="Loading">
+      {[0, 1, 2, 3].map((i) => (
+        <div key={i} className="pl__loadrow">
+          <div className="skeleton pl__loadart" />
+          <div>
+            <div className="skeleton" style={{ width: i % 2 ? 150 : 210, height: 14 }} />
+            <div className="skeleton" style={{ width: i % 2 ? 90 : 120, height: 11, marginTop: 8 }} />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/**
  * The crew's playlist: today's stream under the name of the moment, with earlier days folded
  * beneath it. New-to-you tracks are caught up on the swipe stage; the rest is the list.
  */
@@ -23,12 +47,13 @@ export function PlaylistView({ welcome = false }: { welcome?: boolean }) {
   const { me, crew, toast, sendsVersion, setAccentTrack, openInvite, openSend } = useStore();
   const [firstSend, setFirstSend] = useState(welcome);
   const player = usePlayer();
-  const [playlist, setPlaylist] = useState<Playlist | null>(null);
-  const [mode, setMode] = useState<"stage" | "list">("stage");
+  const crewId = crew?.id ?? null;
+  const known = crewId ? (remembered.get(crewId) ?? null) : null;
+  const [playlist, setPlaylist] = useState<Playlist | null>(known);
+  const [mode, setMode] = useState<"stage" | "list">(known && known.unseen === 0 ? "list" : "stage");
   const [playingAll, setPlayingAll] = useState(false);
   const [who, setWho] = useState<string | null>(null);
-  const [decidedFor, setDecidedFor] = useState<string | null>(null);
-  const crewId = crew?.id ?? null;
+  const [decidedFor, setDecidedFor] = useState<string | null>(known ? crewId : null);
 
   const patchSend = useCallback((updated: Send) => {
     setPlaylist((p) => (p ? { ...p, sends: p.sends.map((s) => (s.id === updated.id ? updated : s)) } : p));
@@ -39,6 +64,7 @@ export function PlaylistView({ welcome = false }: { welcome?: boolean }) {
     if (!crewId) return;
     try {
       const r = await api<{ playlist: Playlist }>(`/api/playlist?crew=${encodeURIComponent(crewId)}&tz=${encodeURIComponent(tz())}`);
+      remembered.set(crewId, r.playlist);
       setPlaylist(r.playlist);
       // First look at a crew: start on the stage when there is something new, else the list.
       setDecidedFor((d) => {
@@ -51,7 +77,7 @@ export function PlaylistView({ welcome = false }: { welcome?: boolean }) {
   }, [crewId, toast]);
 
   useEffect(() => {
-    setPlaylist(null);
+    setPlaylist(crewId ? (remembered.get(crewId) ?? null) : null);
     setWho(null);
     load();
   }, [crewId, load]);
@@ -107,7 +133,8 @@ export function PlaylistView({ welcome = false }: { welcome?: boolean }) {
   const count = playlist?.count ?? 0;
   const todayCount = playlist?.sends.length ?? 0;
   const unseen = playlist?.unseen ?? 0;
-  const showStage = mode === "stage" && (unseen > 0 || playlist === null);
+  // Nothing is decided until the playlist is here: no stage, and no empty state, on a guess.
+  const showStage = playlist !== null && mode === "stage" && unseen > 0;
   const together = crew.members.length > 1;
   const days = playlist?.days ?? [];
 
@@ -182,7 +209,9 @@ export function PlaylistView({ welcome = false }: { welcome?: boolean }) {
         </div>
       </header>
 
-      {showStage || count === 0 ? (
+      {playlist === null ? (
+        <Loading />
+      ) : showStage || count === 0 ? (
         <Reel
           embedded
           onCaughtUp={() => {
