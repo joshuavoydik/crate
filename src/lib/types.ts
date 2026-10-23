@@ -175,6 +175,8 @@ export type Collection = {
   covers: string[];
   /** Whether it holds the track the list was asked about; only when one was. */
   has?: boolean;
+  /** When the playlist is a day of the log, shared: that date (the viewer's), else null. */
+  day: string | null;
 };
 
 export type CollectionTrack = { track: Track; addedBy: Person; addedAt: number };

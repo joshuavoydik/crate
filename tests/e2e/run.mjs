@@ -899,6 +899,42 @@ async function main() {
     await a.screenshot({ path: `${OUT}/26-days-desktop.png`, fullPage: true });
     log("earlier days fold under the playlist, open in place, and have their own pages");
 
+    // ================= Sharing: any playlist, one button =================
+    // Today's log: Share makes the day a playlist with its link on and offers it.
+    await a.goto(`${BASE}/`);
+    await a.locator(".pl__by").getByText(/today/).waitFor({ timeout: 20000 });
+    const showLog = a.getByRole("button", { name: "Show the log" });
+    if (await showLog.count()) await showLog.click();
+    await a.getByRole("button", { name: "Share today's playlist" }).waitFor({ timeout: 20000 });
+    await a.getByRole("button", { name: "Share today's playlist" }).click();
+    await a.locator(".share .invite__url").waitFor();
+    const todayLink = "https://" + (await a.locator(".share .invite__url").textContent());
+    assert.ok(/\/p\/[a-z0-9]+$/i.test(todayLink), "today has a public link");
+    await a.screenshot({ path: `${OUT}/27-share-today.png` });
+    await a.getByRole("button", { name: "Done" }).click();
+    // It now sits among the playlists, marked as a day of the log, with a share glyph of its own.
+    await a.goto(`${BASE}/playlists`);
+    await a.getByText("a day of the log").first().waitFor({ timeout: 20000 });
+    const glyph = a.locator(".mix__wrap").filter({ hasText: "a day of the log" }).first().locator(".mix__share");
+    await glyph.click();
+    await a.locator(".share .invite__url").waitFor();
+    assert.equal("https://" + (await a.locator(".share .invite__url").textContent()), todayLink, "the same link, not a second one");
+    await a.getByRole("button", { name: "Done" }).click();
+    // An earlier day's card shares too.
+    await a.goto(`${BASE}/`);
+    await a.locator(".pl__by").getByText(/today/).waitFor({ timeout: 20000 });
+    if (await showLog.count()) await showLog.click();
+    await a.locator(".day__head").first().click();
+    await a.getByRole("button", { name: /^Share .+/ }).first().waitFor();
+    // Anyone with the link sees the day as a playlist, no account.
+    const stranger = await browser.newContext({ ...devices["iPhone 13"] });
+    const sp = await stranger.newPage();
+    await sp.goto(todayLink.replace("https://", "http://"));
+    await sp.getByText(/A playlist from/).waitFor({ timeout: 20000 });
+    assert.ok((await sp.locator(".radio").count()) === 1);
+    await stranger.close();
+    log("any playlist shares with one button: today, an earlier day, a hand-made one; the link opens for anyone");
+
     // ================= Moving house: the import endpoint and its sign-in links =================
     // The live database file is importable into itself (every row replaced by id): counts come back, and
     // the sign-in link logs Joshua in from a cold browser, cookie-less.

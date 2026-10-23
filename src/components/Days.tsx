@@ -9,7 +9,7 @@ import { TrackCard } from "./TrackCard";
 import { RowThread } from "./RowThread";
 import { Avatar, artFallback } from "./Avatar";
 import { SourceMark, platformOfVia } from "./SourceMark";
-import { IconPlay, IconPause, IconKeep, IconDeck, IconChevron, IconPlus } from "./Icons";
+import { IconPlay, IconPause, IconKeep, IconDeck, IconChevron, IconPlus, IconShare } from "./Icons";
 import { api, timeAgo, viaLabel, metaOf } from "@/lib/client";
 import type { DaySummary, Send, ReactionStatus, Track, Person } from "@/lib/types";
 
@@ -294,6 +294,7 @@ export function DayCard({
                 {playingAll ? <IconPause size={14} /> : <IconPlay size={14} />} {playingAll ? "Stop" : "Play all"}
               </button>
             )}
+            <ShareDay crewId={crewId} date={day.date} title={dayTitle(day.date)} />
             <Link className="btn btn--sm btn--ghost" href={`/days/${day.date}`}>
               Open the day
             </Link>
@@ -306,6 +307,30 @@ export function DayCard({
         </div>
       )}
     </li>
+  );
+}
+
+/** One tap: the day as a shared playlist, link on, offered wherever links go. */
+export function ShareDay({ crewId, date, title, name }: { crewId: string; date: string; title: string; name?: string }) {
+  const { crew, toast, openShare, bumpCollections } = useStore();
+  const [busy, setBusy] = useState(false);
+  async function share() {
+    if (busy) return;
+    setBusy(true);
+    try {
+      const r = await api<{ url: string; collection: { covers: string[] } }>("/api/collections/day", { method: "POST", json: { crew: crewId, date, tz: tz(), name: name ?? title } });
+      bumpCollections();
+      openShare({ title: name ?? title, subtitle: `A day from ${crew?.name ?? "the crew"}`, url: r.url, covers: r.collection.covers });
+    } catch (e) {
+      toast((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
+  return (
+    <button className="btn btn--sm" onClick={share} disabled={busy} aria-label={`Share ${title}`}>
+      <IconShare size={14} /> Share
+    </button>
   );
 }
 

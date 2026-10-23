@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useStore } from "./Store";
 import { Sheet } from "./Sheet";
-import { IconCheck, IconPlus } from "./Icons";
+import { IconCheck, IconPlus, IconShare } from "./Icons";
 import { api } from "@/lib/client";
 import type { Collection } from "@/lib/types";
 import { artFallback } from "./Avatar";
@@ -53,7 +53,7 @@ function NewPlaylistForm({ busy, onSubmit, onCancel, autoFocus }: { busy: boolea
  * playlist (today's, which fills itself) is the page; these are the lists people put together.
  */
 export function PlaylistShelf({ crewId, page }: { crewId: string; page?: boolean }) {
-  const { collectionsVersion, bumpCollections, toast } = useStore();
+  const { collectionsVersion, bumpCollections, toast, crew } = useStore();
   const [list, setList] = useState<Collection[] | null>(null);
   /** Playlists other crews let this person into by their link. */
   const [shared, setShared] = useState<Array<Collection & { crewName: string }>>([]);
@@ -107,11 +107,17 @@ export function PlaylistShelf({ crewId, page }: { crewId: string; page?: boolean
       {list.length > 0 && (
         <div className="mixes">
           {list.map((c) => (
-            <Link key={c.id} href={`/playlists/${c.id}`} className="mix">
-              <Mosaic covers={c.covers} />
-              <div className="mix__name">{c.name}</div>
-              <div className="mix__n num">{c.count === 1 ? "1 track" : `${c.count} tracks`}</div>
-            </Link>
+            <div key={c.id} className="mix__wrap">
+              <Link href={`/playlists/${c.id}`} className="mix">
+                <Mosaic covers={c.covers} />
+                <div className="mix__name">{c.name}</div>
+                <div className="mix__n num">
+                  {c.count === 1 ? "1 track" : `${c.count} tracks`}
+                  {c.day ? " · a day of the log" : ""}
+                </div>
+              </Link>
+              <ShareCollection collection={c} crewName={crew?.name ?? "the crew"} />
+            </div>
           ))}
         </div>
       )}
@@ -138,6 +144,38 @@ export function PlaylistShelf({ crewId, page }: { crewId: string; page?: boolean
 }
 
 /** The sheet behind "Add to a playlist": the crew's playlists with a check on the ones that have the track, and a way to start a new one with it. */
+/** The share glyph on a playlist card: one tap turns its link on (if it is off) and offers it. */
+export function ShareCollection({ collection, crewName, className = "mix__share" }: { collection: Collection; crewName: string; className?: string }) {
+  const { toast, openShare, bumpCollections } = useStore();
+  const [busy, setBusy] = useState(false);
+  async function share(e: React.MouseEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    if (busy) return;
+    setBusy(true);
+    try {
+      let code = collection.publicCode;
+      let covers = collection.covers;
+      if (!code) {
+        const r = await api<{ collection: Collection }>(`/api/collections/${collection.id}`, { method: "PATCH", json: { link: true } });
+        code = r.collection.publicCode;
+        covers = r.collection.covers;
+        bumpCollections();
+      }
+      openShare({ title: collection.name, subtitle: `A playlist from ${crewName}`, url: `${location.origin}/p/${code}`, covers });
+    } catch (x) {
+      toast((x as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
+  return (
+    <button type="button" className={className} onClick={share} disabled={busy} aria-label={`Share ${collection.name}`} title="Share">
+      <IconShare size={15} />
+    </button>
+  );
+}
+
 /** The Playlists page: the crew's hand-made lists and the ones shared with this person. */
 export function PlaylistsView() {
   const { crew } = useStore();

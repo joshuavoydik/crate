@@ -101,3 +101,9 @@ export const IconUser = ({ size = 18, className }: P) => (
     <path d="M4 20a8 8 0 0 1 16 0" />
   </svg>
 );
+
+export const IconShare = ({ size = 16, className }: P) => (
+  <svg {...base(size)} className={className}>
+    <path d="M12 15V4M8 8l4-4 4 4M5 12v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6" />
+  </svg>
+);

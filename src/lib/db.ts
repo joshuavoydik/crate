@@ -223,6 +223,7 @@ const COLUMNS: Array<[table: string, column: string, ddl: string]> = [
   ["users", "chrome_last", "TEXT"],
   ["users", "email", "TEXT"],
   ["users", "google_sub", "TEXT"],
+  ["playlists", "day", "TEXT"],
 ];
 
 /** Indexes on columns that arrive by ALTER, so they run after the columns exist. */

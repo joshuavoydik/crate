@@ -1013,8 +1013,36 @@ textarea:focus-visible,
   background: transparent;
 }
 
-.mixes > .mix:last-child {
+.mixes > .mix:last-child,
+.mixes > .mix__wrap:last-child .mix {
   border-bottom: 1px solid var(--line);
+}
+
+/* A playlist card with its share glyph in the corner: the card is the link, the glyph is the one tap. */
+.mix__wrap {
+  position: relative;
+}
+.mix__share {
+  position: absolute;
+  top: 18px;
+  right: 6px;
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface);
+  border: 1px solid var(--line-2);
+  color: var(--ink-2);
+  cursor: pointer;
+  padding: 0;
+}
+.mix__share:hover {
+  color: var(--signal);
+  border-color: var(--signal);
+}
+.mix__share:disabled {
+  opacity: 0.5;
 }
 
 .mosaic {

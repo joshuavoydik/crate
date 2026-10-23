@@ -1,5 +1,6 @@
 import { all, one, run, now, id, inviteCode } from "./db";
-import { getTrack, membersOf } from "./queries";
+import { getTrack, membersOf, sendsIn } from "./queries";
+import { sendsOnDay, activeToday, localDate } from "./days";
 import type { Collection, CollectionTrack, Person } from "./types";
 
 /**
@@ -10,7 +11,7 @@ import type { Collection, CollectionTrack, Person } from "./types";
  * to someone, and take back.
  */
 
-type Row = { id: string; crew_id: string; name: string; created_by: string; created_at: number; public_code: string | null; count: number; has?: number };
+type Row = { id: string; crew_id: string; name: string; created_by: string; created_at: number; public_code: string | null; count: number; has?: number; day: string | null };
 
 async function coversOf(collectionId: string): Promise<string[]> {
   const rows = await all<{ artwork_url: string }>(
@@ -31,10 +32,11 @@ async function hydrate(r: Row): Promise<Collection> {
     count: Number(r.count),
     covers: await coversOf(r.id),
     has: r.has === undefined ? undefined : Number(r.has) > 0,
+    day: r.day ?? null,
   };
 }
 
-const COLS = "p.id, p.crew_id, p.name, p.created_by, p.created_at, p.public_code, (SELECT COUNT(*) FROM playlist_tracks t WHERE t.playlist_id = p.id) AS count";
+const COLS = "p.id, p.crew_id, p.name, p.created_by, p.created_at, p.public_code, p.day, (SELECT COUNT(*) FROM playlist_tracks t WHERE t.playlist_id = p.id) AS count";
 
 /** The crew's playlists, newest first; with a track id, whether each one already holds it. */
 export async function collectionsFor(crewId: string, trackId?: string | null): Promise<Collection[]> {
@@ -140,4 +142,25 @@ export async function tracksIn(collection: Collection): Promise<CollectionTrack[
     out.push({ track, addedBy: by, addedAt: Number(r.added_at) });
   }
   return out;
+}
+
+/**
+ * A day of the log, handed on: the first share makes a playlist of that day's songs (each credited
+ * to whoever brought it) with its link on; a later share of the same day brings in whatever has
+ * arrived since. It lives among the crew's playlists from then on, like any other.
+ */
+export async function shareDay(crewId: string, userId: string, date: string, tz: string, name: string): Promise<{ collection: Collection; code: string }> {
+  // Today is what the log shows today (brought up today, echoes included); an earlier day is what arrived that day.
+  const sends = date === localDate(now(), tz) ? activeToday(await sendsIn(userId, crewId, 400), tz, date) : await sendsOnDay(userId, crewId, date, tz);
+  let row = await one<{ id: string }>("SELECT id FROM playlists WHERE crew_id = ? AND day = ?", [crewId, date]);
+  if (!row) {
+    const cid = id("pl");
+    await run("INSERT INTO playlists (id, crew_id, name, created_by, created_at, public_code, day) VALUES (?, ?, ?, ?, ?, NULL, ?)", [cid, crewId, name.trim().slice(0, 60) || date, userId, now(), date]);
+    row = { id: cid };
+  }
+  for (const s of [...sends].reverse()) {
+    await run("INSERT OR IGNORE INTO playlist_tracks (playlist_id, track_id, added_by, added_at) VALUES (?, ?, ?, ?)", [row.id, s.track.id, s.from.id, s.createdAt]);
+  }
+  const code = (await setCollectionLink(row.id, true))!;
+  return { collection: (await collectionById(row.id))!, code };
 }

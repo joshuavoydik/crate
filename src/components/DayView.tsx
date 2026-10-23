@@ -6,7 +6,7 @@ import { useStore } from "./Store";
 import { usePlayer } from "./Player";
 import { Avatar } from "./Avatar";
 import { IconPlay, IconPause } from "./Icons";
-import { SendRows, useTrackSheet, facesOf, tz } from "./Days";
+import { SendRows, ShareDay, useTrackSheet, facesOf, tz } from "./Days";
 import { api, metaOf } from "@/lib/client";
 import type { Send } from "@/lib/types";
 
@@ -75,6 +75,7 @@ export function DayView({ date }: { date: string }) {
           </span>
         </div>
         <div className="pl__actions">
+          {data && data.sends.length > 0 && <ShareDay crewId={crew.id} date={date} title={data.title} />}
           {data && data.sends.some((s) => player.canPlay(s.track)) && (
             <button
               className="btn btn--sm"

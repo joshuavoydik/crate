@@ -7,7 +7,7 @@ import { usePlayer } from "./Player";
 import { Reel } from "./Reel";
 import { LiveBand } from "./LiveView";
 import { Avatar } from "./Avatar";
-import { IconPlay, IconPause } from "./Icons";
+import { IconPlay, IconPause, IconShare } from "./Icons";
 import { SendRows, DayCards, useTrackSheet, facesOf, tz } from "./Days";
 import { api, metaOf } from "@/lib/client";
 import type { Playlist, Send } from "@/lib/types";
@@ -46,7 +46,7 @@ function Loading() {
  * beneath it. New-to-you tracks are caught up on the swipe stage; the rest is the list.
  */
 export function PlaylistView({ welcome = false }: { welcome?: boolean }) {
-  const { me, crew, toast, sendsVersion, setAccentTrack, openInvite, openSend } = useStore();
+  const { me, crew, toast, sendsVersion, setAccentTrack, openInvite, openSend, openShare, bumpCollections } = useStore();
   const [firstSend, setFirstSend] = useState(welcome);
   const player = usePlayer();
   const crewId = crew?.id ?? null;
@@ -117,6 +117,25 @@ export function PlaylistView({ welcome = false }: { welcome?: boolean }) {
     if (next) player.play(next.track.id, next.track.previewUrl, metaOf(next.track));
     else setPlayingAll(false);
   }, [playingAll, player.playing, player.progress, player.currentId, playlist, player]);
+
+  /** Today, handed on: one tap makes (or refreshes) the day's playlist with its link and offers it. */
+  const [sharing, setSharing] = useState(false);
+  async function shareToday() {
+    if (!playlist || !crew || sharing) return;
+    setSharing(true);
+    try {
+      const r = await api<{ url: string; collection: { covers: string[] } }>("/api/collections/day", {
+        method: "POST",
+        json: { crew: crew.id, date: playlist.today, tz: tz(), name: playlist.name },
+      });
+      bumpCollections();
+      openShare({ title: playlist.name, subtitle: `Today's playlist from ${crew.name}`, url: r.url, covers: r.collection.covers });
+    } catch (e) {
+      toast((e as Error).message);
+    } finally {
+      setSharing(false);
+    }
+  }
 
   const byLine = useMemo(() => {
     if (!crew) return "";
@@ -194,6 +213,11 @@ export function PlaylistView({ welcome = false }: { welcome?: boolean }) {
           {unseen > 0 && (
             <button className={`btn btn--sm${showStage ? "" : " btn--accent"}`} onClick={() => setMode(showStage ? "list" : "stage")}>
               {showStage ? "Show the log" : `Catch up · ${unseen} new`}
+            </button>
+          )}
+          {todayCount > 0 && !showStage && (
+            <button className="btn btn--sm" onClick={shareToday} disabled={sharing} aria-label="Share today's playlist">
+              <IconShare size={14} /> Share
             </button>
           )}
           {todayCount > 0 && !showStage && (

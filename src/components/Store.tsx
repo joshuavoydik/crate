@@ -149,7 +149,25 @@ export function StoreProvider({ initialMe, children }: { initialMe: Me; children
   const openAddTo = useCallback((t: Track) => setAddToTrack(t), []);
   const closeAddTo = useCallback(() => setAddToTrack(null), []);
   const bumpCollections = useCallback(() => setCollectionsVersion((v) => v + 1), []);
-  const openShare = useCallback((r: ShareRequest) => setShare(r), []);
+  // On a phone the system's share sheet is the one tap that goes anywhere, so it opens straight away;
+  // Crate's own sheet (the link big, Copy, the few places a link goes) is for a desk, and the fallback.
+  const openShare = useCallback((r: ShareRequest) => {
+    let touch = false;
+    try {
+      touch = window.matchMedia("(hover: none)").matches;
+    } catch {
+      /* no matchMedia */
+    }
+    if (touch && typeof navigator !== "undefined" && typeof navigator.share === "function") {
+      navigator
+        .share({ title: r.title, text: r.subtitle ? `${r.title} · ${r.subtitle}` : r.title, url: r.url })
+        .catch((e: Error) => {
+          if (e?.name !== "AbortError") setShare(r);
+        });
+      return;
+    }
+    setShare(r);
+  }, []);
   const closeShare = useCallback(() => setShare(null), []);
 
   const crew = useMemo(() => me.crews.find((c) => c.id === crewId) ?? me.crews[0] ?? null, [me.crews, crewId]);
