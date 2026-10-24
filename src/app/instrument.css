@@ -29,7 +29,7 @@
   color-scheme: dark;
 }
 
-/* Paper: the same instrument, printed. Only when someone asks for light in Settings. */
+/* Paper: the same instrument, printed. When someone asks for it, or when nothing is chosen and the system is light. */
 :root[data-theme="light"] {
   --surface: #f2f0ea;
   --surface-2: #f8f7f3;
@@ -43,6 +43,23 @@
   --glass: rgba(0, 0, 0, 0.03);
   --glass-2: rgba(0, 0, 0, 0.06);
   color-scheme: light;
+}
+
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    --surface: #f2f0ea;
+    --surface-2: #f8f7f3;
+    --surface-3: #e6e3dc;
+    --ink: #121212;
+    --ink-2: #4a4a47;
+    --ink-3: #6e6d68;
+    --ink-4: #cfcdc6;
+    --line: #dad8d1;
+    --line-2: #c4c2bb;
+    --glass: rgba(0, 0, 0, 0.03);
+    --glass-2: rgba(0, 0, 0, 0.06);
+    color-scheme: light;
+  }
 }
 
 html,
@@ -1930,4 +1947,38 @@ html:has(.nowbar) .shell {
   color: var(--ink-2);
   text-decoration: underline;
   text-underline-offset: 3px;
+}
+
+
+/* ---------- appearance: the three modes and the coloured grounds ---------- */
+
+.grounds {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+}
+.ground {
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--line-2);
+  padding: 0;
+  cursor: pointer;
+  position: relative;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+}
+.ground[aria-checked="true"] {
+  outline: 1px solid var(--signal);
+  outline-offset: 2px;
+}
+.ground:hover {
+  border-color: var(--ink-2);
+}
+.switch--stack {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 12px;
+}
+.appearance .seg {
+  align-self: flex-start;
 }

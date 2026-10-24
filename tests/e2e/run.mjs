@@ -460,6 +460,25 @@ async function main() {
     assert.equal(await a.evaluate(() => document.documentElement.getAttribute("data-theme")), "light");
     await a.getByRole("radio", { name: "Black" }).click();
     assert.equal(await a.evaluate(() => document.documentElement.getAttribute("data-theme")), "dark");
+    // A coloured ground: the whole token set follows it, the signal changes where red would not read, and it survives a reload.
+    await a.getByRole("radio", { name: "Oxblood" }).click();
+    assert.equal(await a.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue("--surface").trim()), "#3b0d12");
+    assert.equal(await a.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue("--signal").trim()), "#ffb000");
+    await a.reload();
+    assert.equal(await a.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue("--surface").trim()), "#3b0d12");
+    await a.getByRole("radio", { name: "Butter" }).click();
+    assert.equal(await a.evaluate(() => document.documentElement.getAttribute("data-theme")), "light");
+    assert.equal(await a.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue("--ink").trim()), "#121212");
+    await settled(a);
+    await a.screenshot({ path: `${OUT}/09b-settings-butter.png` });
+    // System follows the device: a light device paints paper with nothing chosen.
+    await a.getByRole("radio", { name: "System" }).click();
+    assert.equal(await a.evaluate(() => document.documentElement.getAttribute("data-theme")), null);
+    await a.emulateMedia({ colorScheme: "light" });
+    assert.equal(await a.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue("--surface").trim()), "#f2f0ea");
+    await a.emulateMedia({ colorScheme: "dark" });
+    assert.equal(await a.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue("--surface").trim()), "#0b0b0c");
+    await a.getByRole("radio", { name: "Black" }).click();
     // The crew page: people, invite, the playlist name, rules, public radio; leaving asks first.
     await a.goto(`${BASE}/crew`);
     await a.getByRole("textbox", { name: "Crew name" }).waitFor();

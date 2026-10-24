@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { effectiveTheme, getThemeMode, setThemeMode, type ThemeMode } from "@/lib/theme";
+import { TINTS } from "@/lib/tints";
 
 const IconSun = () => (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" aria-hidden>
@@ -42,7 +43,7 @@ export function ThemeToggle() {
   );
 }
 
-/** Black / Paper, for Settings. Nothing chosen means black. */
+/** System / Black / Paper, and seven coloured grounds, for Settings. Nothing chosen follows the system. */
 export function ThemePicker() {
   const [mode, setMode] = useState<ThemeMode>("system");
   useEffect(() => setMode(getThemeMode()), []);
@@ -50,14 +51,35 @@ export function ThemePicker() {
     setThemeMode(m);
     setMode(m);
   };
-  const on = mode === "light" ? "light" : "dark";
+  const named: Array<[ThemeMode, string]> = [
+    ["system", "System"],
+    ["dark", "Black"],
+    ["light", "Paper"],
+  ];
   return (
-    <div className="seg" role="radiogroup" aria-label="Appearance">
-      {(["dark", "light"] as ThemeMode[]).map((m) => (
-        <button key={m} role="radio" aria-checked={on === m} className={on === m ? "is-on" : ""} onClick={() => pick(m)}>
-          {m === "dark" ? "Black" : "Paper"}
-        </button>
-      ))}
+    <div className="appearance">
+      <div className="seg" role="radiogroup" aria-label="Appearance">
+        {named.map(([m, label]) => (
+          <button key={m} role="radio" aria-checked={mode === m} className={mode === m ? "is-on" : ""} onClick={() => pick(m)}>
+            {label}
+          </button>
+        ))}
+      </div>
+      <div className="grounds" role="radiogroup" aria-label="Background colour">
+        {TINTS.map((t) => (
+          <button
+            key={t.id}
+            type="button"
+            role="radio"
+            aria-checked={mode === t.id}
+            aria-label={t.name}
+            title={t.name}
+            className="ground"
+            style={{ background: t.bg }}
+            onClick={() => pick(t.id)}
+          />
+        ))}
+      </div>
     </div>
   );
 }

@@ -288,11 +288,11 @@ export function SettingsView({ appUrl }: { appUrl: string }) {
         <Connections onMac={openMac} />
       </div>
 
-      <div className="switch" style={{ marginTop: 22 }}>
+      <div className="switch switch--stack" style={{ marginTop: 22 }}>
         <div>
           <div>Appearance</div>
           <div className="faint" style={{ fontSize: 13 }}>
-            Black is the instrument. Paper is the same thing printed.
+            System follows your device. Black is the instrument, Paper the same thing printed, or pick a ground: the type and the signal adjust to read on it.
           </div>
         </div>
         <ThemePicker />
