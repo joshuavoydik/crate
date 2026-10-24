@@ -954,6 +954,68 @@ async function main() {
     await stranger.close();
     log("any playlist shares with one button: today, an earlier day, a hand-made one; the link opens for anyone");
 
+    // ================= A person's page, and following =================
+    // Off by default: no page. Joshua turns his on from Settings, gets a handle, and the link works for anyone.
+    const offPage = await desk.request.get(`${BASE}/u/joshua`);
+    assert.equal(offPage.status(), 404, "no page until it is switched on");
+    await a.goto(`${BASE}/settings`);
+    await a.getByRole("radio", { name: "Plays too" }).click();
+    await a.getByRole("button", { name: "Share your page" }).waitFor({ timeout: 15000 });
+    const meNow = (await (await desk.request.get(`${BASE}/api/me`)).json()).me;
+    assert.equal(meNow.public, "plays");
+    assert.equal(meNow.handle, "joshua", "a handle from the first name");
+    // A handle of his own; a bad one is refused.
+    await a.getByRole("textbox", { name: "Handle", exact: true }).fill("josh");
+    await a.locator("#page").getByRole("button", { name: "Save" }).click();
+    await a.getByText("Handle saved").waitFor();
+    assert.equal((await desk.request.patch(`${BASE}/api/me`, { data: { handle: "no spaces here" } })).status(), 400);
+    // Joshua is playing something; a stranger opens the page: the orb, the recent plays, the shared playlists, a preview to tap.
+    await desk.request.post(`${BASE}/api/live`, { data: { trackId: liveTrack.id, playing: true, progressMs: 1000, durationMs: 30000 } });
+    const visitor = await browser.newContext({ ...devices["iPhone 13"] });
+    const vp = await visitor.newPage();
+    await vp.goto(`${BASE}/u/josh`);
+    await vp.getByRole("heading", { name: "Joshua" }).waitFor({ timeout: 20000 });
+    vp.on("pageerror", (e) => console.error("VISITOR PAGE ERROR:", e.message));
+    await vp.getByText("Playing now").waitFor({ timeout: 20000 });
+    await vp.getByText("@josh").waitFor();
+    await vp.getByText("Playlists", { exact: true }).waitFor();
+    await vp.screenshot({ path: `${OUT}/28-profile-phone.png`, fullPage: true });
+    // The card behind the link renders.
+    const og = await visitor.request.get(`${BASE}/u/josh/opengraph-image`);
+    assert.equal(og.status(), 200);
+    assert.ok((og.headers()["content-type"] || "").includes("image/png"), "the link card is a PNG");
+    const ogP = await visitor.request.get(`${BASE}/p/${todayLink.split("/p/")[1]}/opengraph-image`);
+    assert.equal(ogP.status(), 200);
+    const html = await (await visitor.request.get(`${BASE}/u/josh`)).text();
+    assert.ok(html.includes('property="og:title" content="Joshua on Crate"'), "og:title is set");
+    assert.ok(/opengraph-image/.test(html), "og:image points at the card");
+    // Follow needs an account: the button sends a stranger to sign in and back.
+    await vp.getByTestId("follow").click();
+    await vp.waitForURL(/\/signin\?next=%2Fu%2Fjosh/);
+    await visitor.close();
+    // Ariel follows Joshua: he shows on her Live under the crew, and on her Following page; his count goes up.
+    await b.goto(`${BASE}/u/josh`);
+    await b.getByTestId("follow").click();
+    await b.getByRole("button", { name: "Following" }).waitFor();
+    await b.getByText("1 follower").waitFor();
+    await b.goto(`${BASE}/following`);
+    await b.getByRole("heading", { name: "Following" }).waitFor();
+    await b.getByText("@josh").waitFor({ timeout: 15000 });
+    await b.goto(`${BASE}/live`);
+    await b.locator(".live__following").waitFor({ timeout: 20000 });
+    await b.locator(".live__following").getByText(/Following · 1 playing/).waitFor({ timeout: 20000 });
+    // Playlists only: the orb and the plays leave the page; the playlists stay. Off: the page is gone to everyone but him.
+    await desk.request.patch(`${BASE}/api/me`, { data: { public: "playlists" } });
+    const lite = await (await desk.request.get(`${BASE}/api/u/josh`)).json();
+    assert.equal(lite.live, null);
+    assert.equal(lite.plays.length, 0);
+    assert.ok(lite.playlists.length >= 1);
+    await desk.request.patch(`${BASE}/api/me`, { data: { public: "off" } });
+    assert.equal((await phone.request.get(`${BASE}/u/josh`)).status(), 404);
+    assert.equal((await desk.request.get(`${BASE}/u/josh`)).status(), 200, "the owner still sees it, with a note");
+    await desk.request.patch(`${BASE}/api/me`, { data: { public: "plays" } });
+    log("a person's page: on from Settings with a handle, a card behind the link, a stranger looks and is sent to sign in to follow, a friend follows and sees them on Live");
+
     // ================= Moving house: the import endpoint and its sign-in links =================
     // The live database file is importable into itself (every row replaced by id): counts come back, and
     // the sign-in link logs Joshua in from a cold browser, cookie-less.

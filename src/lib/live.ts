@@ -424,7 +424,11 @@ export type LiveSession = {
  * the day as it happens, and the log is where the days pile up.
  */
 export async function liveHistoryFor(crewId: string, limit = 80, opts: { tz?: string } = {}): Promise<LiveSession[]> {
-  const members = await membersOf(crewId);
+  return liveHistoryOf(await membersOf(crewId), limit, opts);
+}
+
+/** Past sessions of these people, newest first; with a zone, only the viewer's today. */
+export async function liveHistoryOf(members: Person[], limit = 80, opts: { tz?: string } = {}): Promise<LiveSession[]> {
   if (!members.length) return [];
   const ids = members.map((m) => m.id);
   // A local day is at most 36 hours away from now in any zone; the rest is filtered on the viewer's clock.
@@ -468,14 +472,18 @@ export async function liveHistoryFor(crewId: string, limit = 80, opts: { tz?: st
   return out;
 }
 
-/** Everyone in the crew, live people first. Refreshes external feeds for anyone stale. */
-export async function liveFor(crewId: string): Promise<LivePerson[]> {
-  const members = await membersOf(crewId);
+/** These people, live ones first. Refreshes external feeds for anyone stale. */
+export async function liveOf(members: Person[]): Promise<LivePerson[]> {
   const rows = await Promise.all(members.map((m) => presenceOf(m.id)));
   await Promise.all(members.map((m, i) => refreshExternal(m.id, rows[i]).catch(() => undefined)));
   const fresh = await Promise.all(members.map((m) => presenceOf(m.id)));
   const out = await Promise.all(members.map((m, i) => rowToLive(m, fresh[i])));
   return out.sort((a, b) => Number(b.live) - Number(a.live) || (b.updatedAt ?? 0) - (a.updatedAt ?? 0));
+}
+
+/** Everyone in the crew, live people first. */
+export async function liveFor(crewId: string): Promise<LivePerson[]> {
+  return liveOf(await membersOf(crewId));
 }
 
 const TUNED_WINDOW = 45_000;

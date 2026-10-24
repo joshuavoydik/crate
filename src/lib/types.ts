@@ -120,6 +120,10 @@ export type Me = {
   hasGoogle: boolean;
   /** Which sign-in doors this Crate has switched on. */
   signIn: { google: boolean; email: boolean };
+  /** The public page: its handle (empty until one is set) and what it shows. */
+  handle: string;
+  public: "off" | "playlists" | "plays";
+  followers: number;
 };
 
 export type Notice = {

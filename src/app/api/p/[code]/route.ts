@@ -6,8 +6,8 @@ import { throttled, clientIp } from "@/lib/ratelimit";
 
 /**
  * A playlist by its share link: no sign-in needed to look. The list, the tracks, who added each.
- * Previews and outbound links stay behind sign-up: a friend sees what is here, and hears it once
- * they are in. Someone already in (a member or a guest) is pointed into the app.
+ * Previews play for anyone; the outbound links stay behind sign-up, so a friend hears the hook
+ * and comes in for the rest. Someone already in (a member or a guest) is pointed into the app.
  */
 export async function GET(_req: Request, ctx: { params: Promise<{ code: string }> }) {
   const { code } = await ctx.params;
@@ -20,8 +20,9 @@ export async function GET(_req: Request, ctx: { params: Promise<{ code: string }
   const tracks = await tracksIn(found.collection);
   return json({
     playlist: { name: found.collection.name, crewName: found.crewName, count: tracks.length, createdAt: found.collection.createdAt },
+    // A preview is the hook, so a visitor gets one; where the song lives (the links) waits for a name.
     tracks: tracks.map((t) => ({
-      track: { ...t.track, previewUrl: null, links: {} },
+      track: { ...t.track, links: {} },
       addedBy: { name: t.addedBy.name.split(" ")[0], avatarUrl: t.addedBy.avatarUrl },
       addedAt: t.addedAt,
     })),

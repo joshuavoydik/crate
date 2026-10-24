@@ -196,6 +196,13 @@ CREATE TABLE IF NOT EXISTS presence (
   updated_at INTEGER NOT NULL,
   checked_at INTEGER NOT NULL DEFAULT 0
 );
+CREATE TABLE IF NOT EXISTS follows (
+  follower_id TEXT NOT NULL,
+  user_id TEXT NOT NULL,
+  created_at INTEGER NOT NULL,
+  PRIMARY KEY (follower_id, user_id)
+);
+CREATE INDEX IF NOT EXISTS follows_user ON follows (user_id);
 `;
 
 /** Columns added after the first release; applied idempotently on startup. */
@@ -224,10 +231,16 @@ const COLUMNS: Array<[table: string, column: string, ddl: string]> = [
   ["users", "email", "TEXT"],
   ["users", "google_sub", "TEXT"],
   ["playlists", "day", "TEXT"],
+  ["users", "handle", "TEXT"],
+  ["users", "public", "TEXT NOT NULL DEFAULT 'off'"],
 ];
 
 /** Indexes on columns that arrive by ALTER, so they run after the columns exist. */
-const LATE_INDEXES = ["CREATE UNIQUE INDEX IF NOT EXISTS users_email ON users(email)", "CREATE UNIQUE INDEX IF NOT EXISTS users_google_sub ON users(google_sub)"];
+const LATE_INDEXES = [
+  "CREATE UNIQUE INDEX IF NOT EXISTS users_email ON users(email)",
+  "CREATE UNIQUE INDEX IF NOT EXISTS users_google_sub ON users(google_sub)",
+  "CREATE UNIQUE INDEX IF NOT EXISTS users_handle ON users(handle)",
+];
 
 let client: Client | null = null;
 let ready: Promise<void> | null = null;

@@ -4,8 +4,9 @@ import { useCallback, useEffect, useState } from "react";
 import { Avatar, artFallback } from "./Avatar";
 import { ThemeToggle } from "./ThemeToggle";
 import { Sheet } from "./Sheet";
-import { IconPlay } from "./Icons";
-import { api, timeAgo } from "@/lib/client";
+import { IconPlay, IconPause } from "./Icons";
+import { PlayerProvider, usePlayer } from "./Player";
+import { api, timeAgo, metaOf } from "@/lib/client";
 import type { Track } from "@/lib/types";
 
 type Feed = {
@@ -20,7 +21,16 @@ type Feed = {
  * Hearing it is the part that needs a name: tap any song and Crate asks for one, makes the person
  * a guest of this playlist, and opens it inside the app with previews and the links to each song.
  */
-export function PublicPlaylistView({ code, name, crewName, signedIn }: { code: string; name: string; crewName: string; signedIn: boolean }) {
+export function PublicPlaylistView(props: { code: string; name: string; crewName: string; signedIn: boolean }) {
+  return (
+    <PlayerProvider>
+      <PublicPlaylist {...props} />
+    </PlayerProvider>
+  );
+}
+
+function PublicPlaylist({ code, name, crewName, signedIn }: { code: string; name: string; crewName: string; signedIn: boolean }) {
+  const player = usePlayer();
   const [feed, setFeed] = useState<Feed | null>(null);
   const [ask, setAsk] = useState<Track | null>(null);
   const [yourName, setYourName] = useState("");
@@ -67,6 +77,12 @@ export function PublicPlaylistView({ code, name, crewName, signedIn }: { code: s
     else setAsk(track ?? tracks[0]?.track ?? null);
   }
 
+  /** A row: the preview plays right here for anyone; a song with no preview opens the way in. */
+  function row(track: Track) {
+    if (track.previewUrl) player.play(track.id, track.previewUrl, metaOf(track));
+    else tap(track);
+  }
+
   return (
     <div className="radio">
       <div className="glow" style={{ top: "-20%", right: "-10%" }} />
@@ -89,44 +105,60 @@ export function PublicPlaylistView({ code, name, crewName, signedIn }: { code: s
 
       <section className="radio__list" aria-label="The playlist">
         <ul className="pl__list">
-          {tracks.map((t) => (
-            <li key={t.track.id} className="pl__row" onClick={() => tap(t.track)} role="button" tabIndex={0} onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && tap(t.track)}>
-              <div className="log__artwrap">
-                {t.track.artworkUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img className="row__art" src={t.track.artworkUrl} alt="" onError={artFallback} />
-                ) : (
-                  <div className="row__art" />
-                )}
-                <span className="log__play" aria-hidden>
-                  <IconPlay size={14} />
-                </span>
-              </div>
-              <div className="pl__main">
-                <div className="row__title pl__title">{t.track.title}</div>
-                <div className="row__sub pl__sub">{t.track.artist}</div>
-              </div>
-              <div className="pl__meta">
-                <span className="pl__from">
-                  <Avatar name={t.addedBy.name} url={t.addedBy.avatarUrl} size={20} />
-                  <span>{t.addedBy.name}</span>
-                </span>
-                <span className="pl__when num">{timeAgo(t.addedAt)}</span>
-              </div>
-            </li>
-          ))}
+          {tracks.map((t) => {
+            const isCur = player.currentId === t.track.id && player.playing;
+            return (
+              <li
+                key={t.track.id}
+                className={`pl__row${isCur ? " is-playing" : ""}`}
+                onClick={() => row(t.track)}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && row(t.track)}
+              >
+                <div className="log__artwrap">
+                  {t.track.artworkUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img className="row__art" src={t.track.artworkUrl} alt="" onError={artFallback} />
+                  ) : (
+                    <div className="row__art" />
+                  )}
+                  <span className="log__play" aria-hidden>
+                    {isCur ? <IconPause size={14} /> : <IconPlay size={14} />}
+                  </span>
+                </div>
+                <div className="pl__main">
+                  <div className="row__title pl__title">{t.track.title}</div>
+                  <div className="row__sub pl__sub">{t.track.artist}</div>
+                </div>
+                <div className="pl__meta">
+                  <span className="pl__from">
+                    <Avatar name={t.addedBy.name} url={t.addedBy.avatarUrl} size={20} />
+                    <span>{t.addedBy.name}</span>
+                  </span>
+                  <span className="pl__when num">{timeAgo(t.addedAt)}</span>
+                </div>
+              </li>
+            );
+          })}
         </ul>
         {feed && tracks.length === 0 && <p className="muted">Nothing in here yet.</p>}
       </section>
       <footer className="radio__foot faint">
-        Made in Crate, where friends trade music. Tap a song to hear it; it takes a name and nothing else.{" "}
+        Made in Crate, where friends trade music. Tap a song for a taste; the whole thing, and where it lives, takes a name and nothing else.{" "}
         <a href="/" style={{ textDecoration: "underline" }}>
           Start your own crew
         </a>
         .
       </footer>
 
-      <Sheet open={!!ask} onClose={() => { if (!busy) setAsk(null); }} label="Hear it on Crate">
+      <Sheet
+        open={!!ask}
+        onClose={() => {
+          if (!busy) setAsk(null);
+        }}
+        label="Hear it on Crate"
+      >
         {ask && (
           <form
             className="comein"
@@ -149,8 +181,8 @@ export function PublicPlaylistView({ code, name, crewName, signedIn }: { code: s
             </div>
             <h2 className="display comein__title">Hear it on Crate.</h2>
             <p className="muted" style={{ marginTop: 0 }}>
-              Crate is music between friends, and this playlist is {crewName}&apos;s. Give it your name and it opens for you: every song, a preview of
-              each, and the way to it on Spotify, Apple Music or wherever you listen. No password, no email.
+              Crate is music between friends, and this playlist is {crewName}&apos;s. Give it your name and it opens for you: every song, a preview of each, and
+              the way to it on Spotify, Apple Music or wherever you listen. No password, no email.
             </p>
             <label className="label caps" htmlFor="comein-name">
               Your name

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { useStore } from "./Store";
+import { useStore, useStoreMaybe } from "./Store";
 import { usePlayer } from "./Player";
 import { Sheet } from "./Sheet";
 import { SourceMark } from "./SourceMark";
@@ -104,6 +104,56 @@ export function TunedIn({ tuned, meId }: { tuned: Tuned; meId: string }) {
       )}
       <span className="tuned__count">{line}</span>
     </div>
+  );
+}
+
+type FollowingFeed = { people: Array<LivePerson & { handle: string; level: string }>; plays: LiveSession[]; now: number };
+
+/**
+ * Under the crew: the people you follow who are playing right now, with a way to all of them. Not
+ * the crew, and never mixed into it; a second row of records, further away.
+ */
+function FollowingStrip({ now, onPlay }: { now: number; onPlay: (t: NonNullable<LivePerson["track"]>) => void }) {
+  const [feed, setFeed] = useState<FollowingFeed | null>(null);
+  useEffect(() => {
+    let stop = false;
+    const load = () =>
+      api<FollowingFeed>("/api/following")
+        .then((r) => !stop && setFeed(r))
+        .catch(() => undefined);
+    load();
+    const id = setInterval(() => {
+      if (document.visibilityState === "visible") load();
+    }, 30000);
+    return () => {
+      stop = true;
+      clearInterval(id);
+    };
+  }, []);
+  if (!feed || feed.people.length === 0) return null;
+  const live = feed.people.filter((p) => p.live);
+  return (
+    <section className="live__following" aria-label="People you follow">
+      <div className="earlier__head">
+        <span className="caps">
+          Following{live.length ? ` · ${live.length} playing` : ""}
+        </span>
+        <Link href="/following" className="earlier__all">
+          All {feed.people.length}
+        </Link>
+      </div>
+      {live.length > 0 ? (
+        <div className="live__grid live__grid--small">
+          {live.map((p) => (
+            <Orb key={p.person.id} p={p} now={now} isMe={false} onOpen={() => p.track && onPlay(p.track)} />
+          ))}
+        </div>
+      ) : (
+        <p className="faint" style={{ fontSize: 13, margin: "6px 0 0" }}>
+          Nobody you follow is playing right now.
+        </p>
+      )}
+    </section>
   );
 }
 
@@ -270,6 +320,8 @@ export function LiveView() {
       {data && data.history.length === 0 && !data.people.some((p) => p.live) && (
         <p className="muted live__quiet">Nothing played yet today. Earlier days are in the log.</p>
       )}
+
+      <FollowingStrip now={now} onPlay={(t) => player.canPlay(t) && player.play(t.id, t.previewUrl, metaOf(t))} />
 
       <Sheet open={!!open} onClose={() => setOpen(null)} label="Now playing">
         {open && (
@@ -510,7 +562,9 @@ export function History({
   playingId: string | null;
   title?: string;
 }) {
-  const { openAddTo } = useStore();
+  // On a public page there is no store, and no playlist to add to.
+  const store = useStoreMaybe();
+  const openAddTo = store?.openAddTo;
   const player = usePlayer();
   const groups: Array<{ label: string; items: LiveSession[] }> = [];
   for (const s of sessions) {
@@ -560,7 +614,7 @@ export function History({
                     {new Date(s.startedAt).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}
                     {mins > 1 ? <span className="faint"> · {mins} min</span> : null}
                   </span>
-                  {s.track && (
+                  {s.track && openAddTo && (
                     <button type="button" className="rowadd" aria-label="Add to a playlist" title="Add to a playlist" onClick={() => openAddTo(s.track!)}>
                       <IconPlus size={14} />
                     </button>

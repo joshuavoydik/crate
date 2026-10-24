@@ -12,6 +12,7 @@ import { ThemePicker } from "./ThemeToggle";
 import { PushCard } from "./PushCard";
 import { DeviceLink } from "./DeviceLink";
 import { SignInCard } from "./SignInCard";
+import { PageCard } from "./PageCard";
 import { Avatar, squareDataUrl } from "./Avatar";
 import { api, sourceName, timeAgo } from "@/lib/client";
 import { PLATFORM_LABELS, orderPlatforms } from "@/lib/resolve/links";
@@ -193,6 +194,8 @@ export function SettingsView({ appUrl }: { appUrl: string }) {
           )}
         </div>
       </div>
+
+      <PageCard />
 
       <PushCard />
 

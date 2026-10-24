@@ -1982,3 +1982,79 @@ html:has(.nowbar) .shell {
 .appearance .seg {
   align-self: flex-start;
 }
+
+/* ---------- a person's page, and following ---------- */
+
+.profile__who {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  min-width: 0;
+}
+.profile__name {
+  font-size: clamp(32px, 7vw, 56px);
+}
+.profile__handle {
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  margin-top: 4px;
+}
+.profile__actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.profile__note {
+  margin: 8px 0 0;
+  font-size: 14px;
+  max-width: 52ch;
+}
+.profile__now {
+  margin-top: 10px;
+}
+.live__following {
+  margin-top: 36px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+}
+.live__grid--small {
+  margin-top: 8px;
+}
+.follow {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+.follow__handle {
+  color: var(--ink-3);
+  text-decoration: none;
+}
+.follow__handle:hover {
+  color: var(--signal);
+}
+.pagecard__handle {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.pagecard__handle .field {
+  flex: 1;
+  min-width: 0;
+  max-width: 220px;
+}
+.pagecard__at {
+  white-space: nowrap;
+}
+@media (max-width: 719px) {
+  .profile .radio__top {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 14px;
+  }
+  .profile__who {
+    gap: 12px;
+  }
+}

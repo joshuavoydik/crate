@@ -2,6 +2,7 @@ import { currentUser } from "@/lib/auth";
 import { json, error, readJson, requireUser, str } from "@/lib/api";
 import { run } from "@/lib/db";
 import { buildMe } from "@/lib/session";
+import { setHandle, setPublicLevel, HandleError, PUBLIC_LEVELS, type PublicLevel } from "@/lib/profile";
 
 export async function GET() {
   const user = await currentUser();
@@ -12,8 +13,20 @@ export async function GET() {
 export async function PATCH(req: Request) {
   const auth = await requireUser();
   if ("response" in auth) return auth.response;
-  const body = await readJson<{ name?: string; isDj?: boolean; preferredPlatform?: string; lastfmUser?: string | null; imessageHandle?: string | null }>(req);
+  const body = await readJson<{ name?: string; isDj?: boolean; preferredPlatform?: string; lastfmUser?: string | null; imessageHandle?: string | null; handle?: string; public?: string }>(req);
   if (!body) return error("Bad JSON");
+  // The public page: its handle and what it shows.
+  if (typeof body.handle === "string") {
+    try {
+      await setHandle(auth.user.id, body.handle);
+    } catch (e) {
+      return error(e instanceof HandleError ? e.message : "Could not set that handle");
+    }
+  }
+  if (typeof body.public === "string") {
+    if (!PUBLIC_LEVELS.includes(body.public as PublicLevel)) return error("public must be off, playlists or plays");
+    await setPublicLevel(auth.user.id, body.public as PublicLevel);
+  }
   const sets: string[] = [];
   const args: (string | number | null)[] = [];
   const name = str(body.name, 60);
