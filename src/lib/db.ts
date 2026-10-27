@@ -311,6 +311,18 @@ export async function db(): Promise<Client> {
       await once("migr:auto_share_v1", async () => {
         await c.execute({ sql: "UPDATE crew_members SET auto_share = 'plays', share_since = ?", args: [Date.now()] });
       });
+      // Plays and likes that streamed in were stamped with the sync's time, so a batch read "just now"
+      // all the way down. Each gets back the moment it happened, from its own entry in the log.
+      await once("migr:play_times_v1", async () => {
+        const match = `l.user_id = sends.from_user_id AND l.track_id = sends.track_id
+          AND l.action = CASE WHEN sends.via LIKE 'played:%' THEN 'played' ELSE 'liked' END
+          AND l.at <= sends.created_at + 60000 AND l.at >= sends.created_at - 7 * 86400000`;
+        await c.execute(
+          `UPDATE sends SET created_at = (SELECT MAX(l.at) FROM log_entries l WHERE ${match})
+           WHERE (sends.via LIKE 'played:%' OR sends.via IN ('spotify', 'apple', 'youtube', 'soundcloud', 'tidal', 'lastfm'))
+             AND EXISTS (SELECT 1 FROM log_entries l WHERE ${match})`,
+        );
+      });
     })();
   }
   await ready;

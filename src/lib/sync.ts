@@ -183,6 +183,8 @@ async function autoShare(userId: string, track: Track, kind: string, item: Sourc
         noteBy: "agent",
         sourceUrl: item.meta.sourceUrl,
         via,
+        // The play's own moment, not the sync's: a batch pulled in later still lands in the order it happened.
+        createdAt: item.at,
       },
       AUTO_SHARE_WINDOW,
     );

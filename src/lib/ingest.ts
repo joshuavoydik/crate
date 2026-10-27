@@ -94,6 +94,8 @@ export async function ingestLink(input: {
           noteBy: "human",
           sourceUrl: input.url,
           via: "imessage",
+          // The text's own time: a link sent at lunch and picked up at night still sits at lunch.
+          createdAt: input.at ?? undefined,
         });
         announceSend(send).catch(() => undefined);
         // Remember it in the log too, so a re-send of the same link is a no-op.

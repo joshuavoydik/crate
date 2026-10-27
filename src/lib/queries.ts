@@ -421,6 +421,8 @@ export async function createSend(input: {
   noteBy: "human" | "agent";
   sourceUrl: string | null;
   via?: string;
+  /** When it happened: a play carries its own time, so a batch that syncs in later still reads in order. Default: now. */
+  createdAt?: number;
 }): Promise<Send> {
   const s = await createSendUnlessRecent(input, 0);
   if (!s) throw new Error("send insert failed");
@@ -435,7 +437,9 @@ export async function createSend(input: {
 export async function createSendUnlessRecent(input: Parameters<typeof createSend>[0], windowMs: number): Promise<Send | null> {
   const sid = id("s");
   const t = now();
-  const args = [sid, input.crewId, input.trackId, input.fromUserId, input.note, input.noteBy, input.sourceUrl, input.via ?? "app", t];
+  // A time in the future is a clock out of step, not a prophecy; the past is kept as it was.
+  const at = input.createdAt && input.createdAt > 0 && input.createdAt <= t + 60_000 ? input.createdAt : t;
+  const args = [sid, input.crewId, input.trackId, input.fromUserId, input.note, input.noteBy, input.sourceUrl, input.via ?? "app", at];
   const inserted = windowMs
     ? await run(
         `INSERT INTO sends (id, crew_id, track_id, from_user_id, note, note_by, source_url, via, created_at)
@@ -476,7 +480,7 @@ export async function unseenCount(userId: string, crewId: string): Promise<numbe
 
 export async function reelFor(userId: string, crewId: string): Promise<Send[]> {
   const rows = await all<SendRow>(
-    `${SEND_SELECT} WHERE ${REEL_WHERE} ORDER BY s.created_at ASC LIMIT 200`,
+    `${SEND_SELECT} WHERE ${REEL_WHERE} ORDER BY s.created_at ASC, s.rowid ASC LIMIT 200`,
     [userId, crewId, userId],
   );
   return withHistory(rows, crewId, userId);
@@ -486,7 +490,7 @@ export async function reelFor(userId: string, crewId: string): Promise<Send[]> {
 export async function sendsIn(userId: string, crewId: string, limit = 200): Promise<Send[]> {
   const rows = await all<SendRow>(
     `${SEND_SELECT} LEFT JOIN (SELECT send_id, MAX(at) AS last_at FROM echoes GROUP BY send_id) e ON e.send_id = s.id
-     WHERE s.crew_id = ? ORDER BY MAX(s.created_at, COALESCE(e.last_at, 0)) DESC LIMIT ?`,
+     WHERE s.crew_id = ? ORDER BY MAX(s.created_at, COALESCE(e.last_at, 0)) DESC, s.rowid DESC LIMIT ?`,
     [userId, crewId, limit],
   );
   return withHistory(rows, crewId, userId);

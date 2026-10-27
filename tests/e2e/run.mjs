@@ -717,7 +717,8 @@ async function main() {
     assert.equal(badTok.status(), 401);
     const ing1 = await ingestCtx.request.post(`${BASE}/api/ingest`, {
       headers: { authorization: `Bearer ${tokenRes.token}` },
-      data: { text: `you need this https://www.youtube.com/watch?v=dQw4w9WgXcQ`, from: "+1 (415) 555-0100", at: nowMs },
+      // Everything carries its own moment now, and the reel runs oldest first: this text is from a minute before the like.
+      data: { text: `you need this https://www.youtube.com/watch?v=dQw4w9WgXcQ`, from: "+1 (415) 555-0100", at: nowMs - 60_000 },
     });
     assert.equal(ing1.status(), 200);
     const ing1Json = await ing1.json();
@@ -744,7 +745,8 @@ async function main() {
     await b.getByText("Saved").last().waitFor();
     const ing2 = await (await ingestCtx.request.post(`${BASE}/api/ingest`, {
       headers: { authorization: `Bearer ${tokenRes.token}` },
-      data: { text: `for your set ${SC}`, from: "+14155550100", at: nowMs },
+      // Her text carries its own time (two minutes before the like), so it is first on Joshua's stage.
+      data: { text: `for your set ${SC}`, from: "+14155550100", at: nowMs - 120_000 },
     })).json();
     assert.equal(ing2.outcome.kind, "send");
     assert.equal(ing2.outcome.fromName, "Ariel");
