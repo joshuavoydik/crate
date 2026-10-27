@@ -92,6 +92,43 @@ async function remember(userId: string, prev: PresenceRow | null, w: Write, t: n
   );
 }
 
+/**
+ * A play that arrived through a platform's own history (the sync), not through a feed watched as
+ * it happened: it still belongs on Live's today and on the person's page. A session is written
+ * for it when none is there already, and if it is newer than the last thing seen, the record on
+ * the orb moves to it, stopped. Nothing here says "playing now"; only a feed can say that.
+ */
+export async function rememberPlay(userId: string, w: { source: string; track: Track; at: number }): Promise<void> {
+  const t = w.track;
+  const dur = t.durationMs && t.durationMs > 0 ? Math.min(t.durationMs, 20 * 60 * 1000) : 4 * 60 * 1000;
+  const twin = await one<{ id: string }>("SELECT id FROM live_history WHERE user_id = ? AND (track_id = ? OR (title = ? AND artist = ?)) AND ABS(started_at - ?) < ?", [
+    userId,
+    t.id,
+    t.title,
+    t.artist,
+    w.at,
+    10 * 60 * 1000,
+  ]);
+  if (!twin) {
+    await run(
+      "INSERT INTO live_history (id, user_id, source, track_id, title, artist, artwork_url, url, started_at, ended_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+      [newId("lh"), userId, w.source, t.id, t.title, t.artist, t.artworkUrl, t.links?.[w.source as keyof Track["links"]]?.url ?? null, w.at, w.at + dur],
+    );
+  }
+  const prev = await presenceOf(userId);
+  // Stale, or nothing yet: the last thing played becomes this one, at rest.
+  if (!prev || (!prev.playing && (prev.updated_at ?? 0) < w.at) || (prev.playing && now() - prev.updated_at > LIVE_WINDOW && prev.updated_at < w.at)) {
+    await run(
+      `INSERT INTO presence (user_id, source, playing, track_id, title, artist, artwork_url, url, progress_ms, duration_ms, started_at, updated_at, checked_at)
+       VALUES (?, ?, 0, ?, ?, ?, ?, ?, NULL, ?, ?, ?, ?)
+       ON CONFLICT(user_id) DO UPDATE SET source = excluded.source, playing = 0, track_id = excluded.track_id, title = excluded.title,
+         artist = excluded.artist, artwork_url = excluded.artwork_url, url = excluded.url, progress_ms = NULL,
+         duration_ms = excluded.duration_ms, started_at = excluded.started_at, updated_at = excluded.updated_at`,
+      [userId, w.source, t.id, t.title, t.artist, t.artworkUrl, t.links?.[w.source as keyof Track["links"]]?.url ?? null, t.durationMs ?? null, w.at, w.at + dur, prev?.checked_at ?? 0],
+    );
+  }
+}
+
 async function write(userId: string, w: Write, checked: boolean): Promise<void> {
   const t = now();
   const prev = await presenceOf(userId);

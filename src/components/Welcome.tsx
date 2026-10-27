@@ -6,7 +6,7 @@ import Link from "next/link";
 import { api } from "@/lib/client";
 
 /** The front door. With `me`, a signed-in person who is in no crew yet: same two choices, no name to ask for. */
-export function Welcome({ invite, me }: { invite?: { code: string; crewName: string; members: string[] } | null; me?: { name: string } | null }) {
+export function Welcome({ invite, me, google = false }: { invite?: { code: string; crewName: string; members: string[] } | null; me?: { name: string } | null; google?: boolean }) {
   const router = useRouter();
   const [mode, setMode] = useState<"start" | "join">(invite ? "join" : "start");
   const [yourName, setYourName] = useState(me?.name ?? "");
@@ -62,6 +62,15 @@ export function Welcome({ invite, me }: { invite?: { code: string; crewName: str
           "Music between friends, with memory. What you play shows up for your crew as you play it, and is kept. Only the crew ever sees it."
         )}
       </p>
+
+      {google && !me && (
+        <div className="welcome__google">
+          <a className="btn btn--primary signin__google" href={`/api/auth/google${invite ? `?next=${encodeURIComponent(`/join/${invite.code}`)}` : ""}`} data-testid="google-welcome">
+            Continue with Google
+          </a>
+          <div className="caps welcome__or">or just a name</div>
+        </div>
+      )}
 
       {mode === "start" ? (
         <form className="welcome__form" onSubmit={start}>

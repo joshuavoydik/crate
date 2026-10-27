@@ -1,6 +1,7 @@
 import { loadMe } from "@/lib/session";
 import { crewByCode } from "@/lib/queries";
 import { Welcome } from "@/components/Welcome";
+import { googleSignInConfigured } from "@/lib/google-signin";
 import { JoinExisting } from "@/components/JoinExisting";
 
 export const dynamic = "force-dynamic";
@@ -21,5 +22,5 @@ export default async function JoinPage({ params }: { params: Promise<{ code: str
   if (me) {
     return <JoinExisting code={code} crewName={crew.name} members={members} already={crew.members.some((m) => m.id === me.id)} meName={me.name} />;
   }
-  return <Welcome invite={{ code, crewName: crew.name, members }} />;
+  return <Welcome invite={{ code, crewName: crew.name, members }} google={await googleSignInConfigured()} />;
 }

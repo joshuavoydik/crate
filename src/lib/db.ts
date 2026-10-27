@@ -311,6 +311,20 @@ export async function db(): Promise<Client> {
       await once("migr:auto_share_v1", async () => {
         await c.execute({ sql: "UPDATE crew_members SET auto_share = 'plays', share_since = ?", args: [Date.now()] });
       });
+      // Plays that came in through a platform's history never reached Live or a person's page, which only
+      // knew what a feed had been watched to see. The last two weeks of them become sessions once.
+      await once("migr:live_from_log_v1", async () => {
+        await c.execute({
+          sql: `INSERT INTO live_history (id, user_id, source, track_id, title, artist, artwork_url, url, started_at, ended_at)
+                SELECT 'lh_' || lower(hex(randomblob(12))), l.user_id, l.source_kind, l.track_id, t.title, t.artist, t.artwork_url, NULL, l.at,
+                       l.at + MIN(COALESCE(NULLIF(t.duration_ms, 0), 240000), 1200000)
+                FROM log_entries l JOIN tracks t ON t.id = l.track_id
+                WHERE l.action = 'played' AND l.at > ? AND l.source_kind NOT IN ('imessage', 'crate')
+                  AND NOT EXISTS (SELECT 1 FROM live_history h WHERE h.user_id = l.user_id
+                                  AND (h.track_id = l.track_id OR (h.title = t.title AND h.artist = t.artist)) AND ABS(h.started_at - l.at) < 600000)`,
+          args: [Date.now() - 14 * 86400000],
+        });
+      });
       // Plays and likes that streamed in were stamped with the sync's time, so a batch read "just now"
       // all the way down. Each gets back the moment it happened, from its own entry in the log.
       await once("migr:play_times_v1", async () => {

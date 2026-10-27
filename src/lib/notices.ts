@@ -37,6 +37,17 @@ export function deriveNotices(sources: SourceLike[], dismissed: Set<string>): No
         action: oauth ? { label: `Reconnect ${label}`, href: `/api/connect/${s.kind}` } : { label: "Open settings", href: "/settings" },
         at: s.last_sync_at,
       });
+    } else if (s.kind === "spotify" && s.status === "error" && s.error && /not registered for this application/i.test(s.error)) {
+      // Spotify's development mode: the app's owner has to list each person's Spotify email before
+      // Spotify lets their account in. Reconnecting does nothing; a word to the owner does.
+      out.push({
+        id: `error:${s.kind}:allowlist`,
+        kind: "error",
+        title: "Spotify has not let your account in yet",
+        body: "Spotify makes whoever runs this Crate list each person's Spotify email before it will talk to their account. Send them the email on your Spotify account and it starts working; nothing to redo on your side.",
+        action: { label: "Open settings", href: "/settings" },
+        at: s.last_sync_at,
+      });
     } else if (s.status === "error" && s.error && !TRANSIENT.test(s.error)) {
       out.push({
         id: `error:${s.kind}:${tinyHash(s.error)}`,

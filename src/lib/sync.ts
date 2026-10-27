@@ -5,6 +5,7 @@ import { resolveFromMeta, type TrackMeta } from "./resolve";
 import { fingerprint } from "./resolve/parse";
 import { upsertTrack, createSendUnlessRecent, getTrack, echo } from "./queries";
 import { suggestNote } from "./agent";
+import { rememberPlay } from "./live";
 import type { Track } from "./types";
 
 export type SourceRow = {
@@ -114,6 +115,8 @@ export async function ingestItems(userId: string, kind: string, items: SourceIte
     // Already there, from this report's twin or from another device: theirs counts, not this one.
     if (!inserted) continue;
     added++;
+    // The platform's own history knows about this play, so Live and the person's page should too.
+    if (item.action === "played") await rememberPlay(userId, { source: kind, track, at: item.at }).catch(() => undefined);
     shared += await autoShare(userId, track, kind, item);
     await new Promise((r) => setTimeout(r, 150));
   }

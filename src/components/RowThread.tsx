@@ -42,6 +42,17 @@ export function RowThread({ send, onOpen, compact = false }: { send: Send; onOpe
   }
 
   const empty = shown.length === 0;
+  // A row nobody has said anything about shows one quiet word, not an input: ten open fields down a
+  // list is noise. A press makes it the field; a thread that exists keeps the line to add to it.
+  if (compact && empty && !open && !text) {
+    return (
+      <div className="rt rt--compact rt--closed" onClick={(e) => e.stopPropagation()} onPointerDown={(e) => e.stopPropagation()}>
+        <button type="button" className="rt__open" onClick={() => setOpen(true)} aria-label="Comment">
+          Say something
+        </button>
+      </div>
+    );
+  }
   return (
     <div
       className={`rt${compact ? " rt--compact" : ""}`}
@@ -79,6 +90,7 @@ export function RowThread({ send, onOpen, compact = false }: { send: Send; onOpe
           placeholder={empty ? "Say something" : "Add to it"}
           value={text}
           aria-label="Comment"
+          autoFocus={compact && empty}
           onFocus={() => setOpen(true)}
           onBlur={() => !text && setOpen(false)}
           onChange={(e) => setText(e.target.value.slice(0, 500))}

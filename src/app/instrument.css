@@ -2058,3 +2058,40 @@ html:has(.nowbar) .shell {
     gap: 12px;
   }
 }
+
+/* A row with no thread yet: one quiet word where the field would be. */
+.rt--closed {
+  padding: 2px 0 0;
+}
+.rt__open {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-4);
+  background: none;
+  border: 0;
+  padding: 4px 0;
+  cursor: pointer;
+}
+.rt__open:hover,
+.pl__row:hover .rt__open {
+  color: var(--ink-3);
+}
+@media (hover: none) {
+  .rt__open {
+    color: var(--ink-3);
+  }
+}
+
+/* The front door's one-tap way in, above the name field. */
+.welcome__google {
+  width: 100%;
+  max-width: 360px;
+  display: grid;
+  gap: 14px;
+  margin-bottom: 18px;
+}
+.welcome__or {
+  text-align: center;
+}
